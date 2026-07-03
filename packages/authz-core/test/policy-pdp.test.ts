@@ -113,6 +113,24 @@ describe('LayeredDecisionPoint', () => {
     expect(d.reason).toBe('no_grant');
   });
 
+  it("fail-closed : deny si une condition leve a l'evaluation", async () => {
+    const throwing: ExpressionEnginePort = {
+      evaluateBoolean: () => {
+        throw new Error('boom');
+      },
+    };
+    const pdpX = new LayeredDecisionPoint({
+      grants: repoWith([GRANT]),
+      relations: relationOf('self'),
+      policies: store([ALLOW_SCOPING]),
+      expr: throwing,
+      clock: CLOCK,
+    });
+    const d = await pdpX.check(request('A1', 'A1'));
+    expect(d.effect).toBe('deny');
+    expect(d.reason).toBe('condition_error');
+  });
+
   it('scoping ABAC : allow si la condition matche (meme agence)', async () => {
     const d = await pdp([GRANT], [ALLOW_SCOPING]).check(request('A1', 'A1'));
     expect(d.effect).toBe('allow');

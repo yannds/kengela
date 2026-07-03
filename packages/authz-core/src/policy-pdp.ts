@@ -92,7 +92,18 @@ export class LayeredDecisionPoint implements PolicyDecisionPoint {
       resource,
       env: { ...principal.ctx, ...request.env, now },
     };
-    const matched = rules.filter((r) => this.#ruleApplies(r, relation, ctx));
+    // FAIL-CLOSED (Zero Trust) : si une condition ne peut pas etre evaluee
+    // (variable absente, expression invalide...), on REFUSE la requete.
+    let matched: PolicyRule[];
+    try {
+      matched = rules.filter((r) => this.#ruleApplies(r, relation, ctx));
+    } catch {
+      return this.#emit(
+        request,
+        { effect: 'deny', reason: 'condition_error', signals: { relation } },
+        now,
+      );
+    }
 
     // 3. Deny explicite prioritaire.
     const deny = matched.find((r) => r.effect === 'deny');
