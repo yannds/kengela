@@ -1,0 +1,79 @@
+// Schema de REFERENCE pour @kengela/adapter-persistence-prisma.
+//
+// Ce fichier N'EST PAS compile ni genere par ce paquet. Il documente le
+// stockage Postgres reel qu'une application hote materialiserait. Le PrismaClient
+// genere depuis ce schema est structurellement compatible avec l'interface
+// NARROW `PrismaLike` (src/prisma-like.ts) : il se passe la ou elle est attendue.
+//
+// Les colonnes d'union (scope, source, effect) restent des `String` : le
+// narrowing fail-closed vers les litteraux des contrats vit dans mapping.ts.
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Grant {
+  id         String    @id @default(cuid())
+  userId     String
+  tenantId   String
+  permission String
+  scope      String
+  source     String
+  expiresAt  DateTime?
+  // Un grant peut provenir d'un role (materialise) ou etre direct.
+  role       Role?     @relation(fields: [roleId], references: [id])
+  roleId     String?
+
+  @@index([userId, tenantId])
+}
+
+model Role {
+  id       String  @id @default(cuid())
+  key      String
+  tenantId String
+  grants   Grant[]
+
+  @@unique([tenantId, key])
+}
+
+model Session {
+  token     String   @id
+  userId    String
+  tenantId  String
+  createdAt DateTime
+  expiresAt DateTime
+  // AuthContext serialise (ip/geo/device/riskScore/authTime).
+  ctx       Json
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Policy {
+  id       String       @id @default(cuid())
+  resource String
+  action   String
+  tenantId String
+  rules    PolicyRule[]
+
+  @@index([tenantId])
+}
+
+model PolicyRule {
+  id          String  @id @default(cuid())
+  effect      String
+  scope       String?
+  when        String?
+  // Obligations serialisees (tableau d'Obligation).
+  obligations Json?
+  reason      String?
+  policy      Policy  @relation(fields: [policyId], references: [id])
+  policyId    String
+
+  @@index([policyId])
+}
