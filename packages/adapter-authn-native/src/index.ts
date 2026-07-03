@@ -6,3 +6,5 @@ export { AesGcmFieldCipher } from './aes-gcm-field-cipher.js';
 export { SubjectFieldCipher } from './subject-field-cipher.js';
 export { SubjectCryptoShredder } from './subject-crypto-shredder.js';
 export { TotpVerifier } from './totp-verifier.js';
+export { TotpMfaService } from './totp-mfa-service.js';
+export type { TotpMfaServiceOptions } from './totp-mfa-service.js';

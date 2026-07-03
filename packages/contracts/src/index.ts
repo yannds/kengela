@@ -222,9 +222,39 @@ export interface CredentialStore {
 
 /** MFA (TOTP + backup codes). [TRANSLOG crypto AES-256-GCM] + [ATRIUM twoFactor] */
 export interface MfaService {
-  enroll(userId: UserId): Promise<{ readonly secretUri: string; readonly qr: string }>;
+  enroll(input: {
+    readonly tenantId: TenantId;
+    readonly userId: UserId;
+    readonly account: string;
+    readonly issuer: string;
+  }): Promise<{ readonly secretUri: string; readonly qr: string }>;
+  challenge(input: {
+    readonly tenantId: TenantId;
+    readonly userId: UserId;
+  }): Promise<{ readonly challengeId: string }>;
   verify(challengeId: string, code: string): Promise<boolean>;
-  challenge(userId: UserId): Promise<{ readonly challengeId: string }>;
+}
+
+/**
+ * Persistance du secret TOTP chiffré at-rest, isolée par tenant. [TRANSLOG]
+ * L'implémentation (app) stocke le secret déjà chiffré ; le port n'en connaît que l'opacité.
+ */
+export interface MfaSecretStore {
+  save(tenantId: TenantId, userId: UserId, encryptedSecret: string): Promise<void>;
+  get(tenantId: TenantId, userId: UserId): Promise<string | null>;
+}
+
+/**
+ * Émission/consommation de défis MFA one-shot (step-up). [TRANSLOG]
+ * `issue` renvoie un challengeId opaque ; `consume` est à usage unique (one-shot) et expirant.
+ */
+export interface MfaChallengeStore {
+  /** Renvoie un challengeId opaque, valable `ttlMs`. */
+  issue(tenantId: TenantId, userId: UserId, ttlMs: number): Promise<string>;
+  /** Résout et invalide le défi (one-shot). null si inconnu, consommé ou expiré. */
+  consume(
+    challengeId: string,
+  ): Promise<{ readonly tenantId: TenantId; readonly userId: UserId } | null>;
 }
 
 /**
