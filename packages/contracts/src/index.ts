@@ -252,6 +252,24 @@ export interface FieldCipherPort {
   decryptField(tenantId: TenantId, ciphertext: string): Promise<string>;
 }
 
+/**
+ * Journal d'accès aux données personnelles (RGPD art. 30, auditabilité). [compliance-by-design]
+ * Chaque lecture/export de PII doit être traçable : qui, quel sujet, quels champs, quelle finalité.
+ */
+export interface PiiAccessLogSink {
+  record(entry: {
+    readonly tenantId: TenantId;
+    /** Personne concernée (data subject). */
+    readonly subjectId: string;
+    /** Acteur qui accède (absent = système). */
+    readonly actorId?: UserId;
+    readonly fields: readonly string[];
+    /** Finalité du traitement (RGPD). */
+    readonly purpose: string;
+    readonly at: number;
+  }): Promise<void> | void;
+}
+
 /* ============================================================================
  * 3. PORTS AUTHZ (le coeur Zero Trust)
  * ========================================================================== */
