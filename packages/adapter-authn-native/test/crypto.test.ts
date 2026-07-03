@@ -28,6 +28,28 @@ describe('AesGcmKeyManagement', () => {
   it('refuse une cle maitre trop courte', () => {
     expect(() => new AesGcmKeyManagement(new Uint8Array(16))).toThrow();
   });
+
+  it('contexte HKDF : separation de domaine (deux contextes ne sont pas interchangeables)', async () => {
+    const mfa = new AesGcmKeyManagement(KEY); // defaut = kengela:mfa
+    const pii = new AesGcmKeyManagement(KEY, { context: 'kengela:pii-field' });
+    const cipher = await mfa.encrypt('t1', new TextEncoder().encode('x'));
+    // Meme cle maitre, meme tenant, mais contexte different => dechiffrement impossible.
+    await expect(pii.decrypt('t1', cipher)).rejects.toThrow();
+  });
+
+  it('contexte HKDF : deux instances de meme contexte restent interoperables', async () => {
+    const a = new AesGcmKeyManagement(KEY, { context: 'kengela:pii-field' });
+    const b = new AesGcmKeyManagement(KEY, { context: 'kengela:pii-field' });
+    const cipher = await a.encrypt('t1', new TextEncoder().encode('shared'));
+    expect(new TextDecoder().decode(await b.decrypt('t1', cipher))).toBe('shared');
+  });
+
+  it('contexte par defaut inchange (retro-compat kengela:mfa)', async () => {
+    const implicit = new AesGcmKeyManagement(KEY);
+    const explicit = new AesGcmKeyManagement(KEY, { context: 'kengela:mfa' });
+    const cipher = await implicit.encrypt('t1', new TextEncoder().encode('legacy'));
+    expect(new TextDecoder().decode(await explicit.decrypt('t1', cipher))).toBe('legacy');
+  });
 });
 
 describe('AesGcmFieldCipher (PII)', () => {

@@ -3,3 +3,4 @@ export * from './grant.js';
 export * from './engine.js';
 export * from './pdp.js';
 export * from './policy-pdp.js';
+export * from './relation-resolver.js';

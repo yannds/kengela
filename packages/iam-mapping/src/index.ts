@@ -56,6 +56,7 @@ export {
   compileSafeRegex,
   safeRegexTest,
 } from './safe-regex.js';
+export { type ContractsProfileMeta, toContractsProfile } from './contracts-projection.js';
 export {
   type ScimMultiValued,
   type ScimName,

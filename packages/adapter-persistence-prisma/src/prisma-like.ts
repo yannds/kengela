@@ -149,3 +149,94 @@ export interface MfaChallengeDelegate {
   findUnique(args: { readonly where: { readonly id: string } }): Promise<MfaChallengeRow | null>;
   delete(args: { readonly where: { readonly id: string } }): Promise<unknown>;
 }
+
+// ── Credentials : identite par mot de passe (Account) + etat du compte (User) ─
+//
+// Schema de reference (modele « better-auth-like », generique) :
+//  - User    { id, tenantId, isActive, deletedAt?, mfaEnabled, roles String[] }
+//  - Account { userId, tenantId, providerId, accountId, password? }
+// Le hash vit dans `Account` (providerId='credential', accountId=email) ; l'etat du
+// compte (actif, mfa, roles) dans `User`. Un vrai `PrismaClient` (User/Account) est
+// structurellement compatible avec les delegues NARROW ci-dessous.
+
+/** Ligne `Account` — sous-ensemble NARROW (le hash `password` est optionnel). */
+export interface AccountRow {
+  readonly userId: UserId;
+  readonly tenantId: TenantId;
+  readonly password: string | null;
+}
+
+/** Ligne `User` — sous-ensemble NARROW lu pour resoudre un `CredentialRecord`. */
+export interface CredentialUserRow {
+  readonly id: UserId;
+  readonly tenantId: TenantId;
+  readonly isActive: boolean;
+  readonly deletedAt: Date | null;
+  readonly mfaEnabled: boolean;
+  /** Rôles de l'utilisateur (colonne liste, ex. `roles String[]`). */
+  readonly roles: readonly string[];
+}
+
+export interface AccountDelegate {
+  findFirst(args: {
+    readonly where: {
+      readonly tenantId: TenantId;
+      readonly providerId: string;
+      readonly accountId: string;
+    };
+  }): Promise<AccountRow | null>;
+  findMany(args: {
+    readonly where: { readonly providerId: string; readonly accountId: string };
+  }): Promise<readonly AccountRow[]>;
+}
+
+export interface CredentialUserDelegate {
+  findFirst(args: {
+    readonly where: { readonly id: UserId; readonly tenantId: TenantId };
+  }): Promise<CredentialUserRow | null>;
+  findMany(args: {
+    readonly where: { readonly id: { readonly in: readonly UserId[] } };
+  }): Promise<readonly CredentialUserRow[]>;
+}
+
+/** Surface NARROW dont `PrismaCredentialStore` a besoin (Account + User). */
+export interface CredentialPrismaLike {
+  readonly account: AccountDelegate;
+  readonly user: CredentialUserDelegate;
+}
+
+// ── PII : clé de chiffrement PAR SUJET (crypto-shredding) + journal d'accès ───
+
+/** Ligne stockant la clé d'un sujet, sérialisée en base64 (chiffrée-at-rest si KMS injecté). */
+export interface SubjectKeyRow {
+  readonly key: string;
+}
+
+export interface SubjectKeyDelegate {
+  findFirst(args: {
+    readonly where: { readonly tenantId: TenantId; readonly subjectId: string };
+  }): Promise<SubjectKeyRow | null>;
+  create(args: {
+    readonly data: {
+      readonly tenantId: TenantId;
+      readonly subjectId: string;
+      readonly key: string;
+    };
+  }): Promise<unknown>;
+  deleteMany(args: {
+    readonly where: { readonly tenantId: TenantId; readonly subjectId: string };
+  }): Promise<{ readonly count: number }>;
+}
+
+export interface PiiAccessLogDelegate {
+  create(args: {
+    readonly data: {
+      readonly tenantId: TenantId;
+      readonly subjectId: string;
+      readonly actorId: UserId | null;
+      readonly fields: readonly string[];
+      readonly purpose: string;
+      readonly at: Date;
+    };
+  }): Promise<unknown>;
+}

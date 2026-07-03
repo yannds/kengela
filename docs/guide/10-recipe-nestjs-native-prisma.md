@@ -18,22 +18,26 @@ implémentent et que l'**app compose**. Ce scénario branche les ports suivants 
 | ---------------------------- | ------------------------------------------------- | ------------------------------------- | -------------- |
 | `PasswordHasher`             | `Argon2PasswordHasher`                            | `@kengela/adapter-authn-native`       | fourni Kengela |
 | `CredentialAuthenticator`    | `NativeCredentialAuthenticator`                   | `@kengela/adapter-authn-native`       | fourni Kengela |
-| `CredentialStore`            | _(le tien)_ `AppCredentialStore`                  | ton app                               | **toi**        |
+| `CredentialStore`            | `PrismaCredentialStore` (générique) _ou le tien_  | `@kengela/adapter-persistence-prisma` | fourni / toi   |
 | `SessionStore`               | `PrismaSessionStore`                              | `@kengela/adapter-persistence-prisma` | fourni Kengela |
 | `AuthorizationRepository`    | `PrismaAuthorizationRepository`                   | `@kengela/adapter-persistence-prisma` | fourni Kengela |
 | `PolicyStore`                | `PrismaPolicyStore`                               | `@kengela/adapter-persistence-prisma` | fourni Kengela |
 | `ExpressionEnginePort` (CEL) | `CelExpressionEngine`                             | `@kengela/adapter-expr-cel`           | fourni Kengela |
-| `RelationResolver`           | _(le tien)_ `AppRelationResolver`                 | ton app                               | **toi**        |
+| `RelationResolver`           | `PrincipalRelationResolver` _ou le tien_          | `@kengela/authz-core`                 | fourni / toi   |
 | `PolicyDecisionPoint` (PDP)  | `RbacDecisionPoint` **ou** `LayeredDecisionPoint` | `@kengela/authz-core`                 | fourni Kengela |
 | Guard + décorateurs NestJS   | `KengelaAuthzGuard`, `@RequirePermission`, …      | `@kengela/nestjs`                     | fourni Kengela |
 
-> **Deux ports que la lib NE fournit PAS d'adapter par défaut** et que tu écris toi-même :
+> **Deux ports pour lesquels un adapter par défaut GÉNÉRIQUE existe désormais** — utilisable
+> tel quel si ta forme colle, à remplacer par le tien sinon :
 >
-> - `CredentialStore` — la recherche credential dépend de TON schéma (le prisma adapter
->   n'exporte aucun `CredentialStore`). `@kengela/connector-translog` en donne un exemple réel
->   (`TranslogCredentialStore`).
-> - `RelationResolver` — la relation org acteur↔ressource dépend de TON organigramme. Aucun
->   adapter n'implémente `RelationResolver` dans le monorepo ; le PDP l'exige en dépendance.
+> - `CredentialStore` — `PrismaCredentialStore` (`@kengela/adapter-persistence-prisma`) résout
+>   un credential sur le modèle générique `Account(providerId='credential')` + `User` (mêmes
+>   conventions que `TranslogCredentialStore`). Si TON schéma diffère, écris le tien ;
+>   `@kengela/connector-translog` en donne un exemple réel.
+> - `RelationResolver` — `PrincipalRelationResolver` (`@kengela/authz-core`) calcule la relation
+>   org à partir des champs déjà portés par le `Principal` (`orgUnitId`/`agencyId`/`coverageUnits`)
+>   confrontés à la `ResourceRef` (`attributes.ownerId`/`unitId`…), deny-by-default. Un
+>   organigramme calculé HORS jeton (unités en base) reste du ressort d'un resolver app.
 
 **Choix du PDP :**
 
@@ -516,11 +520,13 @@ Policy d'exemple (une ligne `Policy` + une ligne `PolicyRule` step-up en base) :
 **Ce que tu écris toi-même :**
 
 - **Le schéma Prisma** (§3) + la génération du `PrismaClient`.
-- **`CredentialStore`** (`findByEmail`, `findByEmailAcrossTenants`) — dépend de ton schéma. Voir
-  `TranslogCredentialStore` (`@kengela/connector-translog`) comme exemple réel : credential dans
-  `Account(providerId='credential')`, état dans `User`, jointure fail-closed.
-- **`RelationResolver`** (`resolveRelation`) — mappe ton organigramme sur `OrgRelation`
-  (`self`/`unit`/`subtree`/`tenant`/`none`). Aucun adapter par défaut.
+- **`CredentialStore`** (`findByEmail`, `findByEmailAcrossTenants`) — SEULEMENT si ton schéma
+  diffère du défaut : `PrismaCredentialStore` (`@kengela/adapter-persistence-prisma`) couvre le
+  modèle générique `Account(providerId='credential')` + `User`. Sinon calque
+  `TranslogCredentialStore` (`@kengela/connector-translog`), jointure fail-closed.
+- **`RelationResolver`** (`resolveRelation`) — `PrincipalRelationResolver`
+  (`@kengela/authz-core`) suffit tant que la relation se déduit du `Principal` ; écris le tien
+  pour brancher un organigramme calculé en base (`self`/`unit`/`subtree`/`tenant`/`none`).
 - **La composition root** (§4) + le **middleware d'authn** qui résout la session en `Principal`
   et le pose sur `req.user`.
 - Optionnel : `DecisionLogSink` (journal des décisions), `Clock` (tests déterministes),
@@ -538,14 +544,14 @@ Policy d'exemple (une ligne `Policy` + une ligne `PolicyRule` step-up en base) :
    `where`/`include`). Adapte selon que tes grants sont portés par l'utilisateur, par le rôle, ou
    les deux.
 
-2. **`CredentialStore` non fourni par le prisma adapter.** Vérifié : `adapter-persistence-prisma`
-   n'exporte aucun `CredentialStore`. Le contrat précise « implémentée par la persistance de
-   l'app ». La classe `AppCredentialStore` de §4 est donc un exemple à adapter (le `findUnique`
-   suppose un `@@unique([email, tenantId])` → clé composite `email_tenantId`).
+2. **`CredentialStore` : un défaut générique existe.** `adapter-persistence-prisma` exporte
+   désormais `PrismaCredentialStore` (modèle `Account(providerId='credential')` + `User`). Le
+   contrat reste « implémentée par la persistance de l'app » : si TON schéma diffère (ex. la
+   classe `AppCredentialStore` de §4 avec `@@unique([email, tenantId])`), écris le tien.
 
-3. **`RelationResolver` sans adapter par défaut** dans tout le monorepo — l'`AppRelationResolver`
-   minimal de §4 est volontairement trivial (tenant-scope + ownership) ; une vraie app y branche
-   son organigramme.
+3. **`RelationResolver` : un défaut pur existe.** `authz-core` exporte `PrincipalRelationResolver`
+   (relation déduite des champs du `Principal`, deny-by-default). L'`AppRelationResolver` de §4
+   reste l'option quand la relation exige une traversée d'organigramme en base (hors jeton).
 
 4. **Cast `PrismaClient → PrismaLike`.** La compatibilité est structurelle et documentée dans
    `prisma-like.ts`, mais le `PrismaClient` généré n'étant pas typé nominalement comme `PrismaLike`,

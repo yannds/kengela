@@ -114,7 +114,11 @@ importers:
 
   packages/contracts: {}
 
-  packages/iam-mapping: {}
+  packages/iam-mapping:
+    dependencies:
+      '@kengela/contracts':
+        specifier: workspace:*
+        version: link:../contracts
 
   packages/nestjs:
     dependencies:
