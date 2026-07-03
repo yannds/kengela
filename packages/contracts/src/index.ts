@@ -270,6 +270,22 @@ export interface PiiAccessLogSink {
   }): Promise<void> | void;
 }
 
+/**
+ * Stockage d'une clé de chiffrement PAR SUJET (personne concernée). [compliance-by-design]
+ * Base du crypto-shredding : détruire la clé d'un sujet rend ses PII chiffrées
+ * définitivement illisibles — effacement RGPD (art. 17) sans balayer chaque table.
+ */
+export interface SubjectKeyStore {
+  getOrCreateKey(tenantId: TenantId, subjectId: string): Promise<Uint8Array>;
+  getKey(tenantId: TenantId, subjectId: string): Promise<Uint8Array | null>;
+  deleteKey(tenantId: TenantId, subjectId: string): Promise<void>;
+}
+
+/** Droit à l'effacement (RGPD art. 17). Implémentation recommandée : crypto-shredding. */
+export interface ErasurePort {
+  eraseSubject(tenantId: TenantId, subjectId: string): Promise<void>;
+}
+
 /* ============================================================================
  * 3. PORTS AUTHZ (le coeur Zero Trust)
  * ========================================================================== */
