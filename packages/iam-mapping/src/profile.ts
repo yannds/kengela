@@ -23,6 +23,26 @@ export interface DirectoryAttributes {
   readonly officeLocation?: string;
   /** e-mail/identifiant du responsable hiérarchique (alimente la chaîne d'approbation). */
   readonly manager?: string;
+  // --- Superset Kengela (au-delà d'un seul IdP : Okta, Entra, Google, LDAP...) ---
+  readonly organization?: string;
+  readonly companyName?: string;
+  readonly employeeType?: string;
+  readonly preferredLanguage?: string;
+  readonly locale?: string;
+  readonly timezone?: string;
+  readonly phoneNumber?: string;
+  readonly mobilePhone?: string;
+  readonly streetAddress?: string;
+  readonly city?: string;
+  readonly state?: string;
+  readonly postalCode?: string;
+  readonly country?: string;
+  /**
+   * Attributs additionnels non modélisés en premier plan (schémas custom Okta/Entra,
+   * extensions propriétaires...). EXTENSIBLE : chaque application pioche ce dont elle a
+   * besoin sans que la lib fige la liste.
+   */
+  readonly extensions?: Readonly<Record<string, unknown>>;
 }
 
 /** Profil normalisé d'un utilisateur tel que vu par l'IdP au login / à la synchro SCIM. */
@@ -55,6 +75,19 @@ export const DIRECTORY_ATTRIBUTE_KEYS: readonly (keyof DirectoryAttributes)[] = 
   'costCenter',
   'officeLocation',
   'manager',
+  'organization',
+  'companyName',
+  'employeeType',
+  'preferredLanguage',
+  'locale',
+  'timezone',
+  'phoneNumber',
+  'mobilePhone',
+  'streetAddress',
+  'city',
+  'state',
+  'postalCode',
+  'country',
 ];
 
 /**

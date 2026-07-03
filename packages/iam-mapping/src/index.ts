@@ -56,3 +56,18 @@ export {
   compileSafeRegex,
   safeRegexTest,
 } from './safe-regex.js';
+export {
+  type ScimMultiValued,
+  type ScimName,
+  type ScimAddress,
+  type ScimGroupRef,
+  type ScimManagerRef,
+  type ScimEnterpriseExtension,
+  type ScimMeta,
+  type KengelaScimUser,
+  SCIM_SCHEMA_CORE_USER,
+  SCIM_SCHEMA_ENTERPRISE_USER,
+  SCIM_SCHEMA_GROUP,
+  KENGELA_SCIM_ATTRIBUTE_PATHS,
+  projectScimUser,
+} from './scim-schema.js';
