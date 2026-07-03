@@ -30,6 +30,12 @@ importers:
         specifier: ^4.1.9
         version: 4.1.9(@types/node@24.13.2)(vite@8.1.3(@types/node@24.13.2))
 
+  packages/authz-core:
+    dependencies:
+      '@kengela/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+
   packages/contracts: {}
 
 packages:
