@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "dist",
+
+    // NestJS : decorateurs stage-2 + metadata DI. Incompatibles avec
+    // isolatedDeclarations et verbatimModuleSyntax. Override justifie (integration framework).
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "isolatedDeclarations": false,
+    "verbatimModuleSyntax": false,
+    "types": ["node", "reflect-metadata"]
+  },
+  "include": ["src", "test"]
+}

@@ -1,0 +1,36 @@
+{
+  "name": "@kengela/nestjs",
+  "version": "0.0.0",
+  "description": "Kengela — integration NestJS : guard d'autorisation (PDP) + decorateurs.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@kengela/contracts": "workspace:*"
+  },
+  "peerDependencies": {
+    "@nestjs/common": ">=10",
+    "@nestjs/core": ">=10",
+    "reflect-metadata": ">=0.1.13"
+  },
+  "devDependencies": {
+    "@kengela/authz-core": "workspace:*",
+    "@kengela/adapter-expr-cel": "workspace:*",
+    "@nestjs/common": "^11.0.0",
+    "@nestjs/core": "^11.0.0",
+    "reflect-metadata": "^0.2.2"
+  }
+}
