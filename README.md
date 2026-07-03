@@ -43,3 +43,10 @@ packages/
   iam-mapping/   — normalisation 6 sources IdP          (a venir, depuis Atrium)
   adapter-*/     — better-auth, native, prisma, cel, ldap, ...
 ```
+
+## Licence
+
+**Apache-2.0** (c) 2026 yannds. Voir `LICENSE` et `NOTICE`.
+Licence permissive avec clause de brevet ; le detenteur du copyright conserve
+la possibilite d'un double-licensing commercial ulterieur.
+

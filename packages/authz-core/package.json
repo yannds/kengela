@@ -2,7 +2,7 @@
   "name": "@kengela/authz-core",
   "version": "0.0.0",
   "description": "Kengela — moteur d'autorisation pur : RBAC scope + relation + PDP deny-by-default.",
-  "license": "UNLICENSED",
+  "license": "Apache-2.0",
   "type": "module",
   "exports": {
     ".": {
