@@ -22,6 +22,15 @@ import { KENGELA_PDP } from './tokens.js';
  *  - deny     -> ForbiddenException(raison)
  *  - step_up  -> StepUpRequiredException(obligations) — l'authz exige un facteur d'authn
  *
+ * PRECEDENCE (fail-closed) : l'annotation du HANDLER prime TOUJOURS sur celle de la CLASSE.
+ * Un `@RequirePermission` pose sur un handler ne peut donc PAS etre neutralise par un
+ * `@PublicRoute` pose sur le controleur (sinon une route sensible fuiterait). L'ordre est :
+ *  1. handler `@RequirePermission`  -> on evalue (meme si la classe est publique)
+ *  2. handler `@PublicRoute`        -> public
+ *  3. classe  `@RequirePermission`  -> on evalue
+ *  4. classe  `@PublicRoute`        -> public
+ *  5. rien                          -> deny (route non annotee)
+ *
  * NB : le guard fournit la ressource au niveau TYPE (+ tenant). Les conditions ABAC sur
  * les ATTRIBUTS d'une ressource precise (ex. meme agence) se verifient au niveau service
  * en appelant directement le PDP avec la ressource chargee. Le guard couvre RBAC + les
@@ -38,19 +47,24 @@ export class KengelaAuthzGuard implements CanActivate {
     const handler = context.getHandler();
     const controller = context.getClass();
 
-    const isPublic = this.reflector.getAllAndOverride<boolean>(KENGELA_PUBLIC, [
-      handler,
-      controller,
-    ]);
-    if (isPublic) {
-      return true;
-    }
-
-    const required = this.reflector.getAllAndOverride<RequiredAccess | undefined>(
+    // Precedence handler > classe, evaluee niveau par niveau (fail-closed) : un
+    // @PublicRoute de CLASSE ne peut jamais neutraliser un @RequirePermission de HANDLER.
+    const handlerPermission = this.reflector.get<RequiredAccess | undefined>(
       KENGELA_PERMISSION,
-      [handler, controller],
+      handler,
     );
+    const handlerPublic = this.reflector.get<boolean | undefined>(KENGELA_PUBLIC, handler);
+    const classPermission = this.reflector.get<RequiredAccess | undefined>(
+      KENGELA_PERMISSION,
+      controller,
+    );
+    const classPublic = this.reflector.get<boolean | undefined>(KENGELA_PUBLIC, controller);
+
+    const required = handlerPermission ?? (handlerPublic === true ? undefined : classPermission);
     if (required === undefined) {
+      if (handlerPublic === true || classPublic === true) {
+        return true;
+      }
       throw new ForbiddenException('route_not_annotated');
     }
 

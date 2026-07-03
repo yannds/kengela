@@ -17,7 +17,7 @@ import type {
   PolicyDecisionPoint,
   RelationResolver,
 } from '@kengela/contracts';
-import { activeGrants, grantCovers } from './engine.js';
+import { activeGrants, grantCovers, tenantScopedRelation } from './engine.js';
 
 export interface RbacDecisionPointDeps {
   readonly grants: AuthorizationRepository;
@@ -37,9 +37,15 @@ export class RbacDecisionPoint implements PolicyDecisionPoint {
 
   public async check(request: AccessRequest): Promise<Decision> {
     const now = (this.#deps.clock ?? SYSTEM_CLOCK).now();
-    const relation = await this.#deps.relations.resolveRelation(
+    const resolved = await this.#deps.relations.resolveRelation(
       request.principal,
       request.resource,
+    );
+    // Isolation multi-tenant, defense-en-profondeur : cross-tenant => relation `none`.
+    const relation = tenantScopedRelation(
+      request.principal.tenantId,
+      request.resource.tenantId,
+      resolved,
     );
     const required = `${request.resource.type}.${request.action}`;
     const held = await this.#deps.grants.loadGrantsForUser(
@@ -48,9 +54,11 @@ export class RbacDecisionPoint implements PolicyDecisionPoint {
     );
     const allowed = activeGrants(held, now).some((g) => grantCovers(g, required, relation));
 
+    const crossTenant = request.principal.tenantId !== request.resource.tenantId;
+    const signals = { relation, ...(crossTenant ? { crossTenant: true } : {}) };
     const decision: Decision = allowed
-      ? { effect: 'allow', reason: 'rbac_grant', matchedPolicy: required, signals: { relation } }
-      : { effect: 'deny', reason: 'no_grant', signals: { relation } };
+      ? { effect: 'allow', reason: 'rbac_grant', matchedPolicy: required, signals }
+      : { effect: 'deny', reason: 'no_grant', signals };
 
     await this.#deps.log?.record({ request, decision, at: now });
     return decision;

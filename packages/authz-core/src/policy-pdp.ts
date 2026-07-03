@@ -29,7 +29,7 @@ import type {
   PolicyStore,
   RelationResolver,
 } from '@kengela/contracts';
-import { activeGrants, grantCovers } from './engine.js';
+import { activeGrants, grantCovers, tenantScopedRelation } from './engine.js';
 import { scopeCoversRelation } from './scope.js';
 
 export interface LayeredDecisionPointDeps {
@@ -59,7 +59,10 @@ export class LayeredDecisionPoint implements PolicyDecisionPoint {
   public async check(request: AccessRequest): Promise<Decision> {
     const now = (this.#deps.clock ?? SYSTEM_CLOCK).now();
     const { principal, resource, action } = request;
-    const relation = await this.#deps.relations.resolveRelation(principal, resource);
+    const resolved = await this.#deps.relations.resolveRelation(principal, resource);
+    // Isolation multi-tenant, defense-en-profondeur : cross-tenant => relation `none`
+    // (seul un grant `global` du plan plateforme peut couvrir).
+    const relation = tenantScopedRelation(principal.tenantId, resource.tenantId, resolved);
     const required = `${resource.type}.${action}`;
 
     // 1. Plancher RBAC.

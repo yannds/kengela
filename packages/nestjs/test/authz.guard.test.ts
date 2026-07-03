@@ -27,7 +27,10 @@ const principal = (riskScore = 0): Principal => ({
 });
 
 function reflectorWith(meta: Readonly<Record<string, unknown>>): Reflector {
-  return { getAllAndOverride: (key: string): unknown => meta[key] } as unknown as Reflector;
+  return {
+    get: (key: string): unknown => meta[key],
+    getAllAndOverride: (key: string): unknown => meta[key],
+  } as unknown as Reflector;
 }
 
 class FakeController {

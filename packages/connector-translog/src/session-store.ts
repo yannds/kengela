@@ -62,7 +62,15 @@ export class TranslogSessionStore implements SessionStore {
 
   public async get(token: string): Promise<SessionHandle | null> {
     const row = await this.#prisma.session.findUnique({ where: { token } });
-    return row === null ? null : toSessionHandle(row);
+    if (row === null) {
+      return null;
+    }
+    // Fail-closed (durci) : une session expiree n'est JAMAIS restituee comme valide,
+    // meme si le balayage differe (cleanup) ne l'a pas encore purgee.
+    if (row.expiresAt.getTime() <= this.#clock.now()) {
+      return null;
+    }
+    return toSessionHandle(row);
   }
 
   public async rotate(token: string): Promise<SessionHandle> {

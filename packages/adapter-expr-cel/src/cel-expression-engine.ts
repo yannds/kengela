@@ -65,6 +65,7 @@ export class CelExpressionEngine implements ExpressionEnginePort {
     if (cached !== undefined) {
       return cached;
     }
+    assertNoUnboundedRegex(expression);
     let compiled: CompiledExpression;
     try {
       compiled = this.#env.parse(expression);
@@ -78,4 +79,28 @@ export class CelExpressionEngine implements ExpressionEnginePort {
 
 function messageOf(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
+}
+
+/**
+ * Remplace le CONTENU des chaines litterales (`'...'` / `"..."`, echappements geres) par du
+ * vide, pour analyser la structure d'une expression sans confondre du code avec une chaine.
+ * Motif lineaire (chaque alternative consomme des caracteres disjoints) : pas de ReDoS ici.
+ */
+function stripStringLiterals(src: string): string {
+  return src.replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g, '""');
+}
+
+/**
+ * Interdit la fonction CEL `matches` (fail-closed). Le vendor cel-js la compile en
+ * `new RegExp(pattern).test(input)` NON borne : une regex catastrophique (`(a+)+`) provoque
+ * un backtracking exponentiel (ReDoS -> DoS du PDP) sur une entree adverse. La doctrine
+ * Kengela borne TOUTE regex (cf. `@kengela/iam-mapping` safe-regex) ; une condition d'acces
+ * s'exprime donc via `==`, `in`, `startsWith`, `contains`, jamais via un regex non borne.
+ */
+export function assertNoUnboundedRegex(expression: string): void {
+  if (/\bmatches\s*\(/.test(stripStringLiterals(expression))) {
+    throw new CelEvaluationError(
+      `Fonction CEL « matches » interdite (regex non bornee, risque ReDoS) : « ${expression} ».`,
+    );
+  }
 }

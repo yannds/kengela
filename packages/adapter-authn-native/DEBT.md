@@ -5,3 +5,4 @@
 | # | Sujet | Etat | Note | Cible | Prio |
 |---|-------|------|------|-------|------|
 | 2 | Rotation de clé maître AES-GCM | assume | Pas de versioning `enc:vN` ni de rotation/rollover. | En-tête de version + re-chiffrement au rollover | P3 |
+| 3 | Anti-rejeu du code TOTP (NIST 800-63B §5.1.4.2) | scope | Le défi (`MfaChallengeStore`) est one-shot, mais le CODE TOTP lui-même n'est pas mémorisé : dans la fenêtre de pas (~30 s) un code valide déjà consommé pourrait être rejoué via un NOUVEAU `challengeId`. Le verifier devrait refuser un OTP déjà utilisé. | Cache anti-rejeu (tenant:user:code -> vu) à TTL = fenêtre TOTP, branché dans `TotpMfaService.verify`. | P2 |
