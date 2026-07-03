@@ -1,0 +1,21 @@
+{
+  "name": "@kengela/iam-mapping",
+  "version": "0.0.0",
+  "description": "Kengela — normalisation d'identité IdP pure : OIDC/SCIM/SAML/LDAP/Graph/Google → DirectoryProfile + moteur de mapping rôles.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  }
+}

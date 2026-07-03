@@ -38,6 +38,8 @@ importers:
 
   packages/contracts: {}
 
+  packages/iam-mapping: {}
+
 packages:
 
   '@emnapi/core@1.11.1':
