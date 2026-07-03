@@ -1,28 +1,48 @@
 /**
- * Adapter CEL — implemente ExpressionEnginePort a l'aide de @marcbachmann/cel-js.
+ * Adapter CEL — implémente ExpressionEnginePort à l'aide de @marcbachmann/cel-js.
  *
- * Le vendor vit ICI (paquet adapter). Sandboxe, lecture seule, compilations mises
- * en cache. Le contexte {principal, resource, env, tenant} est expose tel quel aux
- * expressions ; une expression doit retourner un booleen (sinon erreur explicite).
+ * Le vendor vit ICI (paquet adapter). Sandboxé, lecture seule, compilations mises
+ * en cache. Le contexte {principal, resource, env, tenant} est exposé tel quel aux
+ * expressions ; une expression doit retourner un booléen (sinon erreur explicite).
  *
- * Dette connue (voir DEBT.md) :
- *  - v1 sans fonctions de dates custom (business-hours) : precalculer dans le
- *    contexte (ContextProvider) ou ajouter un Environment + clock en v2.
- *  - une erreur d'evaluation (variable absente, non-booleen) est LEVEE ; le
- *    fail-closed au niveau PDP (catch -> deny) est un durcissement ulterieur.
+ * Fonctions de dates injectées (déterministes via Clock) : `now()`, `daysUntil(x)`,
+ * `businessDaysBetween(a, b)` — pour des conditions temporelles (échéance, business-hours).
+ *
+ * Dette connue (voir DEBT.md) : une erreur d'évaluation (variable absente, non-booléen)
+ * est LEVÉE ; le PDP (LayeredDecisionPoint) la rattrape en fail-closed (deny).
  */
-import { parse } from '@marcbachmann/cel-js';
-import type { ExpressionContext, ExpressionEnginePort } from '@kengela/contracts';
+import { Environment } from '@marcbachmann/cel-js';
+import type { Clock, ExpressionContext, ExpressionEnginePort } from '@kengela/contracts';
+import { businessDaysBetween, daysBetween, toEpochMs } from './dates.js';
 
-/** Fonction compilee typee au bord vendor (retourne `unknown`, jamais `any`). */
 type CompiledExpression = (context: Record<string, unknown>) => unknown;
+
+const SYSTEM_CLOCK: Clock = { now: () => Date.now() };
 
 export class CelEvaluationError extends Error {
   public override readonly name = 'CelEvaluationError';
 }
 
 export class CelExpressionEngine implements ExpressionEnginePort {
+  readonly #env: Environment;
   readonly #cache = new Map<string, CompiledExpression>();
+
+  public constructor(options: { readonly clock?: Clock } = {}) {
+    const clock = options.clock ?? SYSTEM_CLOCK;
+    this.#env = new Environment()
+      // Variables de contexte exposées aux policies (accès dynamique).
+      .registerVariable('principal', 'dyn')
+      .registerVariable('resource', 'dyn')
+      .registerVariable('env', 'dyn')
+      .registerVariable('tenant', 'dyn')
+      .registerFunction('now(): int', (): bigint => BigInt(clock.now()))
+      .registerFunction('daysUntil(dyn): int', (target: unknown): bigint =>
+        BigInt(daysBetween(clock.now(), toEpochMs(target))),
+      )
+      .registerFunction('businessDaysBetween(dyn, dyn): int', (a: unknown, b: unknown): bigint =>
+        BigInt(businessDaysBetween(toEpochMs(a), toEpochMs(b))),
+      );
+  }
 
   public evaluateBoolean(expression: string, ctx: ExpressionContext): boolean {
     const compiled = this.#compile(expression);
@@ -47,7 +67,7 @@ export class CelExpressionEngine implements ExpressionEnginePort {
     }
     let compiled: CompiledExpression;
     try {
-      compiled = parse(expression);
+      compiled = this.#env.parse(expression);
     } catch (err: unknown) {
       throw new CelEvaluationError(`Expression CEL invalide « ${expression} » : ${messageOf(err)}`);
     }
