@@ -1,0 +1,39 @@
+{
+  "name": "@kengela/adapter-authn-better-auth",
+  "version": "0.1.0",
+  "description": "Kengela — adapter IdentityPort au-dessus d'une instance better-auth (OIDC/OAuth/SSO).",
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@kengela/contracts": "workspace:*"
+  },
+  "peerDependencies": {
+    "better-auth": ">=1"
+  },
+  "peerDependenciesMeta": {
+    "better-auth": { "optional": true }
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yannds/kengela.git",
+    "directory": "packages/adapter-authn-better-auth"
+  }
+}
