@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 480" role="img" aria-label="Architecture hexagonale de Kengela" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">
+  <rect x="0" y="0" width="880" height="480" fill="#F4F6FA"/>
+  <text x="40" y="36" font-size="22" font-weight="700" fill="#15171F">Kengela — architecture hexagonale</text>
+  <text x="40" y="56" font-size="13" fill="#565D6B">le vendor vit dans les adapters ; le core ne connaît que des ports</text>
+
+  <!-- fleche 'depend de' -->
+  <line x1="60" y1="90" x2="60" y2="392" stroke="#9AA3B2" stroke-width="2"/>
+  <polygon points="60,404 54,388 66,388" fill="#9AA3B2"/>
+  <text x="52" y="250" font-size="12" fill="#565D6B" transform="rotate(-90 52 250)" text-anchor="middle">dépend de</text>
+
+  <!-- Applications -->
+  <rect x="96" y="80" width="700" height="56" rx="10" fill="#FFFFFF" stroke="#E2E6EE"/>
+  <rect x="96" y="80" width="6" height="56" rx="3" fill="#565D6B"/>
+  <text x="120" y="104" font-size="15" font-weight="650" fill="#15171F">Applications</text>
+  <text x="120" y="123" font-size="12.5" fill="#565D6B">TransLog Pro · autres apps — n'installent que les paquets utiles</text>
+
+  <!-- NestJS -->
+  <rect x="96" y="146" width="700" height="48" rx="10" fill="#EAEDFB" stroke="#CFD6F5"/>
+  <rect x="96" y="146" width="6" height="48" rx="3" fill="#2B44D0"/>
+  <text x="120" y="168" font-size="14" font-weight="650" fill="#1B2680">Intégration framework · @kengela/nestjs</text>
+  <text x="120" y="185" font-size="12" fill="#3A46A0">guard deny-by-default · @RequirePermission · step-up</text>
+
+  <!-- Adapters -->
+  <rect x="96" y="204" width="700" height="64" rx="10" fill="#FAF0DE" stroke="#EBD9AE"/>
+  <rect x="96" y="204" width="6" height="64" rx="3" fill="#9A6410"/>
+  <text x="120" y="226" font-size="14" font-weight="700" fill="#7A4E0C">Adapters — le vendor vit ici (interchangeable)</text>
+  <text x="120" y="245" font-size="12" fill="#7A4E0C">authn-native (argon2/bcrypt/TOTP/AES) · better-auth · persistence-prisma</text>
+  <text x="120" y="261" font-size="12" fill="#7A4E0C">directory-ldap · expr-cel · scim-server</text>
+
+  <!-- Core -->
+  <rect x="96" y="278" width="700" height="64" rx="10" fill="#E4F2EA" stroke="#BFE0CD"/>
+  <rect x="96" y="278" width="6" height="64" rx="3" fill="#1E7F52"/>
+  <text x="120" y="300" font-size="14" font-weight="700" fill="#155F3D">Core — logique pure, ZÉRO vendor</text>
+  <text x="120" y="319" font-size="12" fill="#155F3D">authz-core (PDP · RBAC · ABAC · step-up · fail-closed) · iam-mapping · pii</text>
+  <text x="120" y="335" font-size="12" fill="#155F3D">policy déclarative + conditions CEL évaluées par requête</text>
+
+  <!-- Contracts -->
+  <rect x="96" y="352" width="700" height="52" rx="10" fill="#2B44D0"/>
+  <rect x="96" y="352" width="6" height="52" rx="3" fill="#EAEDFB"/>
+  <text x="120" y="375" font-size="14" font-weight="700" fill="#FFFFFF">Contracts · @kengela/contracts — les ports, l'invariant</text>
+  <text x="120" y="393" font-size="12" fill="#CBD3FA">IdentityPort · PolicyDecisionPoint · AuthorizationRepository · SessionStore · …</text>
+
+  <!-- callout lint -->
+  <rect x="96" y="420" width="700" height="40" rx="8" fill="#FBE9E7" stroke="#F1C4BE"/>
+  <text x="120" y="445" font-size="12.5" fill="#8A2A20">🔒 Lint d'architecture (dependency-cruiser) : un import vendor dans le CORE casse la build.</text>
+</svg>

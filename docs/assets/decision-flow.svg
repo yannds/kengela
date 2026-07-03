@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 520" role="img" aria-label="Flux de décision Zero Trust du PDP Kengela" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">
+  <rect x="0" y="0" width="760" height="520" fill="#F4F6FA"/>
+  <text x="40" y="36" font-size="21" font-weight="700" fill="#15171F">Décision Zero Trust — deny-by-default, par requête</text>
+
+  <defs>
+    <marker id="ar" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto"><polygon points="0,0 9,4.5 0,9" fill="#9AA3B2"/></marker>
+    <marker id="arR" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto"><polygon points="0,0 9,4.5 0,9" fill="#C1362A"/></marker>
+    <marker id="arA" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto"><polygon points="0,0 9,4.5 0,9" fill="#9A6410"/></marker>
+  </defs>
+
+  <!-- step boxes -->
+  <g>
+    <rect x="60" y="64" width="360" height="52" rx="9" fill="#FFFFFF" stroke="#CFD6F5"/>
+    <text x="78" y="88" font-size="13.5" font-weight="650" fill="#1B2680">1 · RBAC</text>
+    <text x="78" y="106" font-size="12" fill="#565D6B">grant actif couvre la permission à la relation ?</text>
+
+    <rect x="60" y="152" width="360" height="52" rx="9" fill="#FFFFFF" stroke="#CFD6F5"/>
+    <text x="78" y="176" font-size="13.5" font-weight="650" fill="#1B2680">2 · Deny explicite</text>
+    <text x="78" y="194" font-size="12" fill="#565D6B">une règle « deny » matche ? (deny-wins)</text>
+
+    <rect x="60" y="240" width="360" height="52" rx="9" fill="#FFFFFF" stroke="#CFD6F5"/>
+    <text x="78" y="264" font-size="13.5" font-weight="650" fill="#1B2680">3 · Gate ABAC</text>
+    <text x="78" y="282" font-size="12" fill="#565D6B">une règle « allow » matche ? (scoping CEL)</text>
+
+    <rect x="60" y="328" width="360" height="52" rx="9" fill="#FFFFFF" stroke="#CFD6F5"/>
+    <text x="78" y="352" font-size="13.5" font-weight="650" fill="#1B2680">4 · Conditional access</text>
+    <text x="78" y="370" font-size="12" fill="#565D6B">risque / heure / device → obligation ?</text>
+  </g>
+
+  <!-- vertical arrows -->
+  <line x1="240" y1="116" x2="240" y2="150" stroke="#9AA3B2" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="240" y1="204" x2="240" y2="238" stroke="#9AA3B2" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="240" y1="292" x2="240" y2="326" stroke="#9AA3B2" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="240" y1="380" x2="240" y2="424" stroke="#9AA3B2" stroke-width="2" marker-end="url(#ar)"/>
+
+  <!-- right branches to DENY / STEP_UP -->
+  <line x1="420" y1="90" x2="600" y2="90" stroke="#C1362A" stroke-width="2" marker-end="url(#arR)"/>
+  <line x1="420" y1="178" x2="600" y2="178" stroke="#C1362A" stroke-width="2" marker-end="url(#arR)"/>
+  <line x1="420" y1="266" x2="600" y2="266" stroke="#C1362A" stroke-width="2" marker-end="url(#arR)"/>
+  <line x1="420" y1="354" x2="600" y2="354" stroke="#9A6410" stroke-width="2" marker-end="url(#arA)"/>
+
+  <g font-size="11" fill="#8A2A20"><text x="424" y="84">sinon</text><text x="424" y="172">oui</text><text x="424" y="260">non</text></g>
+  <text x="424" y="348" font-size="11" fill="#7A4E0C">oui</text>
+
+  <rect x="600" y="72" width="120" height="34" rx="17" fill="#FBE9E7" stroke="#E7B4AD"/>
+  <text x="660" y="93" font-size="12" font-weight="650" fill="#C1362A" text-anchor="middle">DENY no_grant</text>
+  <rect x="600" y="160" width="120" height="34" rx="17" fill="#FBE9E7" stroke="#E7B4AD"/>
+  <text x="660" y="181" font-size="12" font-weight="650" fill="#C1362A" text-anchor="middle">DENY</text>
+  <rect x="600" y="248" width="140" height="34" rx="17" fill="#FBE9E7" stroke="#E7B4AD"/>
+  <text x="670" y="269" font-size="11.5" font-weight="650" fill="#C1362A" text-anchor="middle">DENY no_matching_allow</text>
+  <rect x="600" y="336" width="140" height="34" rx="17" fill="#FAF0DE" stroke="#EBD9AE"/>
+  <text x="670" y="357" font-size="12" font-weight="650" fill="#9A6410" text-anchor="middle">STEP_UP passkey</text>
+
+  <!-- ALLOW -->
+  <rect x="150" y="424" width="180" height="44" rx="22" fill="#E4F2EA" stroke="#BFE0CD"/>
+  <text x="240" y="451" font-size="14" font-weight="700" fill="#155F3D" text-anchor="middle">ALLOW + decision log</text>
+</svg>

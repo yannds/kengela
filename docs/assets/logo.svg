@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-label="Kengela — le veilleur">
+  <defs>
+    <linearGradient id="kg-shield" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3B54E0"/>
+      <stop offset="1" stop-color="#1B2680"/>
+    </linearGradient>
+    <radialGradient id="kg-iris" cx="0.5" cy="0.45" r="0.6">
+      <stop offset="0" stop-color="#8CA0FF"/>
+      <stop offset="0.7" stop-color="#2B44D0"/>
+      <stop offset="1" stop-color="#141A55"/>
+    </radialGradient>
+  </defs>
+  <path d="M80 6 L142 32 V82 C142 120 114 146 80 156 C46 146 18 120 18 82 V32 Z" fill="url(#kg-shield)"/>
+  <path d="M80 6 L142 32 V82 C142 120 114 146 80 156 C46 146 18 120 18 82 V32 Z" fill="none" stroke="#EAEDFB" stroke-width="2" opacity="0.25"/>
+  <path d="M40 86 C58 60 102 60 120 86 C102 112 58 112 40 86 Z" fill="#0E1330" opacity="0.45"/>
+  <path d="M43 86 C60 64 100 64 117 86 C100 108 60 108 43 86 Z" fill="none" stroke="#EAEDFB" stroke-width="4.5" stroke-linejoin="round"/>
+  <circle cx="80" cy="86" r="17" fill="url(#kg-iris)"/>
+  <circle cx="80" cy="86" r="7" fill="#0E1330"/>
+  <circle cx="86" cy="80" r="3.4" fill="#EAEDFB"/>
+</svg>

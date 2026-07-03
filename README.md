@@ -1,75 +1,93 @@
+<div align="center">
+
+<img src="docs/assets/logo.svg" width="118" alt="Kengela" />
+
 # Kengela
 
-> **kokéngela** (lingala) — veiller, garder, être vigilant. `Kengela!` = sois vigilant.
-> Le veilleur : ne fait jamais confiance par défaut, vérifie en continu.
+**kokéngela** *(lingala)* — veiller, garder, être vigilant.
+Le veilleur : ne fait **jamais** confiance par défaut, vérifie **en continu**.
 
-Kengela est un socle **identité & accès** (authentification + autorisation) **Zero Trust**,
-pensé pour les applications **multi-tenant**. Il naît de la consolidation de deux bases réelles
-(Atrium et TransLog Pro) en une librairie unique, maintenable et évolutive.
+Socle **identité &amp; accès Zero Trust** multi-tenant pour TypeScript —
+**authentification + autorisation + fédération d'identité + conformité**.
 
-## Doctrine (non négociable)
+![License](https://img.shields.io/badge/license-Apache--2.0-2B44D0)
+![TypeScript](https://img.shields.io/badge/TypeScript-6.0%20strict-3178C6)
+![Tests](https://img.shields.io/badge/tests-275%20passing-1E7F52)
+![Packages](https://img.shields.io/badge/packages-12-1B2680)
+![Zero&nbsp;Trust](https://img.shields.io/badge/ZTNA-Zero%20Trust-141A55)
 
-- **Abstraction totale** : le CORE ne connait aucun vendor. Prisma, better-auth, LDAP, Redis,
-  Vault, CEL ne sont que des **adapters interchangeables** derriere des **ports**.
-- **Le port est un sas, pas une planque** : on enveloppe l'existant pour ne rien casser,
-  mais tout ce qui est faible a une **cible de migration** tracee (voir `DEBT.md` par adapter).
-- **Zero dette silencieuse** : aucun compromis cache, tout documente.
-- **Zero Trust (ZTNA)** : autorisation deny-by-default, evaluee **par requete**, avec contexte
-  continu (geo / heure / device / risque), obligations / step-up, et **decision logs**.
+</div>
 
-## Les 3 anneaux
+---
 
-```
-contracts  ── types & ports purs, zero vendor          (@kengela/contracts)
-core       ── logique pure : PDP, RBAC, ABAC, mapping   (@kengela/authz-core, ...)
-adapters   ── le vendor vit ici, interchangeable        (@kengela/adapter-*)
-```
+## Pourquoi Kengela
 
-Un lint d'architecture (`pnpm lint:arch`, dependency-cruiser) **casse la build** si un paquet
-CORE importe un vendor.
+Une seule brique pour l'identité et l'accès de tes applications, plutôt que de réinventer
+la roue à chaque projet. Née de la consolidation de deux bases réelles (Atrium et TransLog Pro).
+
+- **Autorisation « Entra-like »** : RBAC scopé + relation organisationnelle + **ABAC** (conditions
+  CEL) + **conditional access** (géo/heure/device/risque) + **step-up** — deny-by-default, fail-closed.
+- **Authentification durcie** : credential **timing-safe** (argon2id/bcrypt), sessions opaques,
+  **MFA/TOTP** complet, chiffrement **AES-256-GCM**, **crypto-shredding** (RGPD).
+- **Fédération** : normalisation de **6 sources IdP** (OIDC/SCIM/SAML/LDAP/Graph/Google), serveur
+  **SCIM 2.0** conforme **Microsoft Entra**, connecteur AD/LDAP.
+- **Conformité intégrée** : classification PII, minimisation, rétention, effacement.
+- **Abstraction totale** : le cœur ne connaît aucun vendor ; tu ne prends que ce dont tu as besoin.
+
+## Architecture
+
+<div align="center"><img src="docs/assets/architecture.svg" width="760" alt="Architecture hexagonale" /></div>
+
+**Le port est un sas, pas une planque.** On enveloppe l'existant derrière des ports ; tout ce qui
+est faible a une cible de migration tracée (`DEBT.md` par paquet). Un **lint d'architecture**
+(`pnpm lint:arch`) casse la build si un paquet du cœur importe un vendor.
+
+## Décision Zero Trust
+
+<div align="center"><img src="docs/assets/decision-flow.svg" width="720" alt="Flux de décision du PDP" /></div>
+
+Chaque requête est évaluée **par le PDP** : plancher RBAC → deny explicite prioritaire → gate ABAC
+(scoping déclaratif) → conditional access (step-up) → allow, le tout tracé en **decision log**.
+Une condition inévaluable ⇒ **refus** (fail-closed).
 
 ## Paquets
 
 | Paquet | Rôle |
 |---|---|
-| `@kengela/contracts` | Ports & types — l'invariant du projet, zéro vendor |
-| `@kengela/authz-core` | Moteur d'autorisation : RBAC scopé + relation org + ABAC (CEL) + conditional access + step-up ; deny-by-default, **fail-closed**, decision logs |
-| `@kengela/iam-mapping` | Normalisation **6 sources IdP** (OIDC/SCIM/SAML/LDAP/Graph/Google) + schéma **SCIM canonique** (superset Okta/Entra) + moteur de règles |
-| `@kengela/adapter-expr-cel` | Moteur **CEL** (conditions ABAC + fonctions de dates déterministes) |
-| `@kengela/adapter-authn-native` | Credential **timing-safe** (argon2id/bcrypt + `needsRehash`), sessions, **MFA/TOTP** complet, **AES-256-GCM**, field cipher + **crypto-shredding** (RGPD) |
+| `@kengela/contracts` | Ports &amp; types — l'invariant, zéro vendor |
+| `@kengela/authz-core` | RBAC scopé + relation + ABAC (CEL) + conditional access + step-up ; deny-by-default, fail-closed, decision logs |
+| `@kengela/iam-mapping` | Normalisation **6 sources IdP** + schéma **SCIM canonique** (superset Okta/Entra) + moteur de règles |
+| `@kengela/adapter-expr-cel` | Moteur **CEL** (conditions ABAC + fonctions de dates) |
+| `@kengela/adapter-authn-native` | Credential **timing-safe** (argon2/bcrypt + `needsRehash`), sessions, **MFA/TOTP**, **AES-256-GCM**, crypto-shredding |
 | `@kengela/adapter-authn-better-auth` | `IdentityPort` au-dessus de **better-auth** (OIDC/OAuth/SSO) — better-auth en `peerDependency` |
-| `@kengela/adapter-persistence-prisma` | Stockage (`AuthorizationRepository`/`SessionStore`/`PolicyStore`) via une interface Prisma narrow |
+| `@kengela/adapter-persistence-prisma` | Stockage (`AuthorizationRepository`/`SessionStore`/`PolicyStore`) via interface Prisma narrow |
 | `@kengela/adapter-directory-ldap` | Connecteur **AD/LDAP** (ldapts) → `DirectoryProfile` |
-| `@kengela/scim-server` | Serveur **SCIM 2.0** Users+Groups + découverte (`/Schemas`, `/ServiceProviderConfig`, `/ResourceTypes`) + **conformité Entra** + validation de schéma |
+| `@kengela/scim-server` | Serveur **SCIM 2.0** Users+Groups + découverte + **conformité Entra** + validation de schéma |
 | `@kengela/nestjs` | Intégration **NestJS** : guard deny-by-default + décorateurs + step-up |
 | `@kengela/pii` | Conformité **RGPD** : classification, minimisation, redaction, rétention, effacement |
-| `@kengela/connector-translog` | *(privé)* mapping du schéma TransLog Pro vers les ports Kengela (référence d'intégration) |
+| `@kengela/connector-translog` | *(privé)* mapping du schéma TransLog Pro vers les ports Kengela |
 
 ## Démarrage rapide
 
 ```sh
 pnpm install
-pnpm -r build && pnpm -r test   # tout vert, TS6 strict, ESLint strictTypeChecked
-pnpm lint:arch                  # garde-fou anti-vendor sur le CORE
+pnpm -r build && pnpm -r test   # TS6 strict, ESLint strictTypeChecked, tout vert
+pnpm lint:arch                  # garde-fou anti-vendor sur le cœur
 ```
 
 Une application n'installe que les paquets utiles :
 
 ```sh
 npm add @kengela/authz-core @kengela/nestjs @kengela/adapter-persistence-prisma
-# les adapters lourds (SAML, LDAP, better-auth) restent optionnels
 ```
 
-Voir `PUBLISHING.md` pour publier/consommer, `docs/` pour le RFC et les études.
+## Documentation
 
-## Etat
-
-Socle **fonctionnellement complet** (authn + authz + fédération d'identité + SCIM + conformité PII).
-Chaque paquet a son `DEBT.md` (dettes ouvertes uniquement). Publication npm à venir (voir `PUBLISHING.md`).
+Guides d'implémentation, d'utilisation et de développement : **[`docs/guide/`](docs/guide/)**.
+Publication &amp; consommation : **[`PUBLISHING.md`](PUBLISHING.md)**. Conception : **[`docs/`](docs/)**.
 
 ## Licence
 
-**Apache-2.0** (c) 2026 yannds. Voir `LICENSE` et `NOTICE`.
-Licence permissive avec clause de brevet ; le detenteur du copyright conserve
-la possibilite d'un double-licensing commercial ulterieur.
-
+**Apache-2.0** © 2026 yannds — voir [`LICENSE`](LICENSE) et [`NOTICE`](NOTICE).
+Licence permissive avec clause de brevet ; le détenteur du copyright conserve la possibilité
+d'un double-licensing commercial ultérieur.
