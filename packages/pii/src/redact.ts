@@ -1,4 +1,5 @@
 import type { DirectoryProfile } from '@kengela/iam-mapping';
+import { isPii } from './classification.js';
 
 function maskEmail(value: string): string {
   const at = value.indexOf('@');
@@ -8,7 +9,7 @@ function maskEmail(value: string): string {
   return `${value.slice(0, 1)}***${value.slice(at)}`;
 }
 
-function maskName(value: string): string {
+function maskValue(value: string): string {
   if (value.length <= 1) {
     return '***';
   }
@@ -16,16 +17,21 @@ function maskName(value: string): string {
 }
 
 /**
- * Redaction/masquage des champs d'identité personnels pour affichage/journaux
- * sans exposer la PII en clair. Les valeurs sont partiellement masquées, pas
- * supprimées (utile pour le support tout en respectant la minimisation).
+ * Redaction/masquage des données personnelles pour affichage/journaux sans exposer
+ * la PII en clair. Masque l'identité (email/nom) ET les attributs classés `pii`
+ * (téléphone, adresse...). Les champs non personnels restent inchangés.
  */
 export function redactProfile(profile: DirectoryProfile): DirectoryProfile {
+  const attributes: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(profile.attributes)) {
+    attributes[key] = isPii(key) && typeof value === 'string' ? maskValue(value) : value;
+  }
   return {
     ...profile,
     email: maskEmail(profile.email),
-    firstName: profile.firstName === null ? null : maskName(profile.firstName),
-    lastName: profile.lastName === null ? null : maskName(profile.lastName),
-    displayName: profile.displayName === null ? null : maskName(profile.displayName),
+    firstName: profile.firstName === null ? null : maskValue(profile.firstName),
+    lastName: profile.lastName === null ? null : maskValue(profile.lastName),
+    displayName: profile.displayName === null ? null : maskValue(profile.displayName),
+    attributes,
   };
 }

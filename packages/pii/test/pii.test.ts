@@ -58,4 +58,11 @@ describe('redactProfile', () => {
     expect(r.firstName).toBe('A***');
     expect(r.displayName).toBe('A***');
   });
+
+  it('masque les attributs PII mais pas les non-PII', () => {
+    const r = redactProfile(profile());
+    expect(r.attributes.phoneNumber).toBe('+***');
+    expect(r.attributes.city).toBe('B***');
+    expect(r.attributes.department).toBe('Ops');
+  });
 });
