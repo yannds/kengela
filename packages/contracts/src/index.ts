@@ -167,7 +167,7 @@ export interface SessionStore {
 
 export type AuthOutcome =
   | { readonly kind: 'authenticated'; readonly principal: Principal }
-  | { readonly kind: 'mfa_required'; readonly challengeId: string }
+  | { readonly kind: 'mfa_required'; readonly userId: UserId; readonly tenantId: TenantId }
   | { readonly kind: 'tenant_choice'; readonly candidates: readonly TenantId[] }
   | { readonly kind: 'invalid_credentials' }
   | { readonly kind: 'captcha_required' };
@@ -181,12 +181,43 @@ export interface CredentialAuthenticator {
     readonly email: string;
     readonly password: string;
     readonly tenantId: TenantId;
+    readonly ctx: AuthContext;
   }): Promise<AuthOutcome>;
   /** Login mobile multi-tenant : peut retourner un choix de tenant. [TRANSLOG] */
   authenticateCrossTenant(input: {
     readonly email: string;
     readonly password: string;
+    readonly ctx: AuthContext;
   }): Promise<AuthOutcome>;
+}
+
+/** Hash de mot de passe (argon2id recommande, bcrypt en compat). [TRANSLOG] */
+export interface PasswordHasher {
+  hash(plain: string): Promise<string>;
+  /** Verification. L'implementation DOIT etre a temps constant. */
+  verify(plain: string, hash: string): Promise<boolean>;
+  /**
+   * true si le hash devrait etre re-calcule (algo/parametres obsoletes) : permet la
+   * migration transparente (ex. bcrypt -> argon2) au prochain login reussi.
+   */
+  needsRehash(hash: string): boolean;
+}
+
+/** Enregistrement credential resolu depuis le stockage. [TRANSLOG] */
+export interface CredentialRecord {
+  readonly userId: UserId;
+  readonly tenantId: TenantId;
+  /** Hash du mot de passe, ou null si le compte n'a pas de credential. */
+  readonly passwordHash: string | null;
+  readonly isActive: boolean;
+  readonly mfaEnabled: boolean;
+  readonly roles: readonly string[];
+}
+
+/** Recherche de credentials (implementee par la persistance de l'app). */
+export interface CredentialStore {
+  findByEmail(email: string, tenantId: TenantId): Promise<CredentialRecord | null>;
+  findByEmailAcrossTenants(email: string): Promise<readonly CredentialRecord[]>;
 }
 
 /** MFA (TOTP + backup codes). [TRANSLOG crypto AES-256-GCM] + [ATRIUM twoFactor] */
@@ -208,6 +239,17 @@ export interface SecretsPort {
 export interface KeyManagementPort {
   encrypt(tenantId: TenantId, plaintext: Uint8Array): Promise<Uint8Array>;
   decrypt(tenantId: TenantId, ciphertext: Uint8Array): Promise<Uint8Array>;
+}
+
+/**
+ * Chiffrement au niveau CHAMP pour les données personnelles (PII : email, téléphone,
+ * adresse...) stockées. [compliance-by-design] Entrée/sortie = chaîne (colonne texte),
+ * isolation cryptographique par tenant. Sert le RGPD (protection at-rest, crypto-shredding
+ * possible via révocation de clé tenant).
+ */
+export interface FieldCipherPort {
+  encryptField(tenantId: TenantId, plaintext: string): Promise<string>;
+  decryptField(tenantId: TenantId, ciphertext: string): Promise<string>;
 }
 
 /* ============================================================================
