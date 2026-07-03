@@ -123,6 +123,25 @@ importers:
         specifier: ^0.2.2
         version: 0.2.2
 
+  packages/pii:
+    dependencies:
+      '@kengela/iam-mapping':
+        specifier: workspace:*
+        version: link:../iam-mapping
+
+  packages/scim-server:
+    dependencies:
+      '@kengela/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@kengela/iam-mapping':
+        specifier: workspace:*
+        version: link:../iam-mapping
+    devDependencies:
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.13.2
+
 packages:
 
   '@borewit/text-codec@0.2.2':

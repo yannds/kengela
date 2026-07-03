@@ -1,0 +1,39 @@
+{
+  "name": "@kengela/scim-server",
+  "version": "0.1.0",
+  "description": "Kengela — cœur SCIM 2.0 (Users + Groups) framework-agnostique : port ScimStore + handlers purs (req parsée → réponse).",
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@kengela/contracts": "workspace:*",
+    "@kengela/iam-mapping": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yannds/kengela.git",
+    "directory": "packages/scim-server"
+  }
+}
