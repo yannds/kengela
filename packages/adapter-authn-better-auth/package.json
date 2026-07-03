@@ -6,15 +6,18 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./dist/esm/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
     }
   },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "files": ["dist"],
+  "main": "./dist/cjs/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && tsc -p tsconfig.build.cjs.json && node ../../scripts/write-dist-markers.mjs dist",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run"
   },
@@ -25,7 +28,9 @@
     "better-auth": ">=1"
   },
   "peerDependenciesMeta": {
-    "better-auth": { "optional": true }
+    "better-auth": {
+      "optional": true
+    }
   },
   "publishConfig": {
     "access": "public",
@@ -35,5 +40,6 @@
     "type": "git",
     "url": "git+https://github.com/yannds/kengela.git",
     "directory": "packages/adapter-authn-better-auth"
-  }
+  },
+  "module": "./dist/esm/index.js"
 }

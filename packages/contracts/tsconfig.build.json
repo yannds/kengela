@@ -4,6 +4,5 @@
     "rootDir": "src",
     "outDir": "dist/esm"
   },
-  "include": ["src"],
-  "exclude": ["test"]
+  "include": ["src"]
 }

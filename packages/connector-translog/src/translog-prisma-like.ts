@@ -71,7 +71,7 @@ export interface UserDelegate {
     readonly where: { readonly id: UserId; readonly tenantId: TenantId };
   }): Promise<UserRow | null>;
   findMany(args: {
-    readonly where: { readonly id: { readonly in: readonly UserId[] } };
+    readonly where: { readonly id: { readonly in: UserId[] } };
   }): Promise<readonly UserRow[]>;
 }
 

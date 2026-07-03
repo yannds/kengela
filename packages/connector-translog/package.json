@@ -3,21 +3,22 @@
   "version": "0.1.0",
   "description": "Kengela — connecteur TransLog Pro : implemente CredentialStore, AuthorizationRepository, SessionStore et PolicyStore contre le schema Prisma reel de TransLog. Paquet prive de reference.",
   "license": "Apache-2.0",
-  "private": true,
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./dist/esm/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
     }
   },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && tsc -p tsconfig.build.cjs.json && node ../../scripts/write-dist-markers.mjs dist",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run"
   },
@@ -26,6 +27,10 @@
   },
   "devDependencies": {
     "@types/node": "^24.10.1"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
   },
   "repository": {
     "type": "git",
