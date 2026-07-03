@@ -9,19 +9,34 @@ Ce guide couvre l'installation, l'utilisation et le développement du monorepo. 
 de code s'appuient sur les signatures réelles** des paquets `@kengela/*`, vérifiées dans le code
 source. Chaque page est autonome (elle sert aussi de page de wiki GitHub).
 
-## Table des matières
+## Table des matières — les fondamentaux
 
-| #   | Page                                                         | Sujet                                                                                                                                 |
-| --- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
-| 0   | [00-getting-started.md](./00-getting-started.md)             | Installer (dual ESM+CJS), composer un premier PDP, exécuter un `check()` de bout en bout : allow, deny, step-up.                      |
-| 1   | [01-architecture.md](./01-architecture.md)                   | Les 3 anneaux, la doctrine « le port est un sas », le lint anti-vendor, le flux de décision Zero Trust, le pont `Principal`.          |
-| 2   | [02-authorization.md](./02-authorization.md)                 | Grammaire des permissions, grants & relations, policies déclaratives (CEL), conditional access, obligations & step-up, decision logs. |
-| 3   | [03-authentication.md](./03-authentication.md)               | Credential timing-safe (argon2id / bcrypt + `needsRehash`), sessions, MFA/TOTP complet, better-auth, crypto-shredding.                |
-| 4   | [04-identity-federation.md](./04-identity-federation.md)     | `iam-mapping` (6 sources → `DirectoryProfile`), schéma SCIM Kengela, `scim-server` (découverte + validation + Entra), LDAP.           |
-| 5   | [05-nestjs-integration.md](./05-nestjs-integration.md)       | `KengelaAuthzGuard`, décorateurs, jeton `KENGELA_PDP`, `StepUpRequiredException`, module d'exemple.                                   |
-| 6   | [06-compliance-pii.md](./06-compliance-pii.md)               | Classification, minimisation, redaction, rétention, effacement (crypto-shredding), `PiiAccessLogSink`.                                |
-| 7   | [07-developing-an-adapter.md](./07-developing-an-adapter.md) | Ajouter un adapter : implémenter un port, interface vendor NARROW, fake de test, `DEBT.md`, conventions strictes, dual build.         |
-| 8   | [08-security.md](./08-security.md)                           | Posture Zero Trust, résumé de l'audit red/blue, et comment relancer l'audit adverse.                                                  |
+| #   | Page                                                   | Sujet                                                                                                                                 |
+| --- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| 0   | [Prise en main](./00-getting-started.md)               | Installer (dual ESM+CJS), composer un premier PDP, exécuter un `check()` de bout en bout : allow, deny, step-up.                      |
+| 1   | [Architecture](./01-architecture.md)                   | Les 3 anneaux, la doctrine « le port est un sas », le lint anti-vendor, le flux de décision Zero Trust, le pont `Principal`.          |
+| 2   | [Autorisation](./02-authorization.md)                  | Grammaire des permissions, grants & relations, policies déclaratives (CEL), conditional access, obligations & step-up, decision logs. |
+| 3   | [Authentification](./03-authentication.md)             | Credential timing-safe (argon2id / bcrypt + `needsRehash`), sessions, MFA/TOTP complet, better-auth, crypto-shredding.                |
+| 4   | [Fédération d'identité](./04-identity-federation.md)   | `iam-mapping` (6 sources → `DirectoryProfile`), schéma SCIM Kengela, `scim-server` (découverte + validation + Entra), LDAP.           |
+| 5   | [Intégration NestJS](./05-nestjs-integration.md)       | `KengelaAuthzGuard`, décorateurs, jeton `KENGELA_PDP`, `StepUpRequiredException`, module d'exemple.                                   |
+| 6   | [Conformité & PII](./06-compliance-pii.md)             | Classification, minimisation, redaction, rétention, effacement (crypto-shredding), `PiiAccessLogSink`.                                |
+| 7   | [Développer un adapter](./07-developing-an-adapter.md) | Ajouter un adapter : implémenter un port, interface vendor NARROW, fake de test, `DEBT.md`, conventions strictes, dual build.         |
+| 8   | [Sécurité](./08-security.md)                           | Posture Zero Trust, résumé de l'audit red/blue, et comment relancer l'audit adverse.                                                  |
+
+## Recettes d'implémentation — « comment je branche Kengela chez moi »
+
+Chaque recette est **copier-coller**, adossée aux **signatures réelles** du code, et distingue ce qui
+est **fourni par Kengela** de ce que **l'application écrit elle-même**. Choisis selon ton backend
+d'identité.
+
+| Scénario                                                                           | Recette                                                                   |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| **NestJS + auth native (argon2) + Prisma** — le chemin par défaut recommandé       | [Recette : NestJS + native + Prisma](./10-recipe-nestjs-native-prisma.md) |
+| **better-auth** comme backend d'authentification (session déléguée)                | [Recette : better-auth](./11-recipe-better-auth.md)                       |
+| Provisioning **SCIM 2.0 depuis Microsoft Entra ID** (Azure AD)                     | [Recette : SCIM / Entra](./12-recipe-scim-entra.md)                       |
+| Fédération annuaire **LDAP / Active Directory**                                    | [Recette : LDAP / AD](./13-recipe-ldap.md)                                |
+| **Autorisation RBAC + ABAC (CEL)**, obligations, step-up, decision logs            | [Recette : autorisation RBAC/ABAC](./14-recipe-authz-rbac-abac.md)        |
+| **Conformité RGPD** : chiffrement de champ per-tenant, crypto-shredding, rétention | [Recette : PII / RGPD](./15-recipe-pii-compliance.md)                     |
 
 ## Les 12 paquets en un coup d'œil
 
