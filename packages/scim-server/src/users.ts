@@ -14,6 +14,7 @@ import {
   externalIdOf,
   familyNameOf,
   givenNameOf,
+  parseExternalIdFilter,
   parsePagination,
   parseUserNameFilter,
   parseUserPatch,
@@ -58,6 +59,38 @@ export async function handleUsersPost(
   return { status: 201, body: toScimUser(created) };
 }
 
+/**
+ * POST `/Users` en mode STRICT RFC 7644 §3.3 / validateur Microsoft Entra : un `userName`
+ * déjà présent (insensible à la casse) ⇒ 409 `uniqueness` (JAMAIS de réconciliation). À
+ * câbler quand l'IdP attend le rejet de doublon plutôt que l'idempotence par e-mail.
+ */
+export async function handleUsersPostStrict(
+  store: ScimStore,
+  request: ScimRequest,
+): Promise<ScimResponse> {
+  const body = asRecord(request.body);
+  const email = emailOf(body);
+  if (email === null) {
+    return { status: 400, body: scimError(400, 'userName (e-mail) requis.', 'invalidValue') };
+  }
+  const existing = await store.findUserByEmail(request.tenantId, email);
+  if (existing !== null) {
+    return {
+      status: 409,
+      body: scimError(409, `userName déjà utilisé : ${email}.`, 'uniqueness'),
+    };
+  }
+  const created = await store.createUser(request.tenantId, {
+    userName: email,
+    externalId: externalIdOf(body),
+    firstName: givenNameOf(body),
+    lastName: familyNameOf(body),
+    displayName: displayNameOf(body),
+    active: activeOf(body),
+  });
+  return { status: 201, body: toScimUser(created) };
+}
+
 /** GET `/Users/:id` : 200 avec la ressource, ou 404 SCIM. */
 export async function handleUsersGet(
   store: ScimStore,
@@ -71,8 +104,9 @@ export async function handleUsersGet(
 }
 
 /**
- * GET `/Users` : `ListResponse` SCIM. Supporte le filtre `userName eq "..."` + pagination
- * (`startIndex`/`count`). Filtre présent mais non supporté ⇒ liste vide (jamais d'erreur).
+ * GET `/Users` : `ListResponse` SCIM. Supporte les filtres `userName eq "..."` ET
+ * `externalId eq "..."` (exigés par le validateur Entra) + pagination (`startIndex`/`count`).
+ * Filtre présent mais non supporté ⇒ liste vide (jamais d'erreur).
  */
 export async function handleUsersList(
   store: ScimStore,
@@ -80,15 +114,20 @@ export async function handleUsersList(
 ): Promise<ScimResponse> {
   const filter = request.query?.filter;
   const userName = parseUserNameFilter(filter);
+  const externalId = parseExternalIdFilter(filter);
   const { startIndex, count } = parsePagination(request.query);
-  if (filter !== undefined && userName === null) {
+  if (filter !== undefined && userName === null && externalId === null) {
     return {
       status: 200,
       body: userListResponse({ resources: [], totalResults: 0, startIndex, itemsPerPage: 0 }),
     };
   }
-  const options: ScimUserListOptions =
-    userName === null ? { startIndex, count } : { userName, startIndex, count };
+  const options: ScimUserListOptions = {
+    startIndex,
+    count,
+    ...(userName === null ? {} : { userName }),
+    ...(externalId === null ? {} : { externalId }),
+  };
   const page = await store.listUsers(request.tenantId, options);
   return { status: 200, body: userListResponse(page) };
 }

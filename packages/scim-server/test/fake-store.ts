@@ -134,6 +134,10 @@ export class FakeScimStore implements ScimStore {
       const needle = options.userName.toLowerCase();
       rows = rows.filter((u) => u.userName.toLowerCase() === needle);
     }
+    if (options.externalId !== undefined) {
+      const needle = options.externalId;
+      rows = rows.filter((u) => u.externalId === needle);
+    }
     const mapped = rows.map((u) => toUserRow(u));
     return Promise.resolve(paginate(mapped, options.startIndex, options.count));
   }

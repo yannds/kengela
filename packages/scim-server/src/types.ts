@@ -76,9 +76,14 @@ export type GroupMemberPatch =
   | { readonly kind: 'replace'; readonly members: readonly string[] };
 
 // ── Options de liste + page ──────────────────────────────────────────────────
-/** Options de `listUsers` : filtre `userName eq` optionnel + pagination 1-based. */
+/**
+ * Options de `listUsers` : filtres `userName eq` / `externalId eq` optionnels (au moins l'un
+ * des deux, jamais les deux à la fois) + pagination 1-based. `userName` s'égale de façon
+ * INSENSIBLE À LA CASSE ; `externalId` est `caseExact` (comparaison exacte).
+ */
 export interface ScimUserListOptions {
   readonly userName?: string;
+  readonly externalId?: string;
   readonly startIndex: number;
   readonly count: number;
 }

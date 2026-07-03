@@ -32,6 +32,7 @@ export type {
 // ── Handlers purs ────────────────────────────────────────────────────────────
 export {
   handleUsersPost,
+  handleUsersPostStrict,
   handleUsersGet,
   handleUsersList,
   handleUsersPatch,
@@ -46,6 +47,23 @@ export {
   handleGroupsPut,
   handleGroupsDelete,
 } from './groups.js';
+
+// ── Endpoints de découverte (auto-description) ───────────────────────────────
+export {
+  SCIM_SCHEMA_SERVICE_PROVIDER_CONFIG,
+  SCIM_SCHEMA_RESOURCE_TYPE,
+  SCIM_SCHEMA_SCHEMA,
+  serviceProviderConfig,
+  resourceTypes,
+  schemaDefinitions,
+  handleServiceProviderConfig,
+  handleResourceTypes,
+  handleSchemas,
+} from './discovery.js';
+
+// ── Validation de schéma (auto-vérification) ─────────────────────────────────
+export { validateScimUser, validateScimGroup } from './validate.js';
+export type { ScimValidationResult } from './validate.js';
 
 // ── Sérialisation / parsing SCIM ─────────────────────────────────────────────
 export {
@@ -71,6 +89,7 @@ export {
   memberIdsOf,
   parseGroupMemberPatch,
   parseUserNameFilter,
+  parseExternalIdFilter,
   parseDisplayNameFilter,
   parsePagination,
 } from './serialize.js';

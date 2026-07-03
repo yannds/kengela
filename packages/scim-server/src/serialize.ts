@@ -361,6 +361,7 @@ export function parseGroupMemberPatch(body: Record<string, unknown>): readonly G
 
 // ── Filtres `eq` (bornés) + pagination ───────────────────────────────────────
 const USERNAME_FILTER = /^userName eq "([^"]{1,320})"$/i;
+const EXTERNALID_FILTER = /^externalId eq "([^"]{1,320})"$/i;
 const DISPLAYNAME_FILTER = /^displayName eq "([^"]{1,320})"$/i;
 
 /** Valeur d'un filtre `userName eq "..."` (regex bornée), sinon null. */
@@ -369,6 +370,18 @@ export function parseUserNameFilter(filter: string | undefined): string | null {
     return null;
   }
   const matched = USERNAME_FILTER.exec(filter.trim());
+  return matched === null ? null : (matched[1] ?? null);
+}
+
+/**
+ * Valeur d'un filtre `externalId eq "..."` (regex bornée), sinon null. Exigé par le
+ * validateur Microsoft Entra pour retrouver un utilisateur par son ancre `externalId`.
+ */
+export function parseExternalIdFilter(filter: string | undefined): string | null {
+  if (filter === undefined) {
+    return null;
+  }
+  const matched = EXTERNALID_FILTER.exec(filter.trim());
   return matched === null ? null : (matched[1] ?? null);
 }
 
