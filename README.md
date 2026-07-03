@@ -4,7 +4,7 @@
 
 # Kengela
 
-**kokéngela** *(lingala)* — veiller, garder, être vigilant.
+**kokéngela** _(lingala)_ — veiller, garder, être vigilant.
 Le veilleur : ne fait **jamais** confiance par défaut, vérifie **en continu**.
 
 Socle **identité &amp; accès Zero Trust** multi-tenant pour TypeScript —
@@ -52,20 +52,20 @@ Une condition inévaluable ⇒ **refus** (fail-closed).
 
 ## Paquets
 
-| Paquet | Rôle |
-|---|---|
-| `@kengela/contracts` | Ports &amp; types — l'invariant, zéro vendor |
-| `@kengela/authz-core` | RBAC scopé + relation + ABAC (CEL) + conditional access + step-up ; deny-by-default, fail-closed, decision logs |
-| `@kengela/iam-mapping` | Normalisation **6 sources IdP** + schéma **SCIM canonique** (superset Okta/Entra) + moteur de règles |
-| `@kengela/adapter-expr-cel` | Moteur **CEL** (conditions ABAC + fonctions de dates) |
-| `@kengela/adapter-authn-native` | Credential **timing-safe** (argon2/bcrypt + `needsRehash`), sessions, **MFA/TOTP**, **AES-256-GCM**, crypto-shredding |
-| `@kengela/adapter-authn-better-auth` | `IdentityPort` au-dessus de **better-auth** (OIDC/OAuth/SSO) — better-auth en `peerDependency` |
-| `@kengela/adapter-persistence-prisma` | Stockage (`AuthorizationRepository`/`SessionStore`/`PolicyStore`) via interface Prisma narrow |
-| `@kengela/adapter-directory-ldap` | Connecteur **AD/LDAP** (ldapts) → `DirectoryProfile` |
-| `@kengela/scim-server` | Serveur **SCIM 2.0** Users+Groups + découverte + **conformité Entra** + validation de schéma |
-| `@kengela/nestjs` | Intégration **NestJS** : guard deny-by-default + décorateurs + step-up |
-| `@kengela/pii` | Conformité **RGPD** : classification, minimisation, redaction, rétention, effacement |
-| `@kengela/connector-translog` | *(privé)* mapping du schéma TransLog Pro vers les ports Kengela |
+| Paquet                                | Rôle                                                                                                                  |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `@kengela/contracts`                  | Ports &amp; types — l'invariant, zéro vendor                                                                          |
+| `@kengela/authz-core`                 | RBAC scopé + relation + ABAC (CEL) + conditional access + step-up ; deny-by-default, fail-closed, decision logs       |
+| `@kengela/iam-mapping`                | Normalisation **6 sources IdP** + schéma **SCIM canonique** (superset Okta/Entra) + moteur de règles                  |
+| `@kengela/adapter-expr-cel`           | Moteur **CEL** (conditions ABAC + fonctions de dates)                                                                 |
+| `@kengela/adapter-authn-native`       | Credential **timing-safe** (argon2/bcrypt + `needsRehash`), sessions, **MFA/TOTP**, **AES-256-GCM**, crypto-shredding |
+| `@kengela/adapter-authn-better-auth`  | `IdentityPort` au-dessus de **better-auth** (OIDC/OAuth/SSO) — better-auth en `peerDependency`                        |
+| `@kengela/adapter-persistence-prisma` | Stockage (`AuthorizationRepository`/`SessionStore`/`PolicyStore`) via interface Prisma narrow                         |
+| `@kengela/adapter-directory-ldap`     | Connecteur **AD/LDAP** (ldapts) → `DirectoryProfile`                                                                  |
+| `@kengela/scim-server`                | Serveur **SCIM 2.0** Users+Groups + découverte + **conformité Entra** + validation de schéma                          |
+| `@kengela/nestjs`                     | Intégration **NestJS** : guard deny-by-default + décorateurs + step-up                                                |
+| `@kengela/pii`                        | Conformité **RGPD** : classification, minimisation, redaction, rétention, effacement                                  |
+| `@kengela/connector-translog`         | _(privé)_ mapping du schéma TransLog Pro vers les ports Kengela                                                       |
 
 ## Démarrage rapide
 

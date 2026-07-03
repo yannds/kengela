@@ -203,7 +203,7 @@ const decision = await layered.check({
   resource: { type: 'data.orders', id: 'o1', tenantId: 't1' },
 });
 
-console.log(decision.effect);      // 'step_up'
+console.log(decision.effect); // 'step_up'
 console.log(decision.obligations); // [{ type: 'require_passkey' }]
 ```
 

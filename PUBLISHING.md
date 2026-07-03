@@ -40,11 +40,10 @@ LDAP, better-auth... — reste optionnel).
 Les adapters embarquent leur vendor **sauf** ceux qui sont des frameworks à configurer
 par l'app, déclarés en `peerDependency` :
 
-| Adapter | Vendor | Installé avec l'adapter ? |
-|---|---|---|
-| `adapter-authn-native` | argon2, bcryptjs, otplib | Oui (dependency) |
-| `adapter-expr-cel` | @marcbachmann/cel-js | Oui (dependency) |
-| `adapter-directory-ldap` | ldapts | Oui (dependency) |
-| `adapter-persistence-prisma` | (aucun — interface narrow) | — |
-| **`adapter-authn-better-auth`** | **better-auth** | **NON — peerDependency : `npm add better-auth` dans ton app** |
-
+| Adapter                         | Vendor                     | Installé avec l'adapter ?                                     |
+| ------------------------------- | -------------------------- | ------------------------------------------------------------- |
+| `adapter-authn-native`          | argon2, bcryptjs, otplib   | Oui (dependency)                                              |
+| `adapter-expr-cel`              | @marcbachmann/cel-js       | Oui (dependency)                                              |
+| `adapter-directory-ldap`        | ldapts                     | Oui (dependency)                                              |
+| `adapter-persistence-prisma`    | (aucun — interface narrow) | —                                                             |
+| **`adapter-authn-better-auth`** | **better-auth**            | **NON — peerDependency : `npm add better-auth` dans ton app** |

@@ -12,17 +12,17 @@ Le port `PasswordHasher` impose trois opérations, dont une vérification **à t
 ```ts
 interface PasswordHasher {
   hash(plain: string): Promise<string>;
-  verify(plain: string, hash: string): Promise<boolean>;   // temps constant
-  needsRehash(hash: string): boolean;                       // migration transparente
+  verify(plain: string, hash: string): Promise<boolean>; // temps constant
+  needsRehash(hash: string): boolean; // migration transparente
 }
 ```
 
 Deux implémentations :
 
-| Classe | Algorithme | Paramètres | Usage |
-|--------|-----------|------------|-------|
-| `Argon2PasswordHasher` | **argon2id** (défaut recommandé) | m = 19456 KiB, t = 2, p = 1 (OWASP) | tout nouveau déploiement |
-| `BcryptPasswordHasher` | bcrypt | coût 12 (configurable) | compat / migration depuis l'existant |
+| Classe                 | Algorithme                       | Paramètres                          | Usage                                |
+| ---------------------- | -------------------------------- | ----------------------------------- | ------------------------------------ |
+| `Argon2PasswordHasher` | **argon2id** (défaut recommandé) | m = 19456 KiB, t = 2, p = 1 (OWASP) | tout nouveau déploiement             |
+| `BcryptPasswordHasher` | bcrypt                           | coût 12 (configurable)              | compat / migration depuis l'existant |
 
 ```ts
 import { Argon2PasswordHasher, BcryptPasswordHasher } from '@kengela/adapter-authn-native';
@@ -38,7 +38,10 @@ const ok = await hasher.verify('correct horse battery staple', hash); // true
 **prochain login réussi**, l'application re-hashe le mot de passe avec l'algorithme cible :
 
 ```ts
-if (await hasher.verify(password, record.passwordHash) && hasher.needsRehash(record.passwordHash)) {
+if (
+  (await hasher.verify(password, record.passwordHash)) &&
+  hasher.needsRehash(record.passwordHash)
+) {
   const upgraded = await hasher.hash(password); // ex. bcrypt → argon2id
   await store.updatePasswordHash(record.userId, upgraded);
 }
@@ -71,13 +74,13 @@ const outcome = await authenticator.authenticate({
 Le `CredentialStore` (implémenté par la persistance de l'app, ex. `connector-translog`) résout un
 `CredentialRecord`. L'issue est un `AuthOutcome` discriminé :
 
-| `kind` | Signification |
-|--------|---------------|
-| `authenticated` | succès, porte le `Principal` |
-| `mfa_required` | le compte a la MFA activée : réclamer un code (voir plus bas) |
-| `tenant_choice` | login cross-tenant : plusieurs tenants correspondent, l'utilisateur choisit |
-| `invalid_credentials` | échec (compte inconnu, mot de passe faux, compte inactif) |
-| `captcha_required` | (réservé) exiger un CAPTCHA |
+| `kind`                | Signification                                                               |
+| --------------------- | --------------------------------------------------------------------------- |
+| `authenticated`       | succès, porte le `Principal`                                                |
+| `mfa_required`        | le compte a la MFA activée : réclamer un code (voir plus bas)               |
+| `tenant_choice`       | login cross-tenant : plusieurs tenants correspondent, l'utilisateur choisit |
+| `invalid_credentials` | échec (compte inconnu, mot de passe faux, compte inactif)                   |
+| `captcha_required`    | (réservé) exiger un CAPTCHA                                                 |
 
 Le login **cross-tenant** (`authenticateCrossTenant`) ne court-circuite pas au premier match : il
 compare pour **tous** les tenants (N compares pour N candidats), pour ne pas créer d'oracle de
@@ -101,8 +104,8 @@ const handle = await sessions.create({
   ttlMs: 3_600_000,
 });
 
-await sessions.get(handle.token);            // null si expiré (fail-closed) ou révoqué
-await sessions.rotate(handle.token);         // émet un nouveau token, invalide l'ancien (atomique si $transaction)
+await sessions.get(handle.token); // null si expiré (fail-closed) ou révoqué
+await sessions.rotate(handle.token); // émet un nouveau token, invalide l'ancien (atomique si $transaction)
 await sessions.revoke(handle.token);
 await sessions.revokeAllForUser('u1');
 ```
@@ -119,31 +122,27 @@ Points durcis (prouvés par test) :
 
 Le cycle MFA compose quatre briques :
 
-| Brique | Port | Rôle |
-|--------|------|------|
-| `TotpVerifier` | (classe) | RFC 6238 : génère un secret base32, l'URI otpauth, vérifie un code (otplib) |
-| `AesGcmKeyManagement` | `KeyManagementPort` | chiffre le secret at-rest, **clé par tenant** (HKDF) |
-| `PrismaMfaSecretStore` | `MfaSecretStore` | persiste le secret **déjà chiffré** |
-| `PrismaMfaChallengeStore` | `MfaChallengeStore` | émet/consomme des défis **one-shot** expirants |
+| Brique                    | Port                | Rôle                                                                        |
+| ------------------------- | ------------------- | --------------------------------------------------------------------------- |
+| `TotpVerifier`            | (classe)            | RFC 6238 : génère un secret base32, l'URI otpauth, vérifie un code (otplib) |
+| `AesGcmKeyManagement`     | `KeyManagementPort` | chiffre le secret at-rest, **clé par tenant** (HKDF)                        |
+| `PrismaMfaSecretStore`    | `MfaSecretStore`    | persiste le secret **déjà chiffré**                                         |
+| `PrismaMfaChallengeStore` | `MfaChallengeStore` | émet/consomme des défis **one-shot** expirants                              |
 
 `TotpMfaService` implémente `MfaService` (enroll / challenge / verify) en orchestrant ces briques.
 **Le secret n'est jamais stocké en clair** : il est chiffré via le KMS enveloppe par tenant avant
 d'atteindre le store, et déchiffré à la volée uniquement pour vérifier un code.
 
 ```ts
-import {
-  TotpVerifier,
-  TotpMfaService,
-  AesGcmKeyManagement,
-} from '@kengela/adapter-authn-native';
+import { TotpVerifier, TotpMfaService, AesGcmKeyManagement } from '@kengela/adapter-authn-native';
 import { PrismaMfaSecretStore, PrismaMfaChallengeStore } from '@kengela/adapter-persistence-prisma';
 
 const mfa = new TotpMfaService(
   new TotpVerifier(),
   new AesGcmKeyManagement(masterKey /* >= 32 octets */),
-  new PrismaMfaSecretStore(prisma.mfaSecret),      // MfaSecretDelegate
+  new PrismaMfaSecretStore(prisma.mfaSecret), // MfaSecretDelegate
   new PrismaMfaChallengeStore(prisma.mfaChallenge), // MfaChallengeDelegate
-  { challengeTtlMs: 120_000 },                      // TTL du défi (défaut 2 min)
+  { challengeTtlMs: 120_000 }, // TTL du défi (défaut 2 min)
 );
 
 // 1) Enrôlement : renvoie l'URI otpauth + un QR (data URL) à afficher.
@@ -164,7 +163,7 @@ const valid = await mfa.verify(challengeId, '123456');
 Contrôles prouvés : `challengeId` **one-shot** (consommé une seule fois, expirant),
 `verify` sans secret enrôlé renvoie `false`, un `challengeId` forgé renvoie `false`.
 
-> **Dette connue (DEBT native #3).** Le défi est one-shot, mais le *code* TOTP lui-même n'est pas
+> **Dette connue (DEBT native #3).** Le défi est one-shot, mais le _code_ TOTP lui-même n'est pas
 > mémorisé : dans la fenêtre de pas (~30 s), un code déjà consommé pourrait être rejoué via un
 > **nouveau** `challengeId`. NIST 800-63B §5.1.4.2 recommande un cache anti-rejeu (cible documentée).
 
@@ -191,7 +190,7 @@ import { BetterAuthIdentity } from '@kengela/adapter-authn-better-auth';
 import type { SessionCredential } from '@kengela/contracts';
 
 const identity = new BetterAuthIdentity({
-  auth,                                    // instance better-auth (BetterAuthLike)
+  auth, // instance better-auth (BetterAuthLike)
   extractTenantId: (user) => (typeof user.tenantId === 'string' ? user.tenantId : null),
   // extractRoles : par défaut aucun rôle n'est hérité du payload — l'authz RECHARGE les grants.
 });

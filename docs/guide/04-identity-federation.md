@@ -15,14 +15,14 @@ Quelle que soit la source, chaque adapter projette le payload IdP vers **une seu
 L'application ne raisonne jamais sur la forme brute d'un IdP : une fois le profil normalisé, **le
 mapping de rôles et la classification marchent tels quels**, quel que soit le sens de la synchro.
 
-| Source | Fonction de projection | Entrée |
-|--------|------------------------|--------|
-| OIDC (Entra / Okta / Keycloak) | `profileFromOidcClaims(claims, map?)` | claims du jeton |
-| SCIM 2.0 | `profileFromScim(body, map?)` | corps SCIM (core + enterprise) |
-| SAML 2.0 (ADFS / Entra / Okta) | `profileFromSaml(assertion)` | assertion normalisée (nameID + attributs) |
-| LDAP / Active Directory | `profileFromLdap(entry)` | entrée LDAP (DN + attributs) |
-| Microsoft Graph | `profileFromGraph(user)` | utilisateur Graph `/users` |
-| Google Workspace | `profileFromGoogle(user)` | utilisateur Admin SDK Directory |
+| Source                         | Fonction de projection                | Entrée                                    |
+| ------------------------------ | ------------------------------------- | ----------------------------------------- |
+| OIDC (Entra / Okta / Keycloak) | `profileFromOidcClaims(claims, map?)` | claims du jeton                           |
+| SCIM 2.0                       | `profileFromScim(body, map?)`         | corps SCIM (core + enterprise)            |
+| SAML 2.0 (ADFS / Entra / Okta) | `profileFromSaml(assertion)`          | assertion normalisée (nameID + attributs) |
+| LDAP / Active Directory        | `profileFromLdap(entry)`              | entrée LDAP (DN + attributs)              |
+| Microsoft Graph                | `profileFromGraph(user)`              | utilisateur Graph `/users`                |
+| Google Workspace               | `profileFromGoogle(user)`             | utilisateur Admin SDK Directory           |
 
 Il existe aussi `profileFromParts(...)` (reconstruire un profil depuis un état persisté) et
 `projectScimUser(user)` (projeter un `KengelaScimUser` typé).
@@ -32,12 +32,12 @@ Le `DirectoryProfile` normalisé :
 ```ts
 interface DirectoryProfile {
   readonly email: string;
-  readonly externalId: string | null;      // sub OIDC / nameID SAML / externalId SCIM
+  readonly externalId: string | null; // sub OIDC / nameID SAML / externalId SCIM
   readonly firstName: string | null;
   readonly lastName: string | null;
   readonly displayName: string | null;
   readonly attributes: DirectoryAttributes; // department, title, manager, phoneNumber, ...
-  readonly groups: readonly string[];       // groupes de sécurité (source du mapping)
+  readonly groups: readonly string[]; // groupes de sécurité (source du mapping)
   readonly claims: Readonly<Record<string, unknown>>; // bruts, pour règles avancées
 }
 ```
@@ -54,8 +54,8 @@ historique.
 import { profileFromOidcClaims } from '@kengela/iam-mapping';
 
 const profile = profileFromOidcClaims(idTokenClaims, {
-  title: 'jobTitle',       // cet IdP met le poste dans `jobTitle`
-  groups: 'roles',         // et les groupes dans `roles`
+  title: 'jobTitle', // cet IdP met le poste dans `jobTitle`
+  groups: 'roles', // et les groupes dans `roles`
 });
 ```
 
@@ -119,10 +119,10 @@ sous-ensemble utile ; la lib ne fige jamais la liste (bag `extensions`).
 
 ```ts
 import {
-  SCIM_SCHEMA_CORE_USER,           // urn:ietf:params:scim:schemas:core:2.0:User
-  SCIM_SCHEMA_ENTERPRISE_USER,     // ...:extension:enterprise:2.0:User
-  SCIM_SCHEMA_GROUP,               // ...:core:2.0:Group
-  KENGELA_SCIM_ATTRIBUTE_PATHS,    // registre des chemins portés (source unique)
+  SCIM_SCHEMA_CORE_USER, // urn:ietf:params:scim:schemas:core:2.0:User
+  SCIM_SCHEMA_ENTERPRISE_USER, // ...:extension:enterprise:2.0:User
+  SCIM_SCHEMA_GROUP, // ...:core:2.0:Group
+  KENGELA_SCIM_ATTRIBUTE_PATHS, // registre des chemins portés (source unique)
   projectScimUser,
   type KengelaScimUser,
 } from '@kengela/iam-mapping';
@@ -139,11 +139,21 @@ handler et sérialise la `ScimResponse` en `application/scim+json`.
 
 ```ts
 import {
-  handleUsersPost, handleUsersPostStrict, handleUsersGet, handleUsersList,
-  handleUsersPatch, handleUsersPut, handleUsersDelete,
-  handleGroupsPost, handleGroupsGet, handleGroupsList,
-  handleGroupsPatch, handleGroupsPut, handleGroupsDelete,
-  type ScimStore, type ScimRequest,
+  handleUsersPost,
+  handleUsersPostStrict,
+  handleUsersGet,
+  handleUsersList,
+  handleUsersPatch,
+  handleUsersPut,
+  handleUsersDelete,
+  handleGroupsPost,
+  handleGroupsGet,
+  handleGroupsList,
+  handleGroupsPatch,
+  handleGroupsPut,
+  handleGroupsDelete,
+  type ScimStore,
+  type ScimRequest,
 } from '@kengela/scim-server';
 
 const response = await handleUsersPost(store, {
@@ -172,12 +182,12 @@ ont besoin :
 ```ts
 interface ScimStore {
   getUser(tenantId, id): Promise<ScimUserRow | null>;
-  findUserByEmail(tenantId, email): Promise<ScimUserRow | null>;   // réconciliation insensible à la casse
+  findUserByEmail(tenantId, email): Promise<ScimUserRow | null>; // réconciliation insensible à la casse
   listUsers(tenantId, options): Promise<ScimListPage<ScimUserRow>>; // totalResults = total AVANT pagination
   createUser(tenantId, input): Promise<ScimUserRow>;
   replaceUser(tenantId, id, input): Promise<ScimUserRow | null>;
   patchUser(tenantId, id, patch): Promise<ScimUserRow | null>;
-  deactivateUser(tenantId, id): Promise<ScimUserRow | null>;       // désactive, ne supprime jamais
+  deactivateUser(tenantId, id): Promise<ScimUserRow | null>; // désactive, ne supprime jamais
   // ... Groups : getGroup / listGroups / createGroup / replaceGroup / patchGroup / deleteGroup
 }
 ```
@@ -188,9 +198,9 @@ Le validateur Microsoft Entra interroge ces endpoints pour se configurer. Handle
 
 ```ts
 import {
-  handleServiceProviderConfig,  // GET /ServiceProviderConfig
-  handleResourceTypes,          // GET /ResourceTypes[/:id]
-  handleSchemas,                // GET /Schemas[/:id]
+  handleServiceProviderConfig, // GET /ServiceProviderConfig
+  handleResourceTypes, // GET /ResourceTypes[/:id]
+  handleSchemas, // GET /Schemas[/:id]
 } from '@kengela/scim-server';
 
 const cfg = handleServiceProviderConfig();
@@ -232,14 +242,14 @@ import { LdapDirectorySource } from '@kengela/adapter-directory-ldap';
 const source = new LdapDirectorySource({
   url: 'ldaps://dc.corp.local:636',
   bindDN: 'CN=svc-read,OU=Service,DC=corp,DC=local',
-  bindPassword: vaultSecret,        // jamais journalisé
+  bindPassword: vaultSecret, // jamais journalisé
   baseDN: 'OU=Users,DC=corp,DC=local',
   // userFilter, attributes, pageSize, maxUsers, tlsRejectUnauthorized : défauts AD surchargeables
 });
 
-const entries = await source.fetchEntries();                 // LdapEntryParts[]
-const records = LdapDirectorySource.toRecords(entries);      // { profile, active }[]
-const healthy = await source.checkConnection();              // true/false, sans fuiter le secret
+const entries = await source.fetchEntries(); // LdapEntryParts[]
+const records = LdapDirectorySource.toRecords(entries); // { profile, active }[]
+const healthy = await source.checkConnection(); // true/false, sans fuiter le secret
 ```
 
 Points durcis (prouvés par test) :
@@ -259,4 +269,4 @@ un fake en mémoire aussi (tests).
 > mais n'expose pas encore de helper `escapeLdapFilterValue()` : une app qui composerait un filtre
 > depuis une entrée utilisateur non échappée resterait exposée à l'injection de filtre LDAP côté
 > appelant.
-</content>
+> </content>

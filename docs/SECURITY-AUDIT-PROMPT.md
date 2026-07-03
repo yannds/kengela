@@ -15,13 +15,16 @@ le code de production sans le signaler ; tu écris des **tests adverses** (Vites
 chaque hypothèse. AUCUNE mention de Claude/Anthropic nulle part.
 
 ## Cadre à respecter
+
 - Conventions du repo : TS6 strict, ESLint strictTypeChecked, ESM/NodeNext, Prettier. Tests via Vitest.
 - Vérifier d'abord : `pnpm install && pnpm -r build && pnpm -r test && pnpm lint:arch` (tout doit être vert).
 - Lire les ports dans `packages/contracts/src/index.ts` et les implémentations dans chaque `packages/*/src`.
 - Lire tous les `DEBT.md` : traiter chaque dette comme une **hypothèse de faiblesse** à confirmer/infirmer.
 
 ## RED TEAM — scénarios d'attaque à tenter (écris un test qui ÉCHOUE si la lib est vulnérable)
+
 Isolation & autorisation :
+
 1. **Cross-tenant** : un Principal du tenant A obtient-il une décision `allow` sur une ressource du
    tenant B ? (AccessRequest, RelationResolver, grants) — tenter le smuggling de tenantId.
 2. **Escalade de privilège** : un grant `*.global` ou `platform.*` accordé à un tenant non-plateforme
@@ -34,32 +37,23 @@ Isolation & autorisation :
 5. **Sandbox CEL** : tenter une évaluation CEL qui accède à des globals, boucle infinie, ReDoS,
    ou consomme des ressources (DoS). Vérifier l'isolement de `@kengela/adapter-expr-cel`.
 
-Authentification & crypto :
-6. **Timing** : `NativeCredentialAuthenticator` fait-il TOUJOURS un compare bcrypt/argon2 (même
-   email inconnu) ? Mesurer/raisonner sur l'oracle d'énumération. Cross-tenant sans short-circuit ?
-7. **AES-256-GCM** : altérer iv/tag/ciphertext → doit rejeter ; mauvaise clé tenant → rejeter ;
-   nonce réutilisé ? Vérifier `AesGcmKeyManagement`, `AesGcmFieldCipher`, `SubjectFieldCipher`.
-8. **Crypto-shredding** : après `eraseSubject`, une PII chiffrée est-elle réellement irrécupérable ?
-   La clé est-elle vraiment détruite (pas dérivable) ?
-9. **MFA** : rejouer un challengeId (one-shot ?), code TOTP hors fenêtre, deviner le secret, bypass
-   via `verify` sans secret. `TotpMfaService` + stores.
-10. **Sessions** : forger/rejouer un token opaque, expiration respectée, rotation invalide l'ancien,
-    `revokeAll` effectif. `SessionStore` / `PrismaSessionStore` / `TranslogSessionStore`.
+Authentification & crypto : 6. **Timing** : `NativeCredentialAuthenticator` fait-il TOUJOURS un compare bcrypt/argon2 (même
+email inconnu) ? Mesurer/raisonner sur l'oracle d'énumération. Cross-tenant sans short-circuit ? 7. **AES-256-GCM** : altérer iv/tag/ciphertext → doit rejeter ; mauvaise clé tenant → rejeter ;
+nonce réutilisé ? Vérifier `AesGcmKeyManagement`, `AesGcmFieldCipher`, `SubjectFieldCipher`. 8. **Crypto-shredding** : après `eraseSubject`, une PII chiffrée est-elle réellement irrécupérable ?
+La clé est-elle vraiment détruite (pas dérivable) ? 9. **MFA** : rejouer un challengeId (one-shot ?), code TOTP hors fenêtre, deviner le secret, bypass
+via `verify` sans secret. `TotpMfaService` + stores. 10. **Sessions** : forger/rejouer un token opaque, expiration respectée, rotation invalide l'ancien,
+`revokeAll` effectif. `SessionStore` / `PrismaSessionStore` / `TranslogSessionStore`.
 
-Fédération / SCIM :
-11. **SCIM** : injection via filtre (`userName eq`), PATCH malveillant (op inconnue, path forgé),
-    contournement de la désactivation (delete = deactivate), unicité `userName` (409) contournable,
-    validation d'entrée `validateScimUser` bypassable, ReDoS des filtres/regex. `@kengela/scim-server`.
-12. **LDAP** : injection de filtre LDAP, bind password loggé ? TLS désactivable ? `adapter-directory-ldap`.
-13. **Mapping IdP** : `iam-mapping` — regex de règles ReDoS (`safe-regex`), profil malveillant
-    (SAML non signé accepté ? gate emailVerified ?), élévation via mapping de groupes.
+Fédération / SCIM : 11. **SCIM** : injection via filtre (`userName eq`), PATCH malveillant (op inconnue, path forgé),
+contournement de la désactivation (delete = deactivate), unicité `userName` (409) contournable,
+validation d'entrée `validateScimUser` bypassable, ReDoS des filtres/regex. `@kengela/scim-server`. 12. **LDAP** : injection de filtre LDAP, bind password loggé ? TLS désactivable ? `adapter-directory-ldap`. 13. **Mapping IdP** : `iam-mapping` — regex de règles ReDoS (`safe-regex`), profil malveillant
+(SAML non signé accepté ? gate emailVerified ?), élévation via mapping de groupes.
 
-Intégration :
-14. **Guard NestJS** : route non annotée = `deny` (deny-by-default) ? `@PublicRoute` sur une classe
-    neutralise-t-il un `@RequirePermission` de handler de façon dangereuse ? Principal absent = 401.
-15. **better-auth adapter** : session invalide/expirée acceptée ? tenant non résoluble = `null` ?
+Intégration : 14. **Guard NestJS** : route non annotée = `deny` (deny-by-default) ? `@PublicRoute` sur une classe
+neutralise-t-il un `@RequirePermission` de handler de façon dangereuse ? Principal absent = 401. 15. **better-auth adapter** : session invalide/expirée acceptée ? tenant non résoluble = `null` ?
 
 ## BLUE TEAM — prouver les contrôles & la conformité
+
 - Écris/complète les tests adverses ci-dessus qui **passent** (contrôle prouvé) ou **échouent**
   (faille trouvée → à corriger).
 - **Mapping standards** (produire un tableau contrôle → statut → preuve/fichier:ligne) :
@@ -71,6 +65,7 @@ Intégration :
 - Vérifie que les **decision logs** capturent assez pour l'audit (allow/deny + raison + signaux).
 
 ## Livrables
+
 1. **Rapport** `docs/SECURITY-AUDIT-REPORT.md` : findings classés par sévérité (Critical/High/Medium/Low),
    chacun avec : scénario, `fichier:ligne`, preuve (test), impact, remédiation. Puis le tableau de
    mapping standards. Puis la liste des correctifs appliqués vs recommandés.
@@ -80,6 +75,7 @@ Intégration :
 4. Re-vérifier `pnpm -r build && pnpm -r test && pnpm lint:arch` verts. Aucune régression.
 
 ## Contraintes
+
 - Ne casse pas l'API publique des ports sans le justifier dans le rapport.
 - Reste hermétique (fakes en mémoire) — pas de vrai réseau/DB.
 - Ne commit/push pas ; laisse l'orchestrateur committer après revue.

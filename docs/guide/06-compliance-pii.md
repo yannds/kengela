@@ -12,19 +12,19 @@ crypto-shredding concret (voir aussi [03-authentication.md](./03-authentication.
 
 `classify(field)` renvoie la sensibilité d'un champ, sur trois niveaux :
 
-| Sensibilité | Signification | Exemples |
-|-------------|---------------|----------|
-| `none` | non personnel (identifiant technique, rattachement org) | `externalId`, `department`, `title`, `costCenter`, `locale` |
-| `pii` | donnée personnelle (identifiabilité directe/indirecte) | `email`, `firstName`, `lastName`, `phoneNumber`, `streetAddress`, `employeeNumber`, `manager` |
-| `sensitive` | catégorie particulière (RGPD art. 9 : santé, biométrie) | *(aucune dans un annuaire standard ; prévu pour extension)* |
+| Sensibilité | Signification                                           | Exemples                                                                                      |
+| ----------- | ------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `none`      | non personnel (identifiant technique, rattachement org) | `externalId`, `department`, `title`, `costCenter`, `locale`                                   |
+| `pii`       | donnée personnelle (identifiabilité directe/indirecte)  | `email`, `firstName`, `lastName`, `phoneNumber`, `streetAddress`, `employeeNumber`, `manager` |
+| `sensitive` | catégorie particulière (RGPD art. 9 : santé, biométrie) | _(aucune dans un annuaire standard ; prévu pour extension)_                                   |
 
 ```ts
 import { classify, isPii, PII_FIELDS } from '@kengela/pii';
 
-classify('email');        // 'pii'
-classify('department');   // 'none'
-isPii('phoneNumber');     // true
-PII_FIELDS;               // liste des champs classés personnels
+classify('email'); // 'pii'
+classify('department'); // 'none'
+isPii('phoneNumber'); // true
+PII_FIELDS; // liste des champs classés personnels
 ```
 
 Le registre est la source de vérité : un champ inconnu retombe sur `none`.
@@ -64,10 +64,10 @@ const safe = redactProfile(profile);
 La politique par défaut est **prudente** :
 
 | Sensibilité | Durée par défaut (`DEFAULT_RETENTION`) |
-|-------------|----------------------------------------|
-| `none` | illimité (`null`) |
-| `pii` | 2 ans (730 jours) |
-| `sensitive` | 6 mois (182 jours) |
+| ----------- | -------------------------------------- |
+| `none`      | illimité (`null`)                      |
+| `pii`       | 2 ans (730 jours)                      |
+| `sensitive` | 6 mois (182 jours)                     |
 
 ```ts
 import { retentionExpired, DEFAULT_RETENTION, type RetentionPolicy } from '@kengela/pii';
@@ -78,7 +78,11 @@ if (retentionExpired('pii', ageMs)) {
 }
 
 // Une app peut fixer ses propres durées :
-const myPolicy: RetentionPolicy = { none: null, pii: 365 * 24 * 3600 * 1000, sensitive: 90 * 24 * 3600 * 1000 };
+const myPolicy: RetentionPolicy = {
+  none: null,
+  pii: 365 * 24 * 3600 * 1000,
+  sensitive: 90 * 24 * 3600 * 1000,
+};
 retentionExpired('pii', ageMs, myPolicy);
 ```
 
@@ -89,7 +93,7 @@ Le port :
 
 ```ts
 interface FieldCipherPort {
-  encryptField(tenantId: TenantId, plaintext: string): Promise<string>;   // → base64 stockable
+  encryptField(tenantId: TenantId, plaintext: string): Promise<string>; // → base64 stockable
   decryptField(tenantId: TenantId, ciphertext: string): Promise<string>;
 }
 ```
@@ -129,7 +133,7 @@ await cipher.decryptFor('t1', 'subject-42', enc); // null : donnée « shreddée
 ```
 
 Contrôles prouvés : après effacement, la PII est illisible ; la clé d'un autre sujet ne déchiffre
-pas. C'est un effacement RGPD *effectif* qui ne dépend pas d'un balayage exhaustif des tables.
+pas. C'est un effacement RGPD _effectif_ qui ne dépend pas d'un balayage exhaustif des tables.
 
 ## Journal d'accès aux PII (art. 30) — `PiiAccessLogSink`
 
@@ -140,10 +144,10 @@ quelle finalité. Le port :
 interface PiiAccessLogSink {
   record(entry: {
     readonly tenantId: TenantId;
-    readonly subjectId: string;        // personne concernée
-    readonly actorId?: UserId;         // absent = système
+    readonly subjectId: string; // personne concernée
+    readonly actorId?: UserId; // absent = système
     readonly fields: readonly string[];
-    readonly purpose: string;          // finalité du traitement
+    readonly purpose: string; // finalité du traitement
     readonly at: number;
   }): Promise<void> | void;
 }
@@ -172,13 +176,14 @@ traçabilité fait partie du contrat, pas d'un ajout optionnel.
 
 ## Récapitulatif RGPD → outil Kengela
 
-| Exigence RGPD | Outil |
-|---------------|-------|
-| Minimisation (art. 5.1.c) | `minimizeProfile` |
-| Rétention (art. 5.1.e) | `retentionExpired`, `DEFAULT_RETENTION` |
-| Chiffrement at-rest | `FieldCipherPort` / `AesGcmFieldCipher` (par tenant), `SubjectFieldCipher` (par sujet) |
-| Effacement / droit à l'oubli (art. 17) | `ErasurePort` / `SubjectCryptoShredder` (crypto-shredding) |
-| Journal d'accès (art. 30) | `PiiAccessLogSink` |
-| Masquage journaux/affichage | `redactProfile` |
-| Classification | `classify`, `isPii`, `PII_FIELDS` |
+| Exigence RGPD                          | Outil                                                                                  |
+| -------------------------------------- | -------------------------------------------------------------------------------------- |
+| Minimisation (art. 5.1.c)              | `minimizeProfile`                                                                      |
+| Rétention (art. 5.1.e)                 | `retentionExpired`, `DEFAULT_RETENTION`                                                |
+| Chiffrement at-rest                    | `FieldCipherPort` / `AesGcmFieldCipher` (par tenant), `SubjectFieldCipher` (par sujet) |
+| Effacement / droit à l'oubli (art. 17) | `ErasurePort` / `SubjectCryptoShredder` (crypto-shredding)                             |
+| Journal d'accès (art. 30)              | `PiiAccessLogSink`                                                                     |
+| Masquage journaux/affichage            | `redactProfile`                                                                        |
+| Classification                         | `classify`, `isPii`, `PII_FIELDS`                                                      |
+
 </content>

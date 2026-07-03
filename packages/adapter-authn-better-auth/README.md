@@ -23,7 +23,7 @@ npm add better-auth
 import { betterAuth } from 'better-auth'; // installé par TON app (peer)
 import { BetterAuthIdentity } from '@kengela/adapter-authn-better-auth';
 
-const auth = betterAuth({ /* ta config OIDC/OAuth, DB, plugins... */ });
+const auth = betterAuth({/* ta config OIDC/OAuth, DB, plugins... */});
 const identity = new BetterAuthIdentity({
   auth,
   // optionnel : d'où lire le tenant / les rôles sur l'utilisateur better-auth

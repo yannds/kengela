@@ -12,14 +12,14 @@ npm add @kengela/nestjs @kengela/authz-core @kengela/adapter-expr-cel
 
 ## Ce que le paquet exporte
 
-| Export | Type | Rôle |
-|--------|------|------|
-| `KengelaAuthzGuard` | guard | Deny-by-default ; construit une `AccessRequest` et délègue au PDP. |
-| `RequirePermission(resourceType, action)` | décorateur | Déclare l'accès requis d'une route. |
-| `PublicRoute()` | décorateur | Marque une route publique (opt-out volontaire). |
-| `CurrentPrincipal()` | décorateur de paramètre | Injecte le `Principal` (posé sur `req.user`). |
-| `KENGELA_PDP` | jeton (symbol) | Point d'injection de l'implémentation `PolicyDecisionPoint`. |
-| `StepUpRequiredException` | exception | Levée quand le PDP renvoie `step_up`. |
+| Export                                    | Type                    | Rôle                                                               |
+| ----------------------------------------- | ----------------------- | ------------------------------------------------------------------ |
+| `KengelaAuthzGuard`                       | guard                   | Deny-by-default ; construit une `AccessRequest` et délègue au PDP. |
+| `RequirePermission(resourceType, action)` | décorateur              | Déclare l'accès requis d'une route.                                |
+| `PublicRoute()`                           | décorateur              | Marque une route publique (opt-out volontaire).                    |
+| `CurrentPrincipal()`                      | décorateur de paramètre | Injecte le `Principal` (posé sur `req.user`).                      |
+| `KENGELA_PDP`                             | jeton (symbol)          | Point d'injection de l'implémentation `PolicyDecisionPoint`.       |
+| `StepUpRequiredException`                 | exception               | Levée quand le PDP renvoie `step_up`.                              |
 
 ## Câbler le guard et le PDP
 
@@ -97,13 +97,13 @@ Deux garanties de sécurité, prouvées par test :
    celle de la **classe**. Un `@PublicRoute()` posé sur le contrôleur ne peut **pas** neutraliser un
    `@RequirePermission` posé sur un handler. L'ordre exact :
 
-   | Priorité | Annotation | Effet |
-   |----------|-----------|-------|
-   | 1 | handler `@RequirePermission` | on évalue (même si la classe est publique) |
-   | 2 | handler `@PublicRoute` | public |
-   | 3 | classe `@RequirePermission` | on évalue |
-   | 4 | classe `@PublicRoute` | public |
-   | 5 | rien | **deny** (route non annotée) |
+   | Priorité | Annotation                   | Effet                                      |
+   | -------- | ---------------------------- | ------------------------------------------ |
+   | 1        | handler `@RequirePermission` | on évalue (même si la classe est publique) |
+   | 2        | handler `@PublicRoute`       | public                                     |
+   | 3        | classe `@RequirePermission`  | on évalue                                  |
+   | 4        | classe `@PublicRoute`        | public                                     |
+   | 5        | rien                         | **deny** (route non annotée)               |
 
 Ce durcissement corrige un fail-open classique où un `@PublicRoute` de classe rendait publiques
 toutes les routes, y compris un handler sensible.
@@ -113,11 +113,11 @@ toutes les routes, y compris un handler sensible.
 Le guard construit une `AccessRequest` (ressource au niveau **type** + tenant du principal), appelle
 `pdp.check()`, et mappe l'effet :
 
-| `decision.effect` | Résultat HTTP |
-|-------------------|---------------|
-| `allow` | la requête passe |
-| `deny` | `ForbiddenException(decision.reason)` → 403 |
-| `step_up` | `StepUpRequiredException(obligations, reason)` → 403 enrichi |
+| `decision.effect` | Résultat HTTP                                                |
+| ----------------- | ------------------------------------------------------------ |
+| `allow`           | la requête passe                                             |
+| `deny`            | `ForbiddenException(decision.reason)` → 403                  |
+| `step_up`         | `StepUpRequiredException(obligations, reason)` → 403 enrichi |
 
 ```ts
 // Corps de la StepUpRequiredException (403) :
@@ -158,8 +158,8 @@ export class OrdersService {
 }
 ```
 
-Le guard filtre grossièrement (peut-on lire *des* commandes ?) ; le service tranche finement (peut-on
-lire *cette* commande ?).
+Le guard filtre grossièrement (peut-on lire _des_ commandes ?) ; le service tranche finement (peut-on
+lire _cette_ commande ?).
 
 ## SCIM sous NestJS
 

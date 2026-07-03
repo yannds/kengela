@@ -22,12 +22,12 @@ le flux de décision, et le pont `Principal` entre authentification et autorisat
         └──────────────────────────────────────────────┘
 ```
 
-| Anneau | Paquets | Règle |
-|--------|---------|-------|
-| **contracts** | `@kengela/contracts` | **Uniquement** des types et interfaces. Zéro implémentation, zéro import vendor. C'est l'invariant : la forme stable dont dépendent le cœur, les adapters et les apps. |
-| **core** | `authz-core`, `iam-mapping`, `pii` | Logique **pure** (testable hors infra), qui **dépend des ports**. Aucun import de vendor npm (garanti par le lint). |
-| **adapters** | `adapter-expr-cel`, `adapter-authn-native`, `adapter-persistence-prisma`, `adapter-directory-ldap`, `scim-server`, `adapter-authn-better-auth`, `nestjs` | **Implémentent** un port au-dessus d'une techno concrète (Prisma, ldapts, otplib, cel-js, better-auth, NestJS). Le vendor **vit ici**, et nulle part ailleurs. |
-| **apps / connecteurs** | `connector-translog`, votre application | **Composent** : choisissent un adapter par port et câblent le tout. |
+| Anneau                 | Paquets                                                                                                                                                  | Règle                                                                                                                                                                  |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **contracts**          | `@kengela/contracts`                                                                                                                                     | **Uniquement** des types et interfaces. Zéro implémentation, zéro import vendor. C'est l'invariant : la forme stable dont dépendent le cœur, les adapters et les apps. |
+| **core**               | `authz-core`, `iam-mapping`, `pii`                                                                                                                       | Logique **pure** (testable hors infra), qui **dépend des ports**. Aucun import de vendor npm (garanti par le lint).                                                    |
+| **adapters**           | `adapter-expr-cel`, `adapter-authn-native`, `adapter-persistence-prisma`, `adapter-directory-ldap`, `scim-server`, `adapter-authn-better-auth`, `nestjs` | **Implémentent** un port au-dessus d'une techno concrète (Prisma, ldapts, otplib, cel-js, better-auth, NestJS). Le vendor **vit ici**, et nulle part ailleurs.         |
+| **apps / connecteurs** | `connector-translog`, votre application                                                                                                                  | **Composent** : choisissent un adapter par port et câblent le tout.                                                                                                    |
 
 **Le sens des dépendances va toujours vers l'intérieur** : les adapters connaissent les contrats, le
 cœur connaît les contrats, mais **les contrats ne connaissent personne**. Remplacer Prisma par un
@@ -42,10 +42,10 @@ faible, et on garde une cible de migration.
 Cela se matérialise par trois habitudes :
 
 1. **Interface NARROW du vendor.** Un adapter ne dépend pas de tout un framework, mais d'une
-   interface minuscule qui décrit *exactement* les méthodes utilisées. Exemples réels :
+   interface minuscule qui décrit _exactement_ les méthodes utilisées. Exemples réels :
    - `PrismaLike` (adapter-persistence-prisma) : décrit les délégués `grant`, `role`, `session`,
      `policy` et les seules méthodes appelées. On n'importe **rien** de `@prisma/client` ; un vrai
-     `PrismaClient` est *structurellement compatible*.
+     `PrismaClient` est _structurellement compatible_.
    - `LdapClientLike` (adapter-directory-ldap) : `bind` / `search` / `unbind`, rien d'autre. Aucune
      méthode d'écriture d'annuaire n'est déclarée (lecture seule).
    - `BetterAuthLike` (adapter-authn-better-auth) : uniquement `api.getSession`.
@@ -53,7 +53,7 @@ Cela se matérialise par trois habitudes :
    registre de dette avec son état, son problème et sa cible (`DEBT.template.md` à la racine donne le
    gabarit). Une dette résolue est **supprimée** du fichier.
 3. **Fail-closed au narrowing.** Une valeur d'union illisible (un `scope` inconnu, un `effect`
-   invalide) fait *tomber* le grant/la règle plutôt que de l'élargir. Jamais d'élargissement fantôme.
+   invalide) fait _tomber_ le grant/la règle plutôt que de l'élargir. Jamais d'élargissement fantôme.
 
 ## Le lint anti-vendor (garde-fou de build)
 
@@ -130,7 +130,7 @@ et ses `signals` (dont `crossTenant`), pour l'observabilité ZTNA.
 
 ## Isolation multi-tenant au cœur
 
-L'isolation tenant est **le** contrôle central de la lib, et elle est défendue *dans* le PDP, pas
+L'isolation tenant est **le** contrôle central de la lib, et elle est défendue _dans_ le PDP, pas
 déléguée à l'app. L'helper `tenantScopedRelation()` (`authz-core/src/engine.ts`) applique la règle :
 
 ```ts
@@ -157,15 +157,15 @@ tout ce qu'une décision Zero Trust peut exiger :
 interface Principal {
   readonly userId: UserId;
   readonly tenantId: TenantId;
-  readonly roles: readonly string[];          // multi-rôle (union des grants)
+  readonly roles: readonly string[]; // multi-rôle (union des grants)
   readonly orgUnitId?: string;
   readonly agencyId?: string;
   readonly coverageUnits?: readonly string[];
   readonly activeStationId?: string;
-  readonly mfaLevel: 'none' | 'totp' | 'passkey';       // force d'authn atteinte (step-up)
+  readonly mfaLevel: 'none' | 'totp' | 'passkey'; // force d'authn atteinte (step-up)
   readonly authMethod:
     'credential' | 'passwordless' | 'oidc' | 'saml' | 'passkey' | 'impersonation';
-  readonly ctx: AuthContext;                  // géo / device / risque / authTime → conditional access
+  readonly ctx: AuthContext; // géo / device / risque / authTime → conditional access
 }
 ```
 

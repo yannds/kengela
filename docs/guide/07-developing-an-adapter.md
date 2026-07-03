@@ -13,20 +13,20 @@ respect des conventions strictes du repo.
 
 Ouvrez `packages/contracts/src/index.ts` : c'est l'API stable. Repérez l'interface visée. Exemples :
 
-| Besoin | Port | Adapter de référence |
-|--------|------|----------------------|
-| Charger les droits | `AuthorizationRepository` | `adapter-persistence-prisma`, `connector-translog` |
-| Vérifier une session SSO | `IdentityPort` | `adapter-authn-better-auth` |
-| Évaluer une condition | `ExpressionEnginePort` | `adapter-expr-cel` |
-| Hasher un mot de passe | `PasswordHasher` | `adapter-authn-native` |
-| Chiffrer par tenant | `KeyManagementPort` / `FieldCipherPort` | `adapter-authn-native` |
-| Lire un annuaire | (source → `DirectoryProfile`) | `adapter-directory-ldap` |
+| Besoin                   | Port                                    | Adapter de référence                               |
+| ------------------------ | --------------------------------------- | -------------------------------------------------- |
+| Charger les droits       | `AuthorizationRepository`               | `adapter-persistence-prisma`, `connector-translog` |
+| Vérifier une session SSO | `IdentityPort`                          | `adapter-authn-better-auth`                        |
+| Évaluer une condition    | `ExpressionEnginePort`                  | `adapter-expr-cel`                                 |
+| Hasher un mot de passe   | `PasswordHasher`                        | `adapter-authn-native`                             |
+| Chiffrer par tenant      | `KeyManagementPort` / `FieldCipherPort` | `adapter-authn-native`                             |
+| Lire un annuaire         | (source → `DirectoryProfile`)           | `adapter-directory-ldap`                           |
 
 ## Étape 2 - Définir une interface vendor NARROW
 
 Ne dépendez **jamais** de tout un SDK. Décrivez, dans un fichier `*-like.ts`, **exactement** les
-méthodes que vous appelez, avec des types explicites. La vraie lib doit être *structurellement
-compatible* (aucun import du vendor dans ce fichier).
+méthodes que vous appelez, avec des types explicites. La vraie lib doit être _structurellement
+compatible_ (aucun import du vendor dans ce fichier).
 
 Exemple réel (`adapter-authn-better-auth/src/better-auth-like.ts`) :
 
@@ -71,11 +71,11 @@ export class BetterAuthIdentity implements IdentityPort {
     const result = await this.#auth.api.getSession({ headers: /* ... */ new Headers() });
     if (result === null) return null;
     const tenantId = this.#extractTenantId(result.user);
-    if (tenantId === null) return null;           // fail-closed : pas de tenant → refus
+    if (tenantId === null) return null; // fail-closed : pas de tenant → refus
     return {
       userId: result.user.id,
       tenantId,
-      roles: this.#extractRoles(result.user),     // par défaut [] : l'authz recharge les grants
+      roles: this.#extractRoles(result.user), // par défaut [] : l'authz recharge les grants
       mfaLevel: 'none',
       authMethod: 'oidc',
       ctx: { authTime: /* ... */ 0 },
@@ -94,7 +94,7 @@ Règles importantes :
 ## Étape 4 - Écrire un fake pour les tests
 
 Les tests sont **hermétiques** : aucun réseau, aucune DB réelle. Vous testez contre un **fake en
-mémoire** qui satisfait votre interface narrow (et le port). C'est possible *précisément parce que*
+mémoire** qui satisfait votre interface narrow (et le port). C'est possible _précisément parce que_
 l'interface est narrow.
 
 ```ts
@@ -119,7 +119,9 @@ describe('BetterAuthIdentity', () => {
   });
 
   it('refuse (null) une session sans tenant', async () => {
-    const noTenant: BetterAuthLike = { api: { getSession: async () => ({ user: { id: 'u1' }, session: {} }) } };
+    const noTenant: BetterAuthLike = {
+      api: { getSession: async () => ({ user: { id: 'u1' }, session: {} }) },
+    };
     const identity = new BetterAuthIdentity({ auth: noTenant });
     expect(await identity.verifySession({ strategy: 'bearer', token: 'x' })).toBeNull();
   });
@@ -136,9 +138,9 @@ enveloppé sans être migré y figure avec état, problème et cible :
 ```md
 # DEBT.md — @kengela/adapter-xxx
 
-| # | Ce qui est enveloppé | Etat | Problème | Cible de migration | Prio |
-|---|----------------------|------|----------|--------------------|------|
-| 1 | Client `xxx` | enveloppe via `XxxLike` | pas de test d'intégration réel | job CI avec service éphémère | P1 |
+| #   | Ce qui est enveloppé | Etat                    | Problème                       | Cible de migration           | Prio |
+| --- | -------------------- | ----------------------- | ------------------------------ | ---------------------------- | ---- |
+| 1   | Client `xxx`         | enveloppe via `XxxLike` | pas de test d'intégration réel | job CI avec service éphémère | P1   |
 ```
 
 `Etat` : `enveloppe` (parité, non migré) · `en cours` · `migre` · `retire`. **Une dette résolue est
@@ -158,8 +160,8 @@ structure d'un adapter existant :
     ".": {
       "types": "./dist/esm/index.d.ts",
       "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.js"
-    }
+      "require": "./dist/cjs/index.js",
+    },
   },
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
@@ -168,8 +170,8 @@ structure d'un adapter existant :
   "scripts": {
     "build": "tsc -p tsconfig.build.json && tsc -p tsconfig.build.cjs.json && node ../../scripts/write-dist-markers.mjs dist",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run"
-  }
+    "test": "vitest run",
+  },
 }
 ```
 
@@ -178,11 +180,11 @@ et `dist/cjs` (`type: commonjs`) pour que Node interprète chaque sous-arbre cor
 
 ### Vendor : dependency ou peerDependency ?
 
-| Cas | Déclaration |
-|-----|-------------|
-| Lib embarquée (argon2, ldapts, cel-js, otplib) | `dependencies` (installée avec l'adapter) |
-| **Framework à configurer par l'app** (better-auth, `@nestjs/*`, Prisma runtime) | `peerDependencies` (l'app l'installe) |
-| Interface narrow uniquement (aucun runtime vendor, ex. `adapter-persistence-prisma`) | aucune dépendance vendor |
+| Cas                                                                                  | Déclaration                               |
+| ------------------------------------------------------------------------------------ | ----------------------------------------- |
+| Lib embarquée (argon2, ldapts, cel-js, otplib)                                       | `dependencies` (installée avec l'adapter) |
+| **Framework à configurer par l'app** (better-auth, `@nestjs/*`, Prisma runtime)      | `peerDependencies` (l'app l'installe)     |
+| Interface narrow uniquement (aucun runtime vendor, ex. `adapter-persistence-prisma`) | aucune dépendance vendor                  |
 
 ## Étape 7 - Passer les garde-fous
 

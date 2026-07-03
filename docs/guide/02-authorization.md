@@ -21,22 +21,22 @@ Segments valides : `^[a-z0-9*_-]+$`, au moins 2 segments (sinon `PermissionSynta
 
 ### Couverture (`permissionCovers`)
 
-Un grant *couvre* une permission requise selon ces règles :
+Un grant _couvre_ une permission requise selon ces règles :
 
-| Motif du grant | Signification |
-|----------------|---------------|
-| segment `*` **non terminal** | joker sur **exactement un** segment |
-| segment `*` **terminal** | joker de **préfixe** (couvre tous les segments restants) |
-| segment littéral | égalité stricte de segment |
-| (sans joker terminal) | les longueurs doivent être **égales** |
+| Motif du grant               | Signification                                            |
+| ---------------------------- | -------------------------------------------------------- |
+| segment `*` **non terminal** | joker sur **exactement un** segment                      |
+| segment `*` **terminal**     | joker de **préfixe** (couvre tous les segments restants) |
+| segment littéral             | égalité stricte de segment                               |
+| (sans joker terminal)        | les longueurs doivent être **égales**                    |
 
 Exemples :
 
-| Grant | Couvre | Ne couvre pas |
-|-------|--------|---------------|
-| `data.cashier.*` | `data.cashier.register.read` | `data.orders.read` |
-| `data.*.read` | `data.orders.read` | `data.a.b.read` (joker = 1 segment) |
-| `data.cashier.read` | `data.cashier.read` | tout le reste |
+| Grant               | Couvre                       | Ne couvre pas                       |
+| ------------------- | ---------------------------- | ----------------------------------- |
+| `data.cashier.*`    | `data.cashier.register.read` | `data.orders.read`                  |
+| `data.*.read`       | `data.orders.read`           | `data.a.b.read` (joker = 1 segment) |
+| `data.cashier.read` | `data.cashier.read`          | tout le reste                       |
 
 > **Comment la permission requise est construite.** Le PDP forme la permission à vérifier comme
 > `` `${resource.type}.${action}` ``. Ainsi, pour `resource.type = 'data.orders'` et
@@ -49,22 +49,22 @@ Un **grant** est un droit avec provenance et expiration :
 ```ts
 interface Grant {
   readonly permission: PermissionString;
-  readonly scope: Scope;                       // own ⊂ unit ⊂ subtree ⊂ tenant ⊂ global
+  readonly scope: Scope; // own ⊂ unit ⊂ subtree ⊂ tenant ⊂ global
   readonly source: 'MANUAL' | 'IDP' | 'DELEGATION';
-  readonly expiresAt?: Date;                   // grant expiré = inopérant (exclu au check)
+  readonly expiresAt?: Date; // grant expiré = inopérant (exclu au check)
 }
 ```
 
 La **portée** (`Scope`) d'un grant et la **relation** organisationnelle (`OrgRelation`) résolue entre
 l'acteur et la ressource sont comparées par rang :
 
-| Rang | Scope | Relation couverte |
-|------|-------|-------------------|
-| 0 | `own` | `self` |
-| 1 | `unit` | `unit` |
-| 2 | `subtree` | `subtree` |
-| 3 | `tenant` | `tenant` |
-| 4 | `global` | `none` (aucun lien org : seul `global` couvre) |
+| Rang | Scope     | Relation couverte                              |
+| ---- | --------- | ---------------------------------------------- |
+| 0    | `own`     | `self`                                         |
+| 1    | `unit`    | `unit`                                         |
+| 2    | `subtree` | `subtree`                                      |
+| 3    | `tenant`  | `tenant`                                       |
+| 4    | `global`  | `none` (aucun lien org : seul `global` couvre) |
 
 Un droit accordé à une portée **couvre toutes les portées plus étroites** :
 `scopeCoversRelation(grantScope, relation)` est vrai ssi `SCOPE_RANK[grantScope] >=
@@ -90,9 +90,9 @@ interface AuthorizationRepository {
 
 ## Les deux PDP
 
-| Classe | Ce qu'elle tranche | Dépendances |
-|--------|--------------------|-------------|
-| `RbacDecisionPoint` | RBAC seul : grants × relation | `grants`, `relations`, `log?`, `clock?` |
+| Classe                 | Ce qu'elle tranche                                               | Dépendances                                                 |
+| ---------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------- |
+| `RbacDecisionPoint`    | RBAC seul : grants × relation                                    | `grants`, `relations`, `log?`, `clock?`                     |
 | `LayeredDecisionPoint` | RBAC plancher **+** policies ABAC + conditional access + step-up | `grants`, `relations`, `policies`, `expr`, `log?`, `clock?` |
 
 ```ts
@@ -108,15 +108,15 @@ Une `Policy` cible un couple `(resource, action)` (avec `*` en joker) et porte u
 
 ```ts
 interface Policy {
-  readonly resource: string;   // type de ressource, ou '*'
-  readonly action: string;     // action, ou '*'
+  readonly resource: string; // type de ressource, ou '*'
+  readonly action: string; // action, ou '*'
   readonly rules: readonly PolicyRule[];
 }
 
 interface PolicyRule {
   readonly effect: 'allow' | 'deny' | 'step_up';
-  readonly scope?: Scope;                    // restreint la règle à une portée
-  readonly when?: string;                    // condition CEL ; absente = toujours vrai
+  readonly scope?: Scope; // restreint la règle à une portée
+  readonly when?: string; // condition CEL ; absente = toujours vrai
   readonly obligations?: readonly Obligation[];
   readonly reason?: string;
 }
@@ -170,8 +170,8 @@ interface ExpressionContext {
 ```ts
 import { CelExpressionEngine } from '@kengela/adapter-expr-cel';
 
-const expr = new CelExpressionEngine();               // horloge système par défaut
-const engine = new CelExpressionEngine({ clock });    // horloge injectable (tests déterministes)
+const expr = new CelExpressionEngine(); // horloge système par défaut
+const engine = new CelExpressionEngine({ clock }); // horloge injectable (tests déterministes)
 ```
 
 Une expression **doit retourner un booléen** ; sinon `CelEvaluationError` est levée (et le PDP la
@@ -181,11 +181,11 @@ rattrape en `deny condition_error`). Les compilations sont mises en cache.
 
 Trois fonctions sont injectées pour les conditions temporelles (échéance, business-hours) :
 
-| Fonction CEL | Retour | Sens |
-|--------------|--------|------|
-| `now()` | int (epoch ms) | horodatage courant (via `Clock`) |
-| `daysUntil(x)` | int | jours calendaires jusqu'à `x` (bigint/number/Date/ISO) |
-| `businessDaysBetween(a, b)` | int | jours ouvrés (lun-ven), bornes incluses |
+| Fonction CEL                | Retour         | Sens                                                   |
+| --------------------------- | -------------- | ------------------------------------------------------ |
+| `now()`                     | int (epoch ms) | horodatage courant (via `Clock`)                       |
+| `daysUntil(x)`              | int            | jours calendaires jusqu'à `x` (bigint/number/Date/ISO) |
+| `businessDaysBetween(a, b)` | int            | jours ouvrés (lun-ven), bornes incluses                |
 
 ```ts
 // La ressource expire dans plus de 7 jours ?
@@ -202,11 +202,11 @@ par `assertNoUnboundedRegex()`. Exprimez les conditions d'accès via `==`, `in`,
 
 ```ts
 // ❌ rejeté : CelEvaluationError « matches interdite »
-'resource.attributes.name.matches("(a+)+")'
+'resource.attributes.name.matches("(a+)+")';
 
 // ✅ équivalents sûrs
-'resource.attributes.tier in ["gold", "platinum"]'
-'resource.attributes.code.startsWith("EU-")'
+'resource.attributes.tier in ["gold", "platinum"]';
+'resource.attributes.code.startsWith("EU-")';
 ```
 
 ## Obligations et step-up
@@ -269,8 +269,8 @@ interface Decision {
   readonly effect: 'allow' | 'deny' | 'step_up';
   readonly obligations?: readonly Obligation[];
   readonly matchedPolicy?: string;
-  readonly reason: string;      // 'rbac_grant', 'no_grant', 'no_matching_allow', 'condition_error', ...
-  readonly signals?: Readonly<Record<string, unknown>>;  // { relation, crossTenant? }
+  readonly reason: string; // 'rbac_grant', 'no_grant', 'no_matching_allow', 'condition_error', ...
+  readonly signals?: Readonly<Record<string, unknown>>; // { relation, crossTenant? }
 }
 ```
 
@@ -292,5 +292,5 @@ const pdp = new LayeredDecisionPoint({ grants, relations, policies, expr, log })
 ```
 
 Les `signals` capturent notamment la `relation` résolue et le drapeau `crossTenant` : de quoi
-reconstruire *pourquoi* un accès a été accordé ou refusé.
+reconstruire _pourquoi_ un accès a été accordé ou refusé.
 </content>

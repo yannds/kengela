@@ -20,14 +20,14 @@ est attendu.
 
 ## Mapping (resume)
 
-| Port Kengela | Source TransLog | Regle |
-|--------------|-----------------|-------|
-| `CredentialStore.findByEmail` | `Account` (providerId='credential', accountId=email) ⋈ `User` | `passwordHash <- Account.password`, `isActive <- User.isActive && deletedAt==null`, `mfaEnabled <- User.mfaEnabled`, `roles <- User.roleId ? [roleId] : []`. `null` si absent. |
-| `CredentialStore.findByEmailAcrossTenants` | tous les `Account` credential (tous tenants), Users charges en lot | idem, un enregistrement par compte. |
-| `AuthorizationRepository.loadGrantsForUser` | `User.roleId` -> `RolePermission[]` | chaque `permission` `plane.module.action.SCOPE` : dernier segment = portee, reste = permission Kengela. `own->own`, `agency->unit`, `tenant->tenant`, `global->global`, jeton inconnu -> **fail-closed** (grant ignore). `source: 'MANUAL'`, sans expiration. |
-| `AuthorizationRepository.loadRole` | `RolePermission` (roleId=roleKey) | meme split ; `null` si aucune permission. |
-| `SessionStore` | `Session` (`token`, `ipAddress`, `userAgent`, ...) | token opaque `randomBytes(32).hex` ; `expiresAt = now + ttlMs` (Clock injectable) ; `ipAddress <- ctx.ip`, `userAgent <- ctx.device.userAgent`. Reconstitution du `ctx` **LOSSY** (voir DEBT.md). |
-| `PolicyStore.loadPolicies` | — | `[]` (TransLog n'a pas de table policy ; RBAC seul). |
+| Port Kengela                                | Source TransLog                                                    | Regle                                                                                                                                                                                                                                                         |
+| ------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CredentialStore.findByEmail`               | `Account` (providerId='credential', accountId=email) ⋈ `User`      | `passwordHash <- Account.password`, `isActive <- User.isActive && deletedAt==null`, `mfaEnabled <- User.mfaEnabled`, `roles <- User.roleId ? [roleId] : []`. `null` si absent.                                                                                |
+| `CredentialStore.findByEmailAcrossTenants`  | tous les `Account` credential (tous tenants), Users charges en lot | idem, un enregistrement par compte.                                                                                                                                                                                                                           |
+| `AuthorizationRepository.loadGrantsForUser` | `User.roleId` -> `RolePermission[]`                                | chaque `permission` `plane.module.action.SCOPE` : dernier segment = portee, reste = permission Kengela. `own->own`, `agency->unit`, `tenant->tenant`, `global->global`, jeton inconnu -> **fail-closed** (grant ignore). `source: 'MANUAL'`, sans expiration. |
+| `AuthorizationRepository.loadRole`          | `RolePermission` (roleId=roleKey)                                  | meme split ; `null` si aucune permission.                                                                                                                                                                                                                     |
+| `SessionStore`                              | `Session` (`token`, `ipAddress`, `userAgent`, ...)                 | token opaque `randomBytes(32).hex` ; `expiresAt = now + ttlMs` (Clock injectable) ; `ipAddress <- ctx.ip`, `userAgent <- ctx.device.userAgent`. Reconstitution du `ctx` **LOSSY** (voir DEBT.md).                                                             |
+| `PolicyStore.loadPolicies`                  | —                                                                  | `[]` (TransLog n'a pas de table policy ; RBAC seul).                                                                                                                                                                                                          |
 
 ## Fail-closed
 

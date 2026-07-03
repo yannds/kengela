@@ -8,11 +8,11 @@
 ## Résumé exécutif
 
 | Sévérité | Trouvées | Corrigées | Documentées (dette) |
-|----------|----------|-----------|---------------------|
-| Critical | 0 | 0 | 0 |
-| High     | 4 | 4 | 0 |
-| Medium   | 1 | 0 | 1 |
-| Low      | 1 | 0 | 1 |
+| -------- | -------- | --------- | ------------------- |
+| Critical | 0        | 0         | 0                   |
+| High     | 4        | 4         | 0                   |
+| Medium   | 1        | 0         | 1                   |
+| Low      | 1        | 0         | 1                   |
 
 - **83 cas de test adverses** ajoutés (10 fichiers `security-*.test.ts`, ~88 assertions exécutées avec l'`it.each`), tous verts.
 - **4 failles High corrigées** (défense-en-profondeur multi-tenant, fail-open guard NestJS, ReDoS CEL, sessions expirées servies).
@@ -75,22 +75,22 @@
 
 ## 2. Contrôles prouvés (BLUE team — aucune faille)
 
-| # | Scénario RED | Contrôle prouvé | Preuve (fichier) |
-|---|--------------|-----------------|------------------|
-| B1 | Escalade via portée | `subtree` ne couvre pas `tenant` ; grant expiré inopérant ; seul `global` franchit un tenant | `authz-core/test/security-authz.test.ts` |
-| B2 | Fail-open / deny-wins | relation `none` sans grant global = deny ; `deny` explicite gagne quel que soit l'ordre ; condition qui lève = `deny` ; gate ABAC positif | `authz-core/test/security-authz.test.ts`, `adapter-expr-cel/test/security-cel-sandbox.test.ts` |
-| B3 | Sandbox CEL | accès `process`/`globalThis`/`constructor`/`__proto__` → throw ; expression non booléenne → throw ; variable/champ absent → throw (fail-closed) | `adapter-expr-cel/test/security-cel-sandbox.test.ts` |
-| B4 | Énumération par timing | compare bcrypt leurre TOUJOURS effectué (email inconnu, compte inactif) ; cross-tenant sans court-circuit (N compares pour N tenants) | `adapter-authn-native/test/security-authn.test.ts` |
-| B5 | AES-256-GCM | IV/tag/ciphertext altéré → rejet ; tronqué → rejet ; mauvaise clé tenant → rejet ; nonce unique par chiffrement | `adapter-authn-native/test/security-authn.test.ts` |
-| B6 | Crypto-shredding (RGPD art.17) | après `eraseSubject`, PII illisible (null) ; clé d'un autre sujet ne déchiffre pas | `adapter-authn-native/test/security-authn.test.ts` |
-| B7 | Rejeu MFA | `challengeId` one-shot ; verify sans secret = false ; challengeId forgé = false | `adapter-authn-native/test/security-authn.test.ts` |
-| B8 | SCIM injection/ReDoS/PATCH | filtres bornés (entrée géante rejetée vite) ; injection non interprétée ; op inconnue ignorée ; unicité 409 ; delete = désactivation ; isolation tenant (404 cross-tenant) ; validation de schéma stricte | `scim-server/test/security-scim.test.ts` |
-| B9 | Mapping IdP | safe-regex anti-ReDoS ; règle vide ne matche jamais ; aucune élévation sans règle configurée ; SAML sans groupe ne fabrique aucun rôle | `iam-mapping/test/security-mapping.test.ts` |
-| B10 | better-auth | session absente → null ; tenant non résoluble / mauvais type → null ; roles/mfa jamais hérités du payload (l'authz recharge) | `adapter-authn-better-auth/test/security-better-auth.test.ts` |
-| B11 | LDAP | filtre verbatim (aucune injection introduite) ; `unbind` garanti même en erreur ; plafond `max` appliqué ; `checkConnection` avale l'erreur sans fuiter le secret | `adapter-directory-ldap/test/security-ldap.test.ts` |
-| B12 | Sessions | rotation invalide l'ancien token ; `revokeAllForUser` effectif ; token 32 octets aléatoires (64 hex) sans collision | `adapter-persistence-prisma/test/security-session.test.ts` |
-| B13 | Guard NestJS | deny-by-default (route non annotée = 403) ; principal absent = 401 ; précédence handler > classe | `nestjs/test/security-guard.test.ts` |
-| B14 | Decision log | `signals` capturent la relation + `crossTenant` ; raison lisible (`no_grant`, `condition_error`, `no_matching_allow`…) pour l'audit | `authz-core/test/security-authz.test.ts` |
+| #   | Scénario RED                   | Contrôle prouvé                                                                                                                                                                                           | Preuve (fichier)                                                                               |
+| --- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| B1  | Escalade via portée            | `subtree` ne couvre pas `tenant` ; grant expiré inopérant ; seul `global` franchit un tenant                                                                                                              | `authz-core/test/security-authz.test.ts`                                                       |
+| B2  | Fail-open / deny-wins          | relation `none` sans grant global = deny ; `deny` explicite gagne quel que soit l'ordre ; condition qui lève = `deny` ; gate ABAC positif                                                                 | `authz-core/test/security-authz.test.ts`, `adapter-expr-cel/test/security-cel-sandbox.test.ts` |
+| B3  | Sandbox CEL                    | accès `process`/`globalThis`/`constructor`/`__proto__` → throw ; expression non booléenne → throw ; variable/champ absent → throw (fail-closed)                                                           | `adapter-expr-cel/test/security-cel-sandbox.test.ts`                                           |
+| B4  | Énumération par timing         | compare bcrypt leurre TOUJOURS effectué (email inconnu, compte inactif) ; cross-tenant sans court-circuit (N compares pour N tenants)                                                                     | `adapter-authn-native/test/security-authn.test.ts`                                             |
+| B5  | AES-256-GCM                    | IV/tag/ciphertext altéré → rejet ; tronqué → rejet ; mauvaise clé tenant → rejet ; nonce unique par chiffrement                                                                                           | `adapter-authn-native/test/security-authn.test.ts`                                             |
+| B6  | Crypto-shredding (RGPD art.17) | après `eraseSubject`, PII illisible (null) ; clé d'un autre sujet ne déchiffre pas                                                                                                                        | `adapter-authn-native/test/security-authn.test.ts`                                             |
+| B7  | Rejeu MFA                      | `challengeId` one-shot ; verify sans secret = false ; challengeId forgé = false                                                                                                                           | `adapter-authn-native/test/security-authn.test.ts`                                             |
+| B8  | SCIM injection/ReDoS/PATCH     | filtres bornés (entrée géante rejetée vite) ; injection non interprétée ; op inconnue ignorée ; unicité 409 ; delete = désactivation ; isolation tenant (404 cross-tenant) ; validation de schéma stricte | `scim-server/test/security-scim.test.ts`                                                       |
+| B9  | Mapping IdP                    | safe-regex anti-ReDoS ; règle vide ne matche jamais ; aucune élévation sans règle configurée ; SAML sans groupe ne fabrique aucun rôle                                                                    | `iam-mapping/test/security-mapping.test.ts`                                                    |
+| B10 | better-auth                    | session absente → null ; tenant non résoluble / mauvais type → null ; roles/mfa jamais hérités du payload (l'authz recharge)                                                                              | `adapter-authn-better-auth/test/security-better-auth.test.ts`                                  |
+| B11 | LDAP                           | filtre verbatim (aucune injection introduite) ; `unbind` garanti même en erreur ; plafond `max` appliqué ; `checkConnection` avale l'erreur sans fuiter le secret                                         | `adapter-directory-ldap/test/security-ldap.test.ts`                                            |
+| B12 | Sessions                       | rotation invalide l'ancien token ; `revokeAllForUser` effectif ; token 32 octets aléatoires (64 hex) sans collision                                                                                       | `adapter-persistence-prisma/test/security-session.test.ts`                                     |
+| B13 | Guard NestJS                   | deny-by-default (route non annotée = 403) ; principal absent = 401 ; précédence handler > classe                                                                                                          | `nestjs/test/security-guard.test.ts`                                                           |
+| B14 | Decision log                   | `signals` capturent la relation + `crossTenant` ; raison lisible (`no_grant`, `condition_error`, `no_matching_allow`…) pour l'audit                                                                       | `authz-core/test/security-authz.test.ts`                                                       |
 
 ---
 
@@ -98,57 +98,59 @@
 
 ### OWASP ASVS v4
 
-| Contrôle | Statut | Preuve |
-|----------|--------|--------|
-| V2 Authentication — hashing fort, anti-énumération | ✅ | argon2id (`argon2-password-hasher.ts`), compare systématique (`native-credential-authenticator.ts:47-54`) ; `security-authn.test.ts` |
-| V3 Session Management — expiration, rotation, révocation, entropie | ✅ (durci) | expiration fail-closed (`session-store.ts:67`), rotation atomique, token 256 bits ; `security-session.test.ts` |
-| V4 Access Control — deny-by-default, isolation, deny-wins | ✅ (durci) | PDP deny-by-default + `tenantScopedRelation` (`pdp.ts:45`), guard (`authz.guard.ts:52-77`) ; `security-authz.test.ts`, `security-guard.test.ts` |
-| V6 Cryptography — AES-256-GCM, clés par tenant/sujet, intégrité | ✅ | `aes-gcm-key-management.ts` (HKDF par tenant), `subject-field-cipher.ts` ; `security-authn.test.ts` |
-| V7 Errors & Logging — decision log auditable | ✅ | `DecisionLogSink` + `signals`/`reason` ; `security-authz.test.ts` |
-| V9 Data Protection — chiffrement at-rest, minimisation, redaction | ✅ | `pii/` (classify/minimize/redact/retention), `FieldCipherPort` ; tests `pii` |
+| Contrôle                                                           | Statut     | Preuve                                                                                                                                          |
+| ------------------------------------------------------------------ | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| V2 Authentication — hashing fort, anti-énumération                 | ✅         | argon2id (`argon2-password-hasher.ts`), compare systématique (`native-credential-authenticator.ts:47-54`) ; `security-authn.test.ts`            |
+| V3 Session Management — expiration, rotation, révocation, entropie | ✅ (durci) | expiration fail-closed (`session-store.ts:67`), rotation atomique, token 256 bits ; `security-session.test.ts`                                  |
+| V4 Access Control — deny-by-default, isolation, deny-wins          | ✅ (durci) | PDP deny-by-default + `tenantScopedRelation` (`pdp.ts:45`), guard (`authz.guard.ts:52-77`) ; `security-authz.test.ts`, `security-guard.test.ts` |
+| V6 Cryptography — AES-256-GCM, clés par tenant/sujet, intégrité    | ✅         | `aes-gcm-key-management.ts` (HKDF par tenant), `subject-field-cipher.ts` ; `security-authn.test.ts`                                             |
+| V7 Errors & Logging — decision log auditable                       | ✅         | `DecisionLogSink` + `signals`/`reason` ; `security-authz.test.ts`                                                                               |
+| V9 Data Protection — chiffrement at-rest, minimisation, redaction  | ✅         | `pii/` (classify/minimize/redact/retention), `FieldCipherPort` ; tests `pii`                                                                    |
 
 ### NIST SP 800-63B
 
-| Exigence | Statut | Preuve |
-|----------|--------|--------|
-| Password hashing (argon2id, memory-hard) | ✅ | `argon2-password-hasher.ts` (argon2id), `needsRehash` pour migration bcrypt→argon2 |
-| Verifier — compare à temps constant, anti-énumération | ✅ | `native-credential-authenticator.ts` ; `security-authn.test.ts` |
-| MFA TOTP (RFC 6238), secret chiffré at-rest, défi one-shot | ✅ | `totp-mfa-service.ts` (secret chiffré par tenant, `MfaChallengeStore` one-shot) |
-| MFA — refus de réutilisation d'un OTP (§5.1.4.2) | ⚠️ partiel | one-shot par défi OK ; anti-rejeu du code TOTP → **DEBT native #3** (MEDIUM-1) |
+| Exigence                                                   | Statut     | Preuve                                                                             |
+| ---------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------- |
+| Password hashing (argon2id, memory-hard)                   | ✅         | `argon2-password-hasher.ts` (argon2id), `needsRehash` pour migration bcrypt→argon2 |
+| Verifier — compare à temps constant, anti-énumération      | ✅         | `native-credential-authenticator.ts` ; `security-authn.test.ts`                    |
+| MFA TOTP (RFC 6238), secret chiffré at-rest, défi one-shot | ✅         | `totp-mfa-service.ts` (secret chiffré par tenant, `MfaChallengeStore` one-shot)    |
+| MFA — refus de réutilisation d'un OTP (§5.1.4.2)           | ⚠️ partiel | one-shot par défi OK ; anti-rejeu du code TOTP → **DEBT native #3** (MEDIUM-1)     |
 
 ### RGPD
 
-| Exigence | Statut | Preuve |
-|----------|--------|--------|
-| Minimisation (art. 5.1.c) | ✅ | `pii/minimize.ts` (n'expose que les champs autorisés) |
-| Effacement / droit à l'oubli (art. 17) — crypto-shredding | ✅ | `subject-crypto-shredder.ts` ; `security-authn.test.ts` (illisible après erase) |
-| Journal d'accès PII (art. 30) | ✅ | port `PiiAccessLogSink` (contracts) |
-| Rétention (art. 5.1.e) | ✅ | `pii/retention.ts` (`retentionExpired`, défauts prudents) |
-| Chiffrement at-rest | ✅ | `AesGcmFieldCipher` / `SubjectFieldCipher` (AES-256-GCM par tenant/sujet) |
-| Isolation cryptographique inter-tenant | ✅ | HKDF `kengela:mfa:<tenantId>` ; `security-authn.test.ts` (mauvaise clé → rejet) |
+| Exigence                                                  | Statut | Preuve                                                                          |
+| --------------------------------------------------------- | ------ | ------------------------------------------------------------------------------- |
+| Minimisation (art. 5.1.c)                                 | ✅     | `pii/minimize.ts` (n'expose que les champs autorisés)                           |
+| Effacement / droit à l'oubli (art. 17) — crypto-shredding | ✅     | `subject-crypto-shredder.ts` ; `security-authn.test.ts` (illisible après erase) |
+| Journal d'accès PII (art. 30)                             | ✅     | port `PiiAccessLogSink` (contracts)                                             |
+| Rétention (art. 5.1.e)                                    | ✅     | `pii/retention.ts` (`retentionExpired`, défauts prudents)                       |
+| Chiffrement at-rest                                       | ✅     | `AesGcmFieldCipher` / `SubjectFieldCipher` (AES-256-GCM par tenant/sujet)       |
+| Isolation cryptographique inter-tenant                    | ✅     | HKDF `kengela:mfa:<tenantId>` ; `security-authn.test.ts` (mauvaise clé → rejet) |
 
 ### SCIM (RFC 7643/7644 + validateur Microsoft Entra)
 
-| Exigence | Statut | Preuve |
-|----------|--------|--------|
-| Schéma User/Group + validation (7643 §4, §7) | ✅ | `validate.ts`, `discovery.ts` ; `security-scim.test.ts` (schéma forgé rejeté) |
-| Filtre `eq` borné (7644 §3.4.2.2) anti-ReDoS | ✅ | `serialize.ts:363-395` ; `security-scim.test.ts` (entrée géante rejetée) |
-| PATCH (7644 §3.5.2) — op inconnue ignorée, path forgé borné | ✅ | `serialize.ts:236-360` ; `security-scim.test.ts` |
-| Unicité `userName` (409, 7644 §3.3) | ✅ | `handleUsersPostStrict` ; `security-scim.test.ts` |
-| Déprovisionnement = désactivation (jamais suppression) | ✅ | `handleUsersDelete` ; `security-scim.test.ts` |
-| Isolation multi-tenant | ✅ | handlers bornés au `tenantId` ; `security-scim.test.ts` (404 cross-tenant) |
+| Exigence                                                    | Statut | Preuve                                                                        |
+| ----------------------------------------------------------- | ------ | ----------------------------------------------------------------------------- |
+| Schéma User/Group + validation (7643 §4, §7)                | ✅     | `validate.ts`, `discovery.ts` ; `security-scim.test.ts` (schéma forgé rejeté) |
+| Filtre `eq` borné (7644 §3.4.2.2) anti-ReDoS                | ✅     | `serialize.ts:363-395` ; `security-scim.test.ts` (entrée géante rejetée)      |
+| PATCH (7644 §3.5.2) — op inconnue ignorée, path forgé borné | ✅     | `serialize.ts:236-360` ; `security-scim.test.ts`                              |
+| Unicité `userName` (409, 7644 §3.3)                         | ✅     | `handleUsersPostStrict` ; `security-scim.test.ts`                             |
+| Déprovisionnement = désactivation (jamais suppression)      | ✅     | `handleUsersDelete` ; `security-scim.test.ts`                                 |
+| Isolation multi-tenant                                      | ✅     | handlers bornés au `tenantId` ; `security-scim.test.ts` (404 cross-tenant)    |
 
 ---
 
 ## 4. Correctifs appliqués vs recommandés
 
 **Appliqués (High, sécurité — feu vert implicite) :**
+
 1. `tenantScopedRelation` défense-en-profondeur multi-tenant — `authz-core` (`engine.ts:25`, `pdp.ts:45`, `policy-pdp.ts:65`).
 2. Précédence handler > classe dans le guard — `nestjs` (`authz.guard.ts:52-77`).
 3. Interdiction de `matches` (ReDoS) dans CEL — `adapter-expr-cel` (`cel-expression-engine.ts:100`).
 4. `get` de session fail-closed sur l'expiration — `adapter-persistence-prisma` (`session-store.ts:67`) + `connector-translog` (`session-store.ts:70`).
 
 **Recommandés (documentés en dette) :**
+
 - MEDIUM-1 : cache anti-rejeu OTP TOTP — `adapter-authn-native/DEBT.md` #3.
 - LOW-1 : helper `escapeLdapFilterValue()` — `adapter-directory-ldap/DEBT.md` #5.
 
