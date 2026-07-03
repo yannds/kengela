@@ -12,7 +12,7 @@ Tu réalises un **audit de sécurité et de conformité adverse** du monorepo Ke
 (`/Users/dsyann/kengela`), un socle identité & accès Zero Trust multi-tenant en TypeScript.
 Tu joues **deux rôles** : **RED** (attaquer) puis **BLUE** (prouver/durcir). Tu ne modifies PAS
 le code de production sans le signaler ; tu écris des **tests adverses** (Vitest) pour matérialiser
-chaque hypothèse. AUCUNE mention de Claude/Anthropic nulle part.
+chaque hypothèse. AUCUNE mention d'un outil d'assistance IA ou de son éditeur nulle part.
 
 ## Cadre à respecter
 
