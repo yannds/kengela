@@ -28,21 +28,44 @@ adapters   ── le vendor vit ici, interchangeable        (@kengela/adapter-*)
 Un lint d'architecture (`pnpm lint:arch`, dependency-cruiser) **casse la build** si un paquet
 CORE importe un vendor.
 
+## Paquets
+
+| Paquet | Rôle |
+|---|---|
+| `@kengela/contracts` | Ports & types — l'invariant du projet, zéro vendor |
+| `@kengela/authz-core` | Moteur d'autorisation : RBAC scopé + relation org + ABAC (CEL) + conditional access + step-up ; deny-by-default, **fail-closed**, decision logs |
+| `@kengela/iam-mapping` | Normalisation **6 sources IdP** (OIDC/SCIM/SAML/LDAP/Graph/Google) + schéma **SCIM canonique** (superset Okta/Entra) + moteur de règles |
+| `@kengela/adapter-expr-cel` | Moteur **CEL** (conditions ABAC + fonctions de dates déterministes) |
+| `@kengela/adapter-authn-native` | Credential **timing-safe** (argon2id/bcrypt + `needsRehash`), sessions, **MFA/TOTP** complet, **AES-256-GCM**, field cipher + **crypto-shredding** (RGPD) |
+| `@kengela/adapter-authn-better-auth` | `IdentityPort` au-dessus de **better-auth** (OIDC/OAuth/SSO) — better-auth en `peerDependency` |
+| `@kengela/adapter-persistence-prisma` | Stockage (`AuthorizationRepository`/`SessionStore`/`PolicyStore`) via une interface Prisma narrow |
+| `@kengela/adapter-directory-ldap` | Connecteur **AD/LDAP** (ldapts) → `DirectoryProfile` |
+| `@kengela/scim-server` | Serveur **SCIM 2.0** Users+Groups + découverte (`/Schemas`, `/ServiceProviderConfig`, `/ResourceTypes`) + **conformité Entra** + validation de schéma |
+| `@kengela/nestjs` | Intégration **NestJS** : guard deny-by-default + décorateurs + step-up |
+| `@kengela/pii` | Conformité **RGPD** : classification, minimisation, redaction, rétention, effacement |
+| `@kengela/connector-translog` | *(privé)* mapping du schéma TransLog Pro vers les ports Kengela (référence d'intégration) |
+
+## Démarrage rapide
+
+```sh
+pnpm install
+pnpm -r build && pnpm -r test   # tout vert, TS6 strict, ESLint strictTypeChecked
+pnpm lint:arch                  # garde-fou anti-vendor sur le CORE
+```
+
+Une application n'installe que les paquets utiles :
+
+```sh
+npm add @kengela/authz-core @kengela/nestjs @kengela/adapter-persistence-prisma
+# les adapters lourds (SAML, LDAP, better-auth) restent optionnels
+```
+
+Voir `PUBLISHING.md` pour publier/consommer, `docs/` pour le RFC et les études.
+
 ## Etat
 
-Phase **fondations**. Premier paquet : `@kengela/contracts` (les ports, l'invariant du projet).
-Voir `docs/` pour le RFC, l'etude detaillee et le plan d'action.
-
-## Structure
-
-```
-packages/
-  contracts/     @kengela/contracts   — ports & types (fait)
-  authz-core/    — PDP + RBAC + relation + ABAC        (a venir)
-  authn-core/    — orchestration sessions/MFA          (a venir)
-  iam-mapping/   — normalisation 6 sources IdP          (a venir, depuis Atrium)
-  adapter-*/     — better-auth, native, prisma, cel, ldap, ...
-```
+Socle **fonctionnellement complet** (authn + authz + fédération d'identité + SCIM + conformité PII).
+Chaque paquet a son `DEBT.md` (dettes ouvertes uniquement). Publication npm à venir (voir `PUBLISHING.md`).
 
 ## Licence
 
