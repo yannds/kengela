@@ -230,7 +230,12 @@ const refundPolicy: Policy = {
     },
 
     // (c) Conditional access : au-delà d'un seuil de risque, exiger un passkey.
-    { effect: 'step_up', when: 'env.riskScore >= 50', obligations: [{ type: 'require_passkey' }] },
+    //     has() garde l'accès à un champ optionnel (riskScore absent => pas d'erreur, cf. §5).
+    {
+      effect: 'step_up',
+      when: 'has(env.riskScore) && env.riskScore >= 50',
+      obligations: [{ type: 'require_passkey' }],
+    },
   ],
 };
 ```
@@ -241,17 +246,28 @@ Trois conditions réalistes de plus, toutes en opérateurs bornés :
 // Appartenance / propriété
 resource.attributes.ownerId == principal.userId
 
-// Fenêtre horaire (UTC) — env.now est un epoch ms (int)
-(env.now / 3600000) % 24 >= 6 && (env.now / 3600000) % 24 < 20
+// Fenêtre horaire (UTC). env.now est un JS number => `double` côté CEL, et l'arithmétique
+// (/ et %) EXIGE des int : on convertit avec int(...). (% n'a AUCUN overload double.)
+(int(env.now) / 3600000) % 24 >= 6 && (int(env.now) / 3600000) % 24 < 20
 
-// Fraîcheur de session : ré-auth si l'authentification date de + de 15 min
-now() - env.authTime > 900000
+// Fraîcheur de session : ré-auth si l'authentification date de + de 15 min.
+// now() renvoie un int ; env.authTime est un double => on convertit avant la soustraction.
+now() - int(env.authTime) > 900000
 ```
 
-> Caveat horaire : `env.now` et `now()` sont en **UTC** (epoch ms). Pour un fuseau tenant,
-> appliquez l'offset dans l'expression (`+ tenant.tzOffsetMs`) ou pré-calculez côté app et
-> exposez un attribut. `businessDaysBetween(now(), now())` vaut `1` si aujourd'hui (UTC) est un
-> jour ouvré (lun-ven), `0` le week-end — c'est le check « jour ouvré » du dessus.
+> **Types numériques (vérifié sur `@marcbachmann/cel-js` 7.6.1).** La fonction `now()` renvoie un
+> **`int`** ; les nombres injectés dans le contexte (`env.now`, `env.authTime`, `env.riskScore`…)
+> sont des `number` JS, donc des **`double`** côté CEL. L'**arithmétique** (`-`, `/`, `%`) n'a
+> **pas** d'overload mixte : `int - double`, `double / int` et même `double % double` **lèvent**
+> (`no such overload: …`) → deny `condition_error`. Convertis donc tout opérande de contexte avec
+> `int(...)` avant un calcul (`int(env.now)`, `int(env.authTime)`). Les **comparaisons**
+> (`>`, `>=`, `<`, `==`) tolèrent en revanche le mixte int/double : `env.riskScore >= 50` est bien
+> typé (le seul risque y est l'ABSENCE du champ, cf. §5).
+>
+> **Fuseau tenant.** `env.now` et `now()` sont en **UTC** (epoch ms). Pour un fuseau, ajoute
+> l'offset côté int : `(int(env.now) + int(tenant.tzOffsetMs)) …`, ou pré-calcule côté app et
+> expose un attribut. `businessDaysBetween(now(), now())` vaut `1` si aujourd'hui (UTC) est un jour
+> ouvré (lun-ven), `0` le week-end — c'est le check « jour ouvré » du dessus.
 
 ### 3.2 Brancher l'adapter CEL
 
@@ -437,10 +453,21 @@ try {
 ```
 
 Une policy cassée **ferme** l'accès (Zero Trust) au lieu de l'ouvrir — et la décision `deny`
-`condition_error` est journalisée, ce qui rend la panne observable. Piège fréquent :
-`env.riskScore` est **optionnel** (`AuthContext.riskScore?`). Une condition `env.riskScore >= 50`
-sur un principal sans score peut lever → deny. Écrivez des conditions tolérantes (`has()` /
-valeur par défaut fournie par l'app) si l'absence doit être permissive.
+`condition_error` est journalisée, ce qui rend la panne observable.
+
+**Champ absent — comportement vérifié (`cel-js` 7.6.1).** Accéder à une clé absente **lève**
+`No such key: <clé>`, à n'importe quel niveau : `env.riskScore` quand `env` n'a pas de `riskScore`,
+comme `principal.ctx.riskScore` quand `ctx` (ou `riskScore`) manque. `riskScore` étant **optionnel**
+(`AuthContext.riskScore?`), une condition nue `env.riskScore >= 50` sur un principal sans score
+lève → `LayeredDecisionPoint` rattrape → deny `condition_error`. La forme tolérante est la macro
+`has()`, qui court-circuite l'absence **sans** erreur :
+
+```txt
+has(env.riskScore) && env.riskScore >= 50   // false si absent, sinon compare
+```
+
+L'opérateur d'accès optionnel `.?` (`env.?riskScore`) n'est **pas** supporté par cette version du
+vendor (erreur de parse `Expected IDENTIFIER, got QUESTION`) : utilise `has()`, jamais `.?`.
 
 ---
 
@@ -479,3 +506,154 @@ valeur par défaut fournie par l'app) si l'absence doit être permissive.
 | `CelExpressionEngine`, `assertNoUnboundedRegex`                                                                | adapter-expr-cel/`cel-expression-engine.ts` | `evaluateBoolean` ; `matches` interdit |
 | `now` / `daysUntil` / `businessDaysBetween`                                                                    | adapter-expr-cel/`dates.ts`                 | epoch ms, jours ouvrés lun-ven         |
 | `Grant` `Role` `Policy` `PolicyRule` `Decision` `Obligation` `AccessRequest` `Principal` `ResourceRef` + ports | contracts/`index.ts`                        | contrats stables                       |
+| `PrincipalRelationResolver`                                                                                    | authz-core/`relation-resolver.ts`           | relation déduite du `Principal`, pur   |
+
+---
+
+## Exemple complet (copier-coller)
+
+Un seul module ESM qui assemble toute la mécanique de cette page : grants + policy ABAC/CEL,
+un `AuthorizationRepository` en mémoire, le `PrincipalRelationResolver` par défaut, le
+`CelExpressionEngine`, un `DecisionLogSink`, le `LayeredDecisionPoint`, un `check` unitaire, le
+filtrage `checkMany` et la boucle step-up. Les expressions CEL y sont écrites en forme affirmative
+vérifiée (int-safe + `has()`).
+
+```ts
+import { LayeredDecisionPoint, PrincipalRelationResolver } from '@kengela/authz-core';
+import { CelExpressionEngine } from '@kengela/adapter-expr-cel';
+import type {
+  AccessRequest,
+  AuthorizationRepository,
+  Decision,
+  DecisionLogSink,
+  Grant,
+  Policy,
+  PolicyStore,
+  Principal,
+  Role,
+} from '@kengela/contracts';
+
+// 1. Grants (plancher RBAC). Grant plat : motif + portée + provenance + expiration option.
+const grants: readonly Grant[] = [
+  { permission: 'data.cashier.*', scope: 'unit', source: 'MANUAL' },
+  { permission: 'data.refund.approve', scope: 'unit', source: 'MANUAL' },
+  {
+    permission: 'data.refund.approve',
+    scope: 'unit',
+    source: 'DELEGATION',
+    expiresAt: new Date('2026-07-10T00:00:00Z'),
+  },
+];
+const cashierRole: Role = { key: 'cashier', tenantId: 'tnt_acme', grants };
+
+// 2. Repo de grants : rechargé À CHAQUE check (anti-staleness). Ici en mémoire.
+const grantsRepo: AuthorizationRepository = {
+  loadGrantsForUser: async (_userId, _tenantId) => grants,
+  loadRole: async (roleKey, tenantId) =>
+    roleKey === cashierRole.key && tenantId === cashierRole.tenantId ? cashierRole : null,
+};
+
+// 3. RelationResolver par défaut, pur (relation déduite du Principal, deny-by-default).
+const relations = new PrincipalRelationResolver();
+
+// 4. Policies déclaratives (couche ABAC). Conditions CEL int-safe + has().
+const refundPolicy: Policy = {
+  resource: 'data.refund',
+  action: 'approve',
+  rules: [
+    { effect: 'allow', when: 'resource.attributes.agencyId == principal.agencyId' },
+    {
+      effect: 'deny',
+      reason: 'outside_business_hours',
+      when: 'businessDaysBetween(now(), now()) != 1',
+    },
+    {
+      effect: 'step_up',
+      when: 'has(env.riskScore) && env.riskScore >= 50',
+      obligations: [{ type: 'require_passkey' }],
+    },
+  ],
+};
+const policies: PolicyStore = { loadPolicies: async (_tenantId) => [refundPolicy] };
+
+// 5. Adapter CEL (le vendor @marcbachmann/cel-js vit ICI) + horloge injectable.
+const expr = new CelExpressionEngine({ clock: { now: () => Date.now() } });
+
+// 6. Journal des décisions (optionnel).
+const decisionLog: DecisionLogSink = {
+  record: ({ request, decision, at }) => {
+    // eslint-disable-next-line no-console
+    console.log('authz.decision', {
+      at,
+      user: request.principal.userId,
+      effect: decision.effect,
+      reason: decision.reason,
+    });
+  },
+};
+
+// 7. PDP en couches : RBAC -> deny-wins -> gate ABAC -> step-up.
+const layered = new LayeredDecisionPoint({
+  grants: grantsRepo,
+  relations,
+  policies,
+  expr,
+  log: decisionLog,
+  clock: { now: () => Date.now() },
+});
+
+// 8. Une requête d'accès.
+const principal: Principal = {
+  userId: 'usr_42',
+  tenantId: 'tnt_acme',
+  roles: ['cashier'],
+  agencyId: 'agc_lome',
+  mfaLevel: 'totp',
+  authMethod: 'credential',
+  ctx: { authTime: Date.now(), riskScore: 12, device: { trusted: true } },
+};
+const refundRequest: AccessRequest = {
+  principal,
+  action: 'approve',
+  resource: {
+    type: 'data.refund',
+    id: 'rfd_7',
+    tenantId: 'tnt_acme',
+    attributes: { agencyId: 'agc_lome', ownerId: 'usr_42' },
+  },
+};
+
+// 9. Décision unitaire.
+const decision: Decision = await layered.check(refundRequest);
+
+// 10. Filtrage d'une collection sans N+1 (checkMany en parallèle).
+async function visibleRows<T>(
+  rows: readonly T[],
+  toRequest: (row: T) => AccessRequest,
+): Promise<readonly T[]> {
+  const decisions = await layered.checkMany(rows.map(toRequest));
+  return rows.filter((_, i) => decisions[i].effect === 'allow');
+}
+
+// 11. Boucle step-up : le PDP DÉCIDE, l'app EXÉCUTE l'obligation, puis rejoue.
+async function enforce(request: AccessRequest): Promise<'ok' | 'blocked'> {
+  const d = await layered.check(request);
+  if (d.effect === 'allow') return 'ok';
+  if (d.effect === 'deny') return 'blocked';
+  for (const ob of d.obligations ?? []) {
+    if (ob.type === 'require_passkey' && request.principal.mfaLevel !== 'passkey') {
+      await promptPasskey(request.principal.userId);
+    }
+    if (ob.type === 'reauthenticate') await promptReauth(request.principal.userId);
+  }
+  const after = await layered.check(withElevatedSession(request));
+  return after.effect === 'allow' ? 'ok' : 'blocked';
+}
+
+// Stubs applicatifs à brancher sur TON authn (challenge MFA/passkey, ré-auth, session élevée).
+declare function promptPasskey(userId: string): Promise<void>;
+declare function promptReauth(userId: string): Promise<void>;
+declare function withElevatedSession(request: AccessRequest): AccessRequest;
+
+export { layered, decision, visibleRows, enforce };
+```

@@ -37,7 +37,10 @@ L'adapter **n'embarque pas** better-auth. Dans son `package.json` :
 
 Conséquences :
 
-- **`better-auth >= 1`** est la version supportée (peer). L'app choisit la version exacte.
+- La contrainte peer déclarée dans le `package.json` de l'adapter est **exactement
+  `"better-auth": ">=1"`** (aucune borne haute) : toute version better-auth `>= 1.0.0` est
+  supportée, et l'app fige la version exacte qu'elle installe. Ce n'est pas une approximation
+  de la doc — c'est la valeur littérale du champ `peerDependencies`.
 - La peer est `optional: true` : installer l'adapter ne te force pas à tirer better-auth
   (utile si tu ne le composes pas), **mais dès que tu instancies `BetterAuthIdentity`
   avec une vraie instance, better-auth DOIT être présent dans les `node_modules` de ton
@@ -89,10 +92,22 @@ Points clés :
 - L'adapter ne connaît **que `auth.api.getSession({ headers })`**. Il ignore l'OIDC, les
   routes, la DB, les plugins — better-auth gère tout ça côté app.
 - Une **vraie instance better-auth est structurellement compatible** avec
-  `BetterAuthLike` : `betterAuth({...}).api.getSession` a la bonne forme. Pas de wrapper
-  imposé — au pire un cast/adaptateur mince si les types divergent (voir §4).
+  `BetterAuthLike` : `betterAuth({...}).api.getSession` a la bonne forme. On la **NARROW**
+  explicitement à `BetterAuthLike` au câblage via un unique cast `as unknown as BetterAuthLike`
+  (voir §4). Ce n'est **pas** un contournement : c'est le contrat. Kengela oublie
+  volontairement tout de better-auth **sauf** `getSession`.
 - `BetterAuthUser` est **ouvert** (`[key: string]: unknown`) : c'est là que tes champs
   métier (`tenantId`, rôles…) sont lus par les extracteurs.
+
+> Pourquoi `as unknown as BetterAuthLike` et pas un cast simple ? Le type de retour réel
+> de `betterAuth({...}).api.getSession` est **structurellement plus riche** (better-auth y
+> ajoute ses propres champs) que la forme minimale `{ user, session } | null` déclarée par
+> `BetterAuthLike`. TypeScript refuse donc un cast direct entre deux types qu'il juge
+> insuffisamment liés ; le pont `as unknown` est la façon **standard et documentée**
+> d'affirmer une surface narrow. Le cast est **sain** parce qu'à l'exécution une vraie
+> instance better-auth fournit bien `api.getSession({ headers })` renvoyant
+> `{ user, session } | null` — la seule capacité que l'adapter appelle. On assume ce cast
+> une fois, au composition root, et jamais ailleurs.
 
 ---
 
@@ -148,8 +163,9 @@ export const identityProvider = {
   provide: IDENTITY_PORT,
   useFactory: (): IdentityPort =>
     new BetterAuthIdentity({
-      // une vraie instance better-auth satisfait BetterAuthLike.
-      // Si les types divergent, adapte-la explicitement (surface narrow) :
+      // Une vraie instance better-auth expose bien `api.getSession`. On la NARROW
+      // explicitement à BetterAuthLike (la seule capacité consommée) via un cast
+      // volontaire `as unknown as BetterAuthLike` — voir §3 : contrat, pas contournement.
       auth: auth as unknown as BetterAuthLike,
 
       // ton mapping métier -> tenant (défaut = user.tenantId)
@@ -282,6 +298,67 @@ port.
 Autrement dit : better-auth te donne l'authn « clé en main » derrière `IdentityPort` ; le
 natif te donne les pièces pour la construire toi-même. Dans les deux cas, **ce que
 l'authz voit ne change pas** — c'est toujours un `Principal`.
+
+---
+
+## Exemple complet (copier-coller)
+
+Un seul fichier assemblant tout le code fonctionnel de la recette : ton instance
+better-auth, le provider NestJS exposant `IdentityPort`, et la vérification de session à
+chaque requête protégée. Rien d'autre n'est requis côté Kengela — l'authz ne voit que le
+`Principal`.
+
+```ts
+// app/auth/identity.ts — composition root de l'authn déléguée à better-auth
+import { betterAuth } from 'better-auth';
+import {
+  BetterAuthIdentity,
+  type BetterAuthLike,
+  type BetterAuthUser,
+} from '@kengela/adapter-authn-better-auth';
+import type { IdentityPort, Principal, SessionCredential } from '@kengela/contracts';
+
+// 1. TON instance better-auth (100 % côté app) : providers OIDC/OAuth, DB, cookies, plugins.
+//    Assure-toi que la session porte de quoi résoudre le tenant (ex. user.tenantId).
+export const auth = betterAuth({
+  database: /* ton adapter DB better-auth */ undefined as never,
+  // providers OIDC/OAuth, plugins, cookies... : config PROPRE à ton app.
+});
+
+// 2. Provider NestJS exposant IdentityPort. Le reste du socle (PDP, guards, audit) ne
+//    dépend que de ce token — jamais de better-auth directement.
+export const IDENTITY_PORT = Symbol('IdentityPort');
+
+export const identityProvider = {
+  provide: IDENTITY_PORT,
+  useFactory: (): IdentityPort =>
+    new BetterAuthIdentity({
+      // Narrowing volontaire de l'instance réelle vers la surface consommée (voir §3).
+      auth: auth as unknown as BetterAuthLike,
+
+      // Mapping métier -> tenant (fail-closed : null => session refusée).
+      extractTenantId: (user: BetterAuthUser): string | null =>
+        typeof user['tenantId'] === 'string' ? (user['tenantId'] as string) : null,
+
+      // Optionnel : projeter des rôles portés par la session. Sinon [] : l'authz
+      // (AuthorizationRepository) rechargera les grants.
+      extractRoles: (): readonly string[] => [],
+    }),
+};
+
+// 3. Vérification de session à chaque requête protégée (cookie brut OU bearer).
+export async function authenticateRequest(
+  identity: IdentityPort,
+  req: { readonly headers: { readonly cookie?: string; readonly authorization?: string } },
+): Promise<Principal | null> {
+  const credential: SessionCredential = req.headers.authorization
+    ? { strategy: 'bearer', token: req.headers.authorization.replace(/^Bearer\s+/i, '') }
+    : { strategy: 'cookie', token: req.headers.cookie ?? '' };
+
+  // null si : session absente / invalide / SANS tenant résoluble (fail-closed) -> 401.
+  return identity.verifySession(credential);
+}
+```
 
 ---
 

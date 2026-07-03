@@ -4,8 +4,10 @@
 > d'annuaire « pull »), les projeter vers le `DirectoryProfile` normalisé de Kengela, puis les
 > mapper vers les rôles internes du tenant.
 
-Tous les symboles ci-dessous ont été vérifiés dans le code source ; les rares écarts d'API sont
-signalés explicitement en fin de page (« Incertitudes / manques »).
+Tous les symboles ci-dessous ont été vérifiés dans le code source. Les points de conception qui
+pourraient surprendre (deux `DirectoryProfile`, absence de `fetchProfile` sur l'adapter, statut de
+`ldapts`, `sAMAccountName` non consommé) sont **affirmés et expliqués** en fin de page (§7 « Faits
+de conception »), pas laissés en suspens.
 
 ---
 
@@ -167,37 +169,41 @@ const source = new LdapDirectorySource(config, { clientFactory });
 
 `LdapDirectorySource` n'implémente **pas** `DirectorySourcePort` tel quel : le port attend
 `fetchProfile(raw, tenantId)` renvoyant le `DirectoryProfile` **contracts** (avec `active`,
-`source`), alors que la source renvoie des `LdapEntryParts` et un `DirectoryProfile`
-**iam-mapping** (avec `firstName`/`lastName`/`claims`). On écrit donc un mince adaptateur qui
-**reshape** le profil iam-mapping vers la forme contracts :
+`source`), alors que la source expose une API **batch** (`fetchEntries`) et des helpers qui
+produisent le `DirectoryProfile` **iam-mapping** (avec `firstName`/`lastName`/`claims`). C'est un
+**fait de conception**, pas un manque (§7).
+
+Le pont iam-mapping → contracts ne s'écrit **pas** à la main : `@kengela/iam-mapping` exporte la
+fonction PURE **`toContractsProfile(rich, { source, active })`** qui projette le profil riche vers
+la forme minimale de contracts (ajout de `active`/`source`, `externalId` non-null,
+`firstName`/`lastName` reversés dans `attributes`, `claims` abandonnés). L'adaptateur du port se
+réduit alors à trois appels :
 
 ```ts
+// profileFromLdap / accountActiveFromLdap : ré-exportés par l'adapter (SSoT iam-mapping).
 import { profileFromLdap, accountActiveFromLdap } from '@kengela/adapter-directory-ldap';
 import type { LdapEntryParts } from '@kengela/adapter-directory-ldap';
+// toContractsProfile : depuis iam-mapping (l'adapter ne le ré-exporte pas).
+import { toContractsProfile } from '@kengela/iam-mapping';
 import type { DirectorySourcePort, DirectoryProfile, TenantId } from '@kengela/contracts';
 
 class LdapDirectoryPort implements DirectorySourcePort {
   async fetchProfile(raw: unknown, _tenantId: TenantId): Promise<DirectoryProfile> {
     const entry = raw as LdapEntryParts; // le port reçoit une entrée normalisée
-    const p = profileFromLdap(entry); // DirectoryProfile "iam-mapping"
-    return {
-      externalId: p.externalId ?? entry.dn, // contracts exige un string non-null
-      email: p.email || undefined,
-      displayName: p.displayName ?? undefined,
-      groups: p.groups,
-      attributes: p.attributes as Readonly<Record<string, unknown>>,
-      active: accountActiveFromLdap(entry),
-      source: 'ldap',
-    };
+    const rich = profileFromLdap(entry); // DirectoryProfile "iam-mapping" (riche)
+    return toContractsProfile(rich, { source: 'ldap', active: accountActiveFromLdap(entry) });
   }
 }
 
 export const ldapPort: DirectorySourcePort = new LdapDirectoryPort();
 ```
 
-> Le passage iam-mapping → contracts (ajout de `active`/`source`, `externalId` non-null,
-> `firstName`/`lastName`/`claims` abandonnés) est du **code applicatif à écrire** ; il n'est fourni
-> par aucun des deux packages.
+> `toContractsProfile` garantit un `externalId` non-null (repli sur l'e-mail si `objectGUID`
+> manque), omet `email`/`displayName` s'ils sont vides (`exactOptionalPropertyTypes`) et reverse
+> `firstName`/`lastName` dans `attributes`. `active` et `source` sont les deux champs que le profil
+> riche ne porte pas ; ils sont fournis explicitement ici (`accountActiveFromLdap` + `'ldap'`).
+> `toContractsProfile` s'importe depuis `@kengela/iam-mapping` — l'adapter ré-exporte
+> `profileFromLdap`/`accountActiveFromLdap` mais **pas** `toContractsProfile`.
 
 ---
 
@@ -321,22 +327,151 @@ Conditions (`MappingCondition`) : `source` = `'GROUP' | 'CLAIM' | 'ATTRIBUTE'`, 
 
 ---
 
-## 7. Incertitudes / manques d'API (signalés, non inventés)
+## 7. Faits de conception (vérifiés en lecture, affirmés)
 
-1. **Deux `DirectoryProfile` distincts.** Celui de `@kengela/iam-mapping` (retour de
-   `profileFromLdap` / `toProfiles`) a la forme `{ email, externalId, firstName, lastName,
-displayName, attributes, groups, claims }` (`email: string`, `externalId: string | null`).
-   Celui de `@kengela/contracts` (retour du port) a la forme `{ externalId: string, email?,
-displayName?, groups, attributes, active, source }`. **Ils ne sont pas interchangeables** ; le
-   reshape du §3.4 est obligatoire et n'est fourni nulle part.
-2. **`LdapDirectorySource` n'implémente pas `DirectorySourcePort`.** Aucune méthode
-   `fetchProfile(raw, tenantId)` n'existe sur la classe ; son API est batch (`fetchEntries`) +
-   helpers statiques. Le mapping `raw → LdapEntryParts` dans l'adaptateur du port est une
-   **hypothèse** de ma part (le port type `raw: unknown` sans préciser la forme attendue pour LDAP).
-3. **`ldapts` = dependency directe, pas peer/optional.** Vérifié dans le `package.json` de
-   l'adapter. Aucune install séparée requise ; pas de mécanisme d'optionalité à documenter.
-4. **`safe-regex.ts` non lu en détail.** Seuls les symboles exportés sont connus
-   (`safeRegexTest`, `compileSafeRegex`, `SAFE_REGEX_LIMITS`, `SafeRegexLimits`) ; les bornes
-   exactes anti-ReDoS ne sont pas reproduites ici.
-5. **`manager` en dette V2.** `profileFromLdap` réduit le DN du manager à son CN faute de second
+1. **Deux `DirectoryProfile` distincts — par conception.** Celui de `@kengela/iam-mapping`
+   (retour de `profileFromLdap` / `toProfiles`) est RICHE : `{ email, externalId, firstName,
+lastName, displayName, attributes, groups, claims }` (`email: string`, `externalId: string |
+null`). Celui de `@kengela/contracts` (retour du port) est MINIMAL et STABLE : `{ externalId:
+string, email?, displayName?, groups, attributes, active, source }`. Ils **ne sont pas
+   interchangeables** ; la projection de l'un vers l'autre est faite par **`toContractsProfile`**
+   (§3.4), fonction PURE exportée par `@kengela/iam-mapping`. Ce n'est donc plus « du code à
+   écrire » : c'est un appel de bibliothèque.
+2. **`LdapDirectorySource` n'implémente PAS `DirectorySourcePort` — fait de conception assumé.**
+   La classe n'a aucune méthode `fetchProfile(raw, tenantId)` : son API est **batch**
+   (`fetchEntries(filter?, options?)` + `checkConnection()`) avec les helpers statiques
+   `toProfiles` / `toRecords`. Un pull LDAP lit des **milliers** d'entrées en une recherche
+   paginée (bind → search → unbind) ; exposer un `fetchProfile` unitaire imposerait un bind par
+   utilisateur, contraire à la nature « batch » de LDAP. L'adaptateur du port (§3.4) fait le pont
+   `LdapEntryParts → contracts` : le port type `raw: unknown`, et pour cette source `raw` est une
+   `LdapEntryParts` (une entrée normalisée déjà produite par `fetchEntries`).
+3. **`ldapts` = dépendance DIRECTE, pas peer ni optional.** Vérifié dans le `package.json` de
+   l'adapter : `"ldapts": "^8.1.8"` sous `dependencies`. Aucune install séparée requise ; la
+   fabrique par défaut instancie un vrai `new Client(...)` sans configuration supplémentaire.
+4. **`sAMAccountName` n'est PAS consommé par `profileFromLdap`.** Vérifié : il n'est pas dans
+   `LDAP_AD_ATTRIBUTE_DEFAULTS` (dont les clés réelles sont `mail`, `givenName`, `sn`,
+   `displayName`, `objectGUID`, `memberOf`, `department`, `division`, `title`, `employeeNumber`,
+   `physicalDeliveryOfficeName`, `manager` ; `costCenter` = chaîne vide). Il n'y a pas de champ
+   « login » dans `DirectoryProfile` : l'e-mail vient de `mail` (repli `userPrincipalName`). Si
+   votre code applicatif en a besoin, `sAMAccountName` reste récupérable **brut** en le demandant
+   (`attributes: ['sAMAccountName', ...]`), mais il ne peuple aucun champ de profil.
+5. **`safe-regex.ts` — symboles exportés.** `safeRegexTest`, `compileSafeRegex`,
+   `SAFE_REGEX_LIMITS`, `SafeRegexLimits`. `matches` compile une regex bornée (fail-closed) ; les
+   bornes exactes vivent dans `SAFE_REGEX_LIMITS`.
+6. **`manager` en dette V2.** `profileFromLdap` réduit le DN du manager à son CN faute de second
    appel LDAP ; il n'est pas résolu en e-mail (documenté tel quel dans la source).
+
+---
+
+## Exemple complet (copier-coller)
+
+Un seul fichier qui assemble tout le code fonctionnel de la page : configuration de bind,
+health-check, pull paginé, projection vers `DirectoryProfile`, mapping vers les rôles,
+adaptateur `DirectorySourcePort` (via `toContractsProfile`) et orchestration d'une synchro
+`ScimRepository`.
+
+```ts
+import {
+  LdapDirectorySource,
+  profileFromLdap,
+  accountActiveFromLdap,
+  type LdapConnectionConfig,
+  type LdapEntryParts,
+} from '@kengela/adapter-directory-ldap';
+import { evaluateMappings, toContractsProfile, type IdpMappingRule } from '@kengela/iam-mapping';
+import type {
+  DirectorySourcePort,
+  DirectoryProfile,
+  ScimRepository,
+  TenantId,
+} from '@kengela/contracts';
+
+// ── 1. Configuration de bind (résolue depuis la config tenant + coffre) ─────
+const config: LdapConnectionConfig = {
+  url: 'ldaps://dc.corp.local:636', // LDAPS recommandé
+  bindDN: 'CN=svc-kengela,OU=Service,DC=corp,DC=local', // compte de lecture
+  bindPassword: process.env.LDAP_BIND_PASSWORD!, // coffre ; jamais loggé
+  baseDN: 'OU=Users,DC=corp,DC=local',
+  // Optionnels (sinon défauts AD via LDAP_SOURCE_DEFAULTS) :
+  userFilter: '(&(objectCategory=person)(objectClass=user))',
+  attributes: ['*', 'memberOf'],
+  timeoutMs: 15_000,
+  tlsRejectUnauthorized: true,
+  pageSize: 200,
+  maxUsers: 1000,
+};
+
+// clientFactory par défaut = vrai Client ldapts (LDAPS vérifié) construit depuis la config.
+const source = new LdapDirectorySource(config);
+
+// ── 2. Règles de mapping (par tenant) ───────────────────────────────────────
+const rules: IdpMappingRule[] = [
+  {
+    id: 'rh-admins',
+    priority: 0,
+    all: [{ source: 'GROUP', op: 'in', value: ['Groupe RH', 'Domain Admins'] }],
+    assignRoleKeys: ['ADM'],
+    orgUnit: { by: 'code', value: 'RH' },
+    stopOnMatch: false,
+  },
+  {
+    id: 'valideurs',
+    priority: 10,
+    any: [{ source: 'ATTRIBUTE', key: 'title', op: 'contains', value: 'Manager' }],
+    assignRoleKeys: ['VAL'],
+  },
+];
+
+// ── 3. Adaptateur DirectorySourcePort (reshape via toContractsProfile) ──────
+class LdapDirectoryPort implements DirectorySourcePort {
+  async fetchProfile(raw: unknown, _tenantId: TenantId): Promise<DirectoryProfile> {
+    const entry = raw as LdapEntryParts; // une entrée normalisée produite par fetchEntries
+    const rich = profileFromLdap(entry); // DirectoryProfile riche (iam-mapping)
+    return toContractsProfile(rich, { source: 'ldap', active: accountActiveFromLdap(entry) });
+  }
+}
+export const ldapPort: DirectorySourcePort = new LdapDirectoryPort();
+
+// ── 4. Orchestration d'un pull complet ──────────────────────────────────────
+export async function syncLdap(
+  tenantId: TenantId,
+  scimRepository: ScimRepository,
+): Promise<{ synced: number; deactivated: number }> {
+  // (a) Health-check avant tout pull.
+  if (!(await source.checkConnection())) {
+    throw new Error('Annuaire LDAP injoignable ou identifiants invalides');
+  }
+
+  // (b) Lecture réseau : bind → search paginé → normalisation → unbind.
+  const entries = await source.fetchEntries(); // readonly LdapEntryParts[]
+
+  // (c) Projection + activation en une passe (dé-provisioning).
+  const records = LdapDirectorySource.toRecords(entries); // { profile, active }[]
+
+  let synced = 0;
+  let deactivated = 0;
+  for (let i = 0; i < entries.length; i += 1) {
+    const rich = records[i].profile; // DirectoryProfile riche
+    const active = records[i].active; // userAccountControl bit 0x2
+
+    // (d) Mapping vers les rôles internes (moteur pur, configurable par tenant).
+    const result = evaluateMappings(rich, rules);
+    // → result.roleKeys / result.orgUnitDirectives / result.matchedRuleIds
+
+    // (e) Réconciliation : projection RICHE → MINIMAL (contracts), puis upsert.
+    const profile = toContractsProfile(rich, { source: 'ldap', active });
+    const { id } = await scimRepository.upsertUserByEmail(tenantId, profile);
+    synced += 1;
+
+    if (!active) {
+      await scimRepository.deactivateUser(tenantId, id);
+      deactivated += 1;
+    }
+
+    // … appliquer result.roleKeys + result.orgUnitDirectives via vos repos (grants + rattachement).
+    void result;
+  }
+
+  return { synced, deactivated };
+}
+```

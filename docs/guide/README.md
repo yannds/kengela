@@ -9,6 +9,8 @@ Ce guide couvre l'installation, l'utilisation et le développement du monorepo. 
 de code s'appuient sur les signatures réelles** des paquets `@kengela/*`, vérifiées dans le code
 source. Chaque page est autonome (elle sert aussi de page de wiki GitHub).
 
+> 🇬🇧 **English version** : [English guide](./en/README.md) (wiki : _Home_). 🇫🇷 Vous lisez la version française.
+
 ## Table des matières — les fondamentaux
 
 | #   | Page                                                   | Sujet                                                                                                                                 |
@@ -37,6 +39,14 @@ d'identité.
 | Fédération annuaire **LDAP / Active Directory**                                    | [Recette : LDAP / AD](./13-recipe-ldap.md)                                |
 | **Autorisation RBAC + ABAC (CEL)**, obligations, step-up, decision logs            | [Recette : autorisation RBAC/ABAC](./14-recipe-authz-rbac-abac.md)        |
 | **Conformité RGPD** : chiffrement de champ per-tenant, crypto-shredding, rétention | [Recette : PII / RGPD](./15-recipe-pii-compliance.md)                     |
+
+### Recettes combinées (plusieurs briques ensemble)
+
+| Combo                                                                                       | Recette                                                      |
+| ------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| **better-auth + PII** — compte délégué à better-auth, chiffrement de champ + effacement     | [Combo : better-auth + PII](./16-combo-better-auth-pii.md)   |
+| **SCIM/Entra + autorisation** — user provisionné depuis Entra → grants → décision RBAC/ABAC | [Combo : SCIM/Entra + authz](./17-combo-scim-entra-authz.md) |
+| **Full stack** — NestJS + native + Prisma + MFA + authz + PII, un seul composition root     | [Combo : full stack](./18-combo-full-stack.md)               |
 
 ## Les 12 paquets en un coup d'œil
 
