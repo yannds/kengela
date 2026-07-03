@@ -106,3 +106,46 @@ export interface PrismaLike {
   readonly policy: PolicyDelegate;
   readonly $transaction?: (<T>(fn: (tx: PrismaLike) => Promise<T>) => Promise<T>) | undefined;
 }
+
+// ── MFA : secret chiffre at-rest + defis one-shot expirants ──────────────────
+
+/** Ligne stockant le secret TOTP chiffre (le clair n'est jamais persiste). */
+export interface MfaSecretRow {
+  readonly secret: string;
+}
+
+export interface MfaSecretDelegate {
+  findFirst(args: {
+    readonly where: { readonly tenantId: TenantId; readonly userId: UserId };
+  }): Promise<MfaSecretRow | null>;
+  deleteMany(args: {
+    readonly where: { readonly tenantId: TenantId; readonly userId: UserId };
+  }): Promise<{ readonly count: number }>;
+  create(args: {
+    readonly data: {
+      readonly tenantId: TenantId;
+      readonly userId: UserId;
+      readonly secret: string;
+    };
+  }): Promise<unknown>;
+}
+
+export interface MfaChallengeRow {
+  readonly id: string;
+  readonly tenantId: TenantId;
+  readonly userId: UserId;
+  readonly expiresAt: Date;
+}
+
+export interface MfaChallengeDelegate {
+  create(args: {
+    readonly data: {
+      readonly id: string;
+      readonly tenantId: TenantId;
+      readonly userId: UserId;
+      readonly expiresAt: Date;
+    };
+  }): Promise<unknown>;
+  findUnique(args: { readonly where: { readonly id: string } }): Promise<MfaChallengeRow | null>;
+  delete(args: { readonly where: { readonly id: string } }): Promise<unknown>;
+}
