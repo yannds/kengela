@@ -1,6 +1,6 @@
 {
   "name": "@kengela/adapter-expr-cel",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Kengela — adapter ExpressionEnginePort base sur CEL (@marcbachmann/cel-js).",
   "license": "Apache-2.0",
   "type": "module",
@@ -12,7 +12,9 @@
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
@@ -24,5 +26,14 @@
   },
   "devDependencies": {
     "@kengela/authz-core": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yannds/kengela.git",
+    "directory": "packages/adapter-expr-cel"
   }
 }

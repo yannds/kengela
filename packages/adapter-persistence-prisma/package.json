@@ -1,6 +1,6 @@
 {
   "name": "@kengela/adapter-persistence-prisma",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Kengela — adapter de persistance Prisma/Postgres pour AuthorizationRepository, SessionStore et PolicyStore.",
   "license": "Apache-2.0",
   "type": "module",
@@ -12,7 +12,10 @@
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": ["dist", "prisma"],
+  "files": [
+    "dist",
+    "prisma"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
@@ -23,5 +26,14 @@
   },
   "devDependencies": {
     "@types/node": "^24.10.1"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yannds/kengela.git",
+    "directory": "packages/adapter-persistence-prisma"
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@kengela/contracts",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Kengela — stable port contracts (types only, zero vendor).",
   "license": "Apache-2.0",
   "type": "module",
@@ -12,10 +12,21 @@
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "echo \"(contracts: types only, no runtime tests)\" && exit 0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yannds/kengela.git",
+    "directory": "packages/contracts"
   }
 }

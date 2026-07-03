@@ -1,6 +1,6 @@
 {
   "name": "@kengela/adapter-authn-native",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Kengela — authn maison durcie : credential timing-safe, chiffrement AES-256-GCM, TOTP.",
   "license": "Apache-2.0",
   "type": "module",
@@ -25,5 +25,14 @@
     "bcryptjs": "^3.0.3",
     "otplib": "^13.4.1",
     "@node-rs/argon2": "^2.0.2"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yannds/kengela.git",
+    "directory": "packages/adapter-authn-native"
   }
 }
