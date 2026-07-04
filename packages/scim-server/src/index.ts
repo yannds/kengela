@@ -1,16 +1,16 @@
 /**
- * `@kengela/scim-server` - cœur SCIM 2.0 (Users + Groups) FRAMEWORK-AGNOSTIQUE.
+ * `@kengela/scim-server` - SCIM 2.0 core (Users + Groups), FRAMEWORK-AGNOSTIC.
  *
- * Le paquet expose :
- *  - le PORT `ScimStore` (persistance NARROW, orientée SCIM) et ses types de lignes ;
- *  - des HANDLERS PURS `(store, requête parsée) → réponse` (aucune dépendance HTTP) ;
- *  - la sérialisation / le parsing SCIM (ressources, ListResponse, Error, PATCH, filtres).
+ * The package exposes:
+ *  - the `ScimStore` PORT (NARROW, SCIM-oriented persistence) and its row types;
+ *  - PURE HANDLERS `(store, parsed request) -> response` (no HTTP dependency);
+ *  - SCIM serialization / parsing (resources, ListResponse, Error, PATCH, filters).
  *
- * Un adapter (NestJS, Express…) résout le tenant, parse le corps/la requête, appelle un
- * handler et sérialise la `ScimResponse` en `application/scim+json`.
+ * An adapter (NestJS, Express...) resolves the tenant, parses the body/request, calls a
+ * handler and serializes the `ScimResponse` as `application/scim+json`.
  */
 
-// ── Port + types de contrat ──────────────────────────────────────────────────
+// -- Port + contract types ----------------------------------------------------
 export type {
   ScimStore,
   ScimUserRow,
@@ -29,7 +29,7 @@ export type {
   ScimHandler,
 } from './types.js';
 
-// ── Handlers purs ────────────────────────────────────────────────────────────
+// -- Pure handlers ------------------------------------------------------------
 export {
   handleUsersPost,
   handleUsersPostStrict,
@@ -48,7 +48,7 @@ export {
   handleGroupsDelete,
 } from './groups.js';
 
-// ── Endpoints de découverte (auto-description) ───────────────────────────────
+// -- Discovery endpoints (self-description) -----------------------------------
 export {
   SCIM_SCHEMA_SERVICE_PROVIDER_CONFIG,
   SCIM_SCHEMA_RESOURCE_TYPE,
@@ -61,11 +61,11 @@ export {
   handleSchemas,
 } from './discovery.js';
 
-// ── Validation de schéma (auto-vérification) ─────────────────────────────────
+// -- Schema validation (self-check) -------------------------------------------
 export { validateScimUser, validateScimGroup } from './validate.js';
 export type { ScimValidationResult } from './validate.js';
 
-// ── Sérialisation / parsing SCIM ─────────────────────────────────────────────
+// -- SCIM serialization / parsing ---------------------------------------------
 export {
   SCIM_SCHEMA_LIST_RESPONSE,
   SCIM_SCHEMA_ERROR,
@@ -94,7 +94,7 @@ export {
   parsePagination,
 } from './serialize.js';
 
-// ── Ré-exports SCIM utiles (types + URNs canoniques Kengela) ─────────────────
+// -- Useful SCIM re-exports (types + Kengela canonical URNs) ------------------
 export {
   SCIM_SCHEMA_CORE_USER,
   SCIM_SCHEMA_ENTERPRISE_USER,

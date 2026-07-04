@@ -1,14 +1,14 @@
 /**
- * TranslogPrismaLike - la surface NARROW dont ce connecteur depend.
+ * TranslogPrismaLike - the NARROW surface this connector depends on.
  *
- * DOCTRINE : le port est un sas, pas une planque. On n'importe RIEN de
- * `@prisma/client`. On decrit exactement les delegues et methodes utilises,
- * avec des types de lignes explicites tires du schema REEL de TransLog Pro.
- * Un vrai `PrismaClient` genere depuis le schema TransLog est structurellement
- * compatible cote application : il se passe la ou `TranslogPrismaLike` est
- * attendu (les lignes reelles sont des sur-ensembles de nos lignes NARROW).
+ * DOCTRINE: the port is an airlock, not a hideout. We import NOTHING from
+ * `@prisma/client`. We describe exactly the delegates and methods used, with
+ * explicit row types drawn from the REAL TransLog Pro schema. A real
+ * `PrismaClient` generated from the TransLog schema is structurally compatible
+ * on the application side: it fits where `TranslogPrismaLike` is expected (the
+ * real rows are supersets of our NARROW rows).
  *
- * Schema de reference (extrait) :
+ * Reference schema (excerpt):
  *  - User            { id, tenantId, agencyId?, email, roleId?, userType, isActive,
  *                      mfaEnabled, mfaSecret?, deletedAt? }
  *  - Account         { id, tenantId, userId, providerId, accountId, password?, ... }
@@ -18,7 +18,7 @@
  */
 import type { TenantId, UserId } from '@kengela/contracts';
 
-/** Ligne `User` - sous-ensemble NARROW des colonnes lues par le connecteur. */
+/** `User` row - NARROW subset of the columns read by the connector. */
 export interface UserRow {
   readonly id: UserId;
   readonly tenantId: TenantId;
@@ -28,22 +28,22 @@ export interface UserRow {
   readonly deletedAt: Date | null;
 }
 
-/** Ligne `Account` - sous-ensemble NARROW (le hash `password` est optionnel). */
+/** `Account` row - NARROW subset (the `password` hash is optional). */
 export interface AccountRow {
   readonly userId: UserId;
   readonly tenantId: TenantId;
   readonly password: string | null;
 }
 
-/** Ligne `RolePermission` - la permission brute `plane.module.action.SCOPE`. */
+/** `RolePermission` row - the raw permission `plane.module.action.SCOPE`. */
 export interface RolePermissionRow {
   readonly permission: string;
 }
 
 /**
- * Ligne `Session`. Le contexte de connexion n'est PAS stocke en JSON cote
- * TransLog : seuls `ipAddress` et `userAgent` existent (voir DEBT.md). La
- * reconstitution du `AuthContext` est donc LOSSY.
+ * `Session` row. The login context is NOT stored as JSON on the TransLog side:
+ * only `ipAddress` and `userAgent` exist (see DEBT.md). The reconstitution of
+ * the `AuthContext` is therefore LOSSY.
  */
 export interface SessionRow {
   readonly token: string;
@@ -55,7 +55,7 @@ export interface SessionRow {
   readonly userAgent: string | null;
 }
 
-/** Payload d'ecriture d'une session (meme forme que la ligne, sans l'`id` auto). */
+/** Write payload of a session (same shape as the row, without the auto `id`). */
 export interface SessionCreateData {
   readonly token: string;
   readonly userId: UserId;
@@ -105,9 +105,8 @@ export interface SessionDelegate {
 }
 
 /**
- * Le client injecte. `$transaction` est OPTIONNEL : la rotation de session
- * l'utilise si le client le fournit, sinon degrade en delete + create
- * sequentiels (voir DEBT.md).
+ * The injected client. `$transaction` is OPTIONAL: session rotation uses it if the
+ * client provides it, otherwise it degrades to sequential delete + create (see DEBT.md).
  */
 export interface TranslogPrismaLike {
   readonly user: UserDelegate;

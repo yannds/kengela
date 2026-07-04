@@ -3,9 +3,9 @@ import type { BetterAuthLike, BetterAuthSession, BetterAuthUser } from './better
 
 export interface BetterAuthIdentityConfig {
   readonly auth: BetterAuthLike;
-  /** Extrait le tenant depuis l'utilisateur better-auth (défaut : champ `tenantId`). */
+  /** Extracts the tenant from the better-auth user (default: `tenantId` field). */
   readonly extractTenantId?: (user: BetterAuthUser) => string | null;
-  /** Extrait les rôles (défaut : aucun ; l'authz recharge les grants). */
+  /** Extracts the roles (default: none; authz reloads the grants). */
   readonly extractRoles?: (user: BetterAuthUser) => readonly string[];
 }
 
@@ -23,10 +23,10 @@ function sessionAuthTime(session: BetterAuthSession): number {
 }
 
 /**
- * IdentityPort au-dessus de better-auth : vérifie une preuve de session (cookie ou
- * bearer) via `auth.api.getSession` et projette l'utilisateur en `Principal`.
- * Fail-closed : sans tenant résoluble, la session est refusée. Le `ctx` (géo/device)
- * n'est pas fourni par better-auth - l'app l'enrichit via un ContextProvider.
+ * IdentityPort on top of better-auth: verifies a session proof (cookie or bearer) via
+ * `auth.api.getSession` and projects the user into a `Principal`.
+ * Fail-closed: without a resolvable tenant, the session is refused. The `ctx` (geo/device)
+ * is not provided by better-auth - the app enriches it via a ContextProvider.
  */
 export class BetterAuthIdentity implements IdentityPort {
   readonly #auth: BetterAuthLike;

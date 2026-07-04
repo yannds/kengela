@@ -1,13 +1,13 @@
 /**
- * Validation de schéma SCIM 2.0 - « vérifier NOTRE propre schéma » (RFC 7643).
+ * SCIM 2.0 schema validation - "check OUR own schema" (RFC 7643).
  *
- * `validateScimUser` / `validateScimGroup` contrôlent la conformité d'une ressource au
- * schéma Kengela, À L'ENTRÉE (corps poussé par l'IdP) comme À LA SORTIE (round-trip : la
- * sortie de `toScimUser` doit passer la validation). PUR, fail-closed, sans `any`.
+ * `validateScimUser` / `validateScimGroup` check that a resource conforms to the Kengela
+ * schema, ON INPUT (body pushed by the IdP) as well as ON OUTPUT (round-trip: the output
+ * of `toScimUser` must pass validation). PURE, fail-closed, no `any`.
  *
- * Contrôles : `schemas` présent/non vide/URNs reconnues ; attributs requis présents
- * (`userName` pour User, `displayName` pour Group) ; types scalaires corrects ; attributs
- * multi-valués bien formés (tableau d'objets à `value` chaîne).
+ * Checks: `schemas` present/non-empty/recognized URNs; required attributes present
+ * (`userName` for User, `displayName` for Group); correct scalar types; well-formed
+ * multi-valued attributes (array of objects with a string `value`).
  */
 import {
   SCIM_SCHEMA_CORE_USER,
@@ -15,7 +15,7 @@ import {
   SCIM_SCHEMA_GROUP,
 } from '@kengela/iam-mapping';
 
-/** Résultat d'une validation : conforme ou non + la liste EXHAUSTIVE des écarts. */
+/** Validation result: conforming or not + the EXHAUSTIVE list of discrepancies. */
 export interface ScimValidationResult {
   readonly valid: boolean;
   readonly errors: readonly string[];
@@ -31,7 +31,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-/** Contrôle le tableau `schemas` : présent, non vide, URNs chaînes, toutes reconnues. */
+/** Checks the `schemas` array: present, non-empty, string URNs, all recognized. */
 function checkSchemas(
   body: Record<string, unknown>,
   known: ReadonlySet<string>,
@@ -40,81 +40,81 @@ function checkSchemas(
 ): void {
   const schemas = body['schemas'];
   if (!Array.isArray(schemas)) {
-    errors.push('`schemas` est requis et doit être un tableau.');
+    errors.push('`schemas` is required and must be an array.');
     return;
   }
   if (schemas.length === 0) {
-    errors.push('`schemas` ne peut pas être vide.');
+    errors.push('`schemas` cannot be empty.');
     return;
   }
   let hasRequired = false;
   for (const entry of schemas) {
     if (typeof entry !== 'string') {
-      errors.push('`schemas` ne doit contenir que des chaînes (URNs).');
+      errors.push('`schemas` must contain only strings (URNs).');
       continue;
     }
     if (entry === required) {
       hasRequired = true;
     }
     if (!known.has(entry)) {
-      errors.push(`Schéma déclaré non reconnu : ${entry}.`);
+      errors.push(`Declared schema not recognized: ${entry}.`);
     }
   }
   if (!hasRequired) {
-    errors.push(`Le schéma requis est manquant dans \`schemas\` : ${required}.`);
+    errors.push(`The required schema is missing from \`schemas\`: ${required}.`);
   }
 }
 
-/** Vérifie qu'un attribut, s'il est présent, est une chaîne non vide. */
+/** Checks that an attribute, if present, is a non-empty string. */
 function checkOptionalString(body: Record<string, unknown>, key: string, errors: string[]): void {
   const value = body[key];
   if (value === undefined) {
     return;
   }
   if (typeof value !== 'string' || value.trim() === '') {
-    errors.push(`\`${key}\` doit être une chaîne non vide.`);
+    errors.push(`\`${key}\` must be a non-empty string.`);
   }
 }
 
-/** Vérifie qu'un attribut multi-valué, s'il est présent, est un tableau d'objets à `value`. */
+/** Checks that a multi-valued attribute, if present, is an array of objects with a `value`. */
 function checkMultiValued(body: Record<string, unknown>, key: string, errors: string[]): void {
   const value = body[key];
   if (value === undefined) {
     return;
   }
   if (!Array.isArray(value)) {
-    errors.push(`\`${key}\` doit être un tableau (attribut multi-valué).`);
+    errors.push(`\`${key}\` must be an array (multi-valued attribute).`);
     return;
   }
   for (const entry of value) {
     if (!isRecord(entry)) {
-      errors.push(`Chaque entrée de \`${key}\` doit être un objet.`);
+      errors.push(`Each entry of \`${key}\` must be an object.`);
       continue;
     }
     const inner = entry['value'];
     if (inner !== undefined && typeof inner !== 'string') {
-      errors.push(`\`${key}[].value\` doit être une chaîne.`);
+      errors.push(`\`${key}[].value\` must be a string.`);
     }
   }
 }
 
 /**
- * Valide une ressource utilisateur SCIM contre le schéma Kengela (core + enterprise).
- * Requis : `schemas` (contenant le core User) et `userName`. Contrôle aussi les types de
- * `externalId`, `displayName`, `active`, `name`, et les multi-valués `emails`/`phoneNumbers`.
+ * Validates a SCIM user resource against the Kengela schema (core + enterprise).
+ * Required: `schemas` (containing the core User) and `userName`. Also checks the types of
+ * `externalId`, `displayName`, `active`, `name`, and the multi-valued `emails`/`phoneNumbers`.
  */
 export function validateScimUser(input: unknown): ScimValidationResult {
   const errors: string[] = [];
   if (!isRecord(input)) {
-    return { valid: false, errors: ['La ressource utilisateur doit être un objet JSON.'] };
+    return { valid: false, errors: ['The user resource must be a JSON object.'] };
   }
   checkSchemas(input, KNOWN_USER_SCHEMAS, SCIM_SCHEMA_CORE_USER, errors);
 
   const userName = input['userName'];
   if (userName === undefined) {
-    errors.push('`userName` est requis.');
+    errors.push('`userName` is required.');
   } else if (typeof userName !== 'string' || userName.trim() === '') {
-    errors.push('`userName` doit être une chaîne non vide.');
+    errors.push('`userName` must be a non-empty string.');
   }
 
   checkOptionalString(input, 'externalId', errors);
@@ -122,17 +122,17 @@ export function validateScimUser(input: unknown): ScimValidationResult {
 
   const active = input['active'];
   if (active !== undefined && typeof active !== 'boolean') {
-    errors.push('`active` doit être un booléen.');
+    errors.push('`active` must be a boolean.');
   }
 
   const name = input['name'];
   if (name !== undefined && !isRecord(name)) {
-    errors.push('`name` doit être un objet complexe.');
+    errors.push('`name` must be a complex object.');
   } else if (isRecord(name)) {
     for (const sub of ['givenName', 'familyName', 'formatted'] as const) {
       const value = name[sub];
       if (value !== undefined && typeof value !== 'string') {
-        errors.push(`\`name.${sub}\` doit être une chaîne.`);
+        errors.push(`\`name.${sub}\` must be a string.`);
       }
     }
   }
@@ -144,21 +144,21 @@ export function validateScimUser(input: unknown): ScimValidationResult {
 }
 
 /**
- * Valide une ressource groupe SCIM contre le schéma Kengela. Requis : `schemas` (contenant
- * le Group) et `displayName`. Contrôle le type de `externalId` et la bonne forme de `members`.
+ * Validates a SCIM group resource against the Kengela schema. Required: `schemas` (containing
+ * the Group) and `displayName`. Checks the type of `externalId` and the shape of `members`.
  */
 export function validateScimGroup(input: unknown): ScimValidationResult {
   const errors: string[] = [];
   if (!isRecord(input)) {
-    return { valid: false, errors: ['La ressource groupe doit être un objet JSON.'] };
+    return { valid: false, errors: ['The group resource must be a JSON object.'] };
   }
   checkSchemas(input, KNOWN_GROUP_SCHEMAS, SCIM_SCHEMA_GROUP, errors);
 
   const displayName = input['displayName'];
   if (displayName === undefined) {
-    errors.push('`displayName` est requis.');
+    errors.push('`displayName` is required.');
   } else if (typeof displayName !== 'string' || displayName.trim() === '') {
-    errors.push('`displayName` doit être une chaîne non vide.');
+    errors.push('`displayName` must be a non-empty string.');
   }
 
   checkOptionalString(input, 'externalId', errors);

@@ -1,10 +1,10 @@
 /**
- * PrismaSessionStore - implemente SessionStore sur PrismaLike.
+ * PrismaSessionStore - implements SessionStore on PrismaLike.
  *
- * Token opaque = 32 octets aleatoires (node:crypto) en hex. L'horloge est
- * injectable (Clock) pour des tests deterministes ; defaut = Date.now. La
- * rotation est atomique si le client injecte fournit `$transaction`, sinon
- * degrade en delete + create sequentiels.
+ * Opaque token = 32 random bytes (node:crypto) in hex. The clock is
+ * injectable (Clock) for deterministic tests; default = Date.now. Rotation
+ * is atomic if the injected client provides `$transaction`, otherwise it
+ * degrades to sequential delete + create.
  */
 import { randomBytes } from 'node:crypto';
 import type {
@@ -62,8 +62,8 @@ export class PrismaSessionStore implements SessionStore {
     if (row === null) {
       return null;
     }
-    // Fail-closed (durci) : une session expiree n'est JAMAIS restituee comme valide,
-    // meme si le balayage differe (cleanup) ne l'a pas encore purgee.
+    // Fail-closed (hardened): an expired session is NEVER returned as valid,
+    // even if the deferred sweep (cleanup) has not yet purged it.
     if (row.expiresAt.getTime() <= this.#clock.now()) {
       return null;
     }
@@ -73,7 +73,7 @@ export class PrismaSessionStore implements SessionStore {
   public async rotate(token: string): Promise<SessionHandle> {
     const current = await this.#prisma.session.findUnique({ where: { token } });
     if (current === null) {
-      throw new Error('PrismaSessionStore.rotate: session introuvable');
+      throw new Error('PrismaSessionStore.rotate: session not found');
     }
     const data: SessionCreateData = {
       token: newToken(),

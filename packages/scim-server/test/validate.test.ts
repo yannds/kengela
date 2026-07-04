@@ -63,7 +63,7 @@ describe('validateScimUser', () => {
       userName: 'ada@example.com',
     });
     expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.includes('non reconnu'))).toBe(true);
+    expect(result.errors.some((e) => e.includes('not recognized'))).toBe(true);
   });
 
   it('rejette un `schemas` vide', () => {

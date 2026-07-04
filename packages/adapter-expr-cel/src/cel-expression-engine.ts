@@ -1,15 +1,15 @@
 /**
- * Adapter CEL - implémente ExpressionEnginePort à l'aide de @marcbachmann/cel-js.
+ * CEL adapter - implements ExpressionEnginePort using @marcbachmann/cel-js.
  *
- * Le vendor vit ICI (paquet adapter). Sandboxé, lecture seule, compilations mises
- * en cache. Le contexte {principal, resource, env, tenant} est exposé tel quel aux
- * expressions ; une expression doit retourner un booléen (sinon erreur explicite).
+ * The vendor lives HERE (adapter package). Sandboxed, read-only, compilations
+ * cached. The context {principal, resource, env, tenant} is exposed as-is to
+ * expressions; an expression must return a boolean (otherwise an explicit error).
  *
- * Fonctions de dates injectées (déterministes via Clock) : `now()`, `daysUntil(x)`,
- * `businessDaysBetween(a, b)` - pour des conditions temporelles (échéance, business-hours).
+ * Injected date functions (deterministic via Clock): `now()`, `daysUntil(x)`,
+ * `businessDaysBetween(a, b)` - for temporal conditions (deadline, business-hours).
  *
- * Dette connue (voir DEBT.md) : une erreur d'évaluation (variable absente, non-booléen)
- * est LEVÉE ; le PDP (LayeredDecisionPoint) la rattrape en fail-closed (deny).
+ * Known debt (see DEBT.md): an evaluation error (missing variable, non-boolean)
+ * is THROWN; the PDP (LayeredDecisionPoint) catches it fail-closed (deny).
  */
 import { Environment } from '@marcbachmann/cel-js';
 import type { Clock, ExpressionContext, ExpressionEnginePort } from '@kengela/contracts';
@@ -30,7 +30,7 @@ export class CelExpressionEngine implements ExpressionEnginePort {
   public constructor(options: { readonly clock?: Clock } = {}) {
     const clock = options.clock ?? SYSTEM_CLOCK;
     this.#env = new Environment()
-      // Variables de contexte exposées aux policies (accès dynamique).
+      // Context variables exposed to policies (dynamic access).
       .registerVariable('principal', 'dyn')
       .registerVariable('resource', 'dyn')
       .registerVariable('env', 'dyn')
@@ -50,11 +50,11 @@ export class CelExpressionEngine implements ExpressionEnginePort {
     try {
       result = compiled(ctx as unknown as Record<string, unknown>);
     } catch (err: unknown) {
-      throw new CelEvaluationError(`Echec d'evaluation CEL « ${expression} » : ${messageOf(err)}`);
+      throw new CelEvaluationError(`CEL evaluation failed "${expression}": ${messageOf(err)}`);
     }
     if (typeof result !== 'boolean') {
       throw new CelEvaluationError(
-        `Expression CEL non booleenne « ${expression} » -> ${typeof result}`,
+        `Non-boolean CEL expression "${expression}" -> ${typeof result}`,
       );
     }
     return result;
@@ -70,7 +70,7 @@ export class CelExpressionEngine implements ExpressionEnginePort {
     try {
       compiled = this.#env.parse(expression);
     } catch (err: unknown) {
-      throw new CelEvaluationError(`Expression CEL invalide « ${expression} » : ${messageOf(err)}`);
+      throw new CelEvaluationError(`Invalid CEL expression "${expression}": ${messageOf(err)}`);
     }
     this.#cache.set(expression, compiled);
     return compiled;
@@ -82,25 +82,26 @@ function messageOf(err: unknown): string {
 }
 
 /**
- * Remplace le CONTENU des chaines litterales (`'...'` / `"..."`, echappements geres) par du
- * vide, pour analyser la structure d'une expression sans confondre du code avec une chaine.
- * Motif lineaire (chaque alternative consomme des caracteres disjoints) : pas de ReDoS ici.
+ * Replaces the CONTENT of string literals (`'...'` / `"..."`, escapes handled) with
+ * empty, to analyze an expression's structure without confusing code with a string.
+ * Linear pattern (each alternative consumes disjoint characters): no ReDoS here.
  */
 function stripStringLiterals(src: string): string {
   return src.replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g, '""');
 }
 
 /**
- * Interdit la fonction CEL `matches` (fail-closed). Le vendor cel-js la compile en
- * `new RegExp(pattern).test(input)` NON borne : une regex catastrophique (`(a+)+`) provoque
- * un backtracking exponentiel (ReDoS -> DoS du PDP) sur une entree adverse. La doctrine
- * Kengela borne TOUTE regex (cf. `@kengela/iam-mapping` safe-regex) ; une condition d'acces
- * s'exprime donc via `==`, `in`, `startsWith`, `contains`, jamais via un regex non borne.
+ * Forbids the CEL `matches` function (fail-closed). The cel-js vendor compiles it to
+ * `new RegExp(pattern).test(input)` UNBOUNDED: a catastrophic regex (`(a+)+`) causes
+ * exponential backtracking (ReDoS -> PDP DoS) on adversarial input. The Kengela
+ * doctrine bounds EVERY regex (cf. `@kengela/iam-mapping` safe-regex); an access
+ * condition is thus expressed via `==`, `in`, `startsWith`, `contains`, never via an
+ * unbounded regex.
  */
 export function assertNoUnboundedRegex(expression: string): void {
   if (/\bmatches\s*\(/.test(stripStringLiterals(expression))) {
     throw new CelEvaluationError(
-      `Fonction CEL « matches » interdite (regex non bornee, risque ReDoS) : « ${expression} ».`,
+      `Forbidden CEL "matches" function (unbounded regex, ReDoS risk): "${expression}".`,
     );
   }
 }

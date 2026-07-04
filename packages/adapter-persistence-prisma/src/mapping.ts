@@ -1,11 +1,11 @@
 /**
- * Mapping Row -> types de contrats, FAIL-CLOSED.
+ * Mapping Row -> contract types, FAIL-CLOSED.
  *
- * Postgres renvoie `null` et des `string` larges ; nos contrats utilisent des
- * unions litterales et l'absence de propriete (exactOptionalPropertyTypes). Ce
- * module fait la conversion sure : toute valeur d'union inconnue fait TOMBER
- * l'element concerne (grant ou regle), jamais un `allow` fantome. Aucune
- * confiance aveugle dans la colonne JSON `ctx` / `obligations`.
+ * Postgres returns `null` and wide `string` values; our contracts use literal
+ * unions and property absence (exactOptionalPropertyTypes). This module does the
+ * safe conversion: any unknown union value DROPS the affected element (grant or
+ * rule), never a phantom `allow`. No blind trust in the JSON column `ctx` /
+ * `obligations`.
  */
 import type {
   AuthContext,
@@ -20,7 +20,7 @@ import type {
 } from '@kengela/contracts';
 import type { GrantRow, PolicyRow, PolicyRuleRow, RoleRow, SessionRow } from './prisma-like.js';
 
-/** Journal minimal pour tracer ce que le mapping fail-closed a ecarte. */
+/** Minimal log to trace what the fail-closed mapping discarded. */
 export interface AdapterLogger {
   warn(message: string): void;
 }
@@ -65,13 +65,13 @@ function asBoolean(value: unknown): boolean | null {
   return typeof value === 'boolean' ? value : null;
 }
 
-/** Mappe un grant. Retourne `null` (ignore) si scope ou source est inconnu. */
+/** Maps a grant. Returns `null` (ignored) if scope or source is unknown. */
 export function toGrant(row: GrantRow, logger?: AdapterLogger): Grant | null {
   const scope = toScope(row.scope);
   const source = toSource(row.source);
   if (scope === null || source === null) {
     logger?.warn(
-      `prisma-adapter: grant ignore (scope=${row.scope}, source=${row.source}, permission=${row.permission})`,
+      `prisma-adapter: grant ignored (scope=${row.scope}, source=${row.source}, permission=${row.permission})`,
     );
     return null;
   }
@@ -80,7 +80,7 @@ export function toGrant(row: GrantRow, logger?: AdapterLogger): Grant | null {
     : { permission: row.permission, scope, source, expiresAt: row.expiresAt };
 }
 
-/** Mappe un role, en ecartant fail-closed les grants invalides. */
+/** Maps a role, discarding invalid grants fail-closed. */
 export function toRole(row: RoleRow, logger?: AdapterLogger): Role {
   const grants: Grant[] = [];
   for (const grantRow of row.grants) {
@@ -92,7 +92,7 @@ export function toRole(row: RoleRow, logger?: AdapterLogger): Role {
   return { key: row.key, tenantId: row.tenantId, grants };
 }
 
-/** Mappe une obligation JSON. Retourne `null` si type inconnu. */
+/** Maps a JSON obligation. Returns `null` if the type is unknown. */
 export function toObligation(raw: unknown, logger?: AdapterLogger): Obligation | null {
   const rec = asRecord(raw);
   if (rec === null) {
@@ -100,7 +100,7 @@ export function toObligation(raw: unknown, logger?: AdapterLogger): Obligation |
   }
   const type = asString(rec['type']);
   if (type === null || !OBLIGATION_TYPES.has(type)) {
-    logger?.warn(`prisma-adapter: obligation ignoree (type=${type ?? 'null'})`);
+    logger?.warn(`prisma-adapter: obligation ignored (type=${type ?? 'null'})`);
     return null;
   }
   const obligationType = type as Obligation['type'];
@@ -124,20 +124,20 @@ function toObligations(raw: unknown, logger?: AdapterLogger): Obligation[] {
 }
 
 /**
- * Mappe une regle. Fail-closed : une regle a l'effet inconnu OU au scope present
- * mais invalide est ECARTEE (retour `null`), jamais elargie.
+ * Maps a rule. Fail-closed: a rule with an unknown effect OR with a scope present
+ * but invalid is DISCARDED (returns `null`), never widened.
  */
 export function toPolicyRule(row: PolicyRuleRow, logger?: AdapterLogger): PolicyRule | null {
   const effect = toEffect(row.effect);
   if (effect === null) {
-    logger?.warn(`prisma-adapter: regle ignoree (effect inconnu=${row.effect})`);
+    logger?.warn(`prisma-adapter: rule ignored (unknown effect=${row.effect})`);
     return null;
   }
   let scope: Scope | undefined;
   if (row.scope !== null) {
     const parsed = toScope(row.scope);
     if (parsed === null) {
-      logger?.warn(`prisma-adapter: regle ignoree (scope inconnu=${row.scope})`);
+      logger?.warn(`prisma-adapter: rule ignored (unknown scope=${row.scope})`);
       return null;
     }
     scope = parsed;
@@ -154,7 +154,7 @@ export function toPolicyRule(row: PolicyRuleRow, logger?: AdapterLogger): Policy
   };
 }
 
-/** Mappe une policy, en ecartant fail-closed les regles invalides. */
+/** Maps a policy, discarding invalid rules fail-closed. */
 export function toPolicy(row: PolicyRow, logger?: AdapterLogger): Policy {
   const rules: PolicyRule[] = [];
   for (const ruleRow of row.rules) {
@@ -203,8 +203,8 @@ function toDevice(raw: unknown): AuthContext['device'] {
 }
 
 /**
- * Reconstitue un `AuthContext` depuis la colonne JSON `ctx`. Fail-closed :
- * `authTime` retombe a 0 si absent/illisible ; les sous-objets vides sont omis.
+ * Rebuilds an `AuthContext` from the JSON column `ctx`. Fail-closed:
+ * `authTime` falls back to 0 if absent/unreadable; empty sub-objects are omitted.
  */
 export function toAuthContext(raw: unknown): AuthContext {
   const rec = asRecord(raw);
@@ -225,7 +225,7 @@ export function toAuthContext(raw: unknown): AuthContext {
   };
 }
 
-/** Mappe une ligne de session en `SessionHandle`. */
+/** Maps a session row into a `SessionHandle`. */
 export function toSessionHandle(row: SessionRow): SessionHandle {
   return {
     token: row.token,

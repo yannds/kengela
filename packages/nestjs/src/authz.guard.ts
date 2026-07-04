@@ -13,28 +13,28 @@ import { StepUpRequiredException } from './step-up.exception.js';
 import { KENGELA_PDP } from './tokens.js';
 
 /**
- * Guard d'autorisation Zero Trust.
+ * Zero Trust authorization guard.
  *
- * Deny-by-default : une route sans `@RequirePermission` NI `@PublicRoute` est REFUSEE
- * (corrige le fail-open classique). Sinon, construit une AccessRequest a partir du
- * Principal (`req.user`) et de la metadata, delegue au PDP, et mappe la decision :
- *  - allow    -> passe
- *  - deny     -> ForbiddenException(raison)
- *  - step_up  -> StepUpRequiredException(obligations) - l'authz exige un facteur d'authn
+ * Deny-by-default: a route with neither `@RequirePermission` NOR `@PublicRoute` is DENIED
+ * (fixes the classic fail-open). Otherwise, builds an AccessRequest from the Principal
+ * (`req.user`) and the metadata, delegates to the PDP, and maps the decision:
+ *  - allow    -> pass
+ *  - deny     -> ForbiddenException(reason)
+ *  - step_up  -> StepUpRequiredException(obligations) - authz requires an authn factor
  *
- * PRECEDENCE (fail-closed) : l'annotation du HANDLER prime TOUJOURS sur celle de la CLASSE.
- * Un `@RequirePermission` pose sur un handler ne peut donc PAS etre neutralise par un
- * `@PublicRoute` pose sur le controleur (sinon une route sensible fuiterait). L'ordre est :
- *  1. handler `@RequirePermission`  -> on evalue (meme si la classe est publique)
+ * PRECEDENCE (fail-closed): the HANDLER annotation ALWAYS prevails over the CLASS one.
+ * A `@RequirePermission` set on a handler thus CANNOT be neutralized by a `@PublicRoute`
+ * set on the controller (otherwise a sensitive route would leak). The order is:
+ *  1. handler `@RequirePermission`  -> we evaluate (even if the class is public)
  *  2. handler `@PublicRoute`        -> public
- *  3. classe  `@RequirePermission`  -> on evalue
- *  4. classe  `@PublicRoute`        -> public
- *  5. rien                          -> deny (route non annotee)
+ *  3. class   `@RequirePermission`  -> we evaluate
+ *  4. class   `@PublicRoute`        -> public
+ *  5. nothing                       -> deny (unannotated route)
  *
- * NB : le guard fournit la ressource au niveau TYPE (+ tenant). Les conditions ABAC sur
- * les ATTRIBUTS d'une ressource precise (ex. meme agence) se verifient au niveau service
- * en appelant directement le PDP avec la ressource chargee. Le guard couvre RBAC + les
- * conditions de CONTEXTE (principal.ctx : risque/geo/mfa) = conditional access.
+ * NB: the guard provides the resource at the TYPE level (+ tenant). ABAC conditions on
+ * the ATTRIBUTES of a specific resource (e.g. same agency) are checked at the service
+ * level by calling the PDP directly with the loaded resource. The guard covers RBAC +
+ * CONTEXT conditions (principal.ctx: risk/geo/mfa) = conditional access.
  */
 @Injectable()
 export class KengelaAuthzGuard implements CanActivate {
@@ -47,8 +47,8 @@ export class KengelaAuthzGuard implements CanActivate {
     const handler = context.getHandler();
     const controller = context.getClass();
 
-    // Precedence handler > classe, evaluee niveau par niveau (fail-closed) : un
-    // @PublicRoute de CLASSE ne peut jamais neutraliser un @RequirePermission de HANDLER.
+    // Precedence handler > class, evaluated level by level (fail-closed): a
+    // CLASS @PublicRoute can never neutralize a HANDLER @RequirePermission.
     const handlerPermission = this.reflector.get<RequiredAccess | undefined>(
       KENGELA_PERMISSION,
       handler,

@@ -1,9 +1,9 @@
 /**
- * Sérialisation et parsing SCIM 2.0 - fonctions PURES (RFC 7643/7644).
+ * SCIM 2.0 serialization and parsing - PURE functions (RFC 7643/7644).
  *
- * Sérialise les lignes du store en ressources SCIM (`schemas`/`id`/`meta`), construit les
- * `ListResponse` et `Error`, et interprète les corps entrants : e-mail (userName ∪ emails),
- * identité, PATCH Users/Groups, filtres `eq` (regex bornée, anti-ReDoS) et pagination.
+ * Serializes store rows into SCIM resources (`schemas`/`id`/`meta`), builds the
+ * `ListResponse` and `Error`, and interprets incoming bodies: email (userName union emails),
+ * identity, Users/Groups PATCH, `eq` filters (bounded regex, anti-ReDoS) and pagination.
  */
 import { SCIM_SCHEMA_CORE_USER, SCIM_SCHEMA_GROUP } from '@kengela/iam-mapping';
 import type {
@@ -15,21 +15,21 @@ import type {
   ScimUserRow,
 } from './types.js';
 
-// ── URNs des messages d'API SCIM (RFC 7644 §3.4 / §3.12) ─────────────────────
+// -- URNs of the SCIM API messages (RFC 7644 §3.4 / §3.12) --------------------
 export const SCIM_SCHEMA_LIST_RESPONSE = 'urn:ietf:params:scim:api:messages:2.0:ListResponse';
 export const SCIM_SCHEMA_ERROR = 'urn:ietf:params:scim:api:messages:2.0:Error';
 export const SCIM_SCHEMA_PATCH_OP = 'urn:ietf:params:scim:api:messages:2.0:PatchOp';
 
-/** Taille de page par défaut et plafond (borne l'`itemsPerPage` demandé par l'IdP). */
+/** Default page size and cap (bounds the `itemsPerPage` requested by the IdP). */
 export const DEFAULT_PAGE_SIZE = 100;
 export const MAX_PAGE_SIZE = 200;
 
-// ── Utilitaires de narrowing (fail-closed, sans `any`) ───────────────────────
+// -- Narrowing helpers (fail-closed, no `any`) --------------------------------
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
-/** Coerce l'entrée d'un objet inconnu en enregistrement lisible (jamais `any`). */
+/** Coerces an unknown object entry into a readable record (never `any`). */
 export function asRecord(value: unknown): Record<string, unknown> {
   return isRecord(value) ? value : {};
 }
@@ -48,8 +48,8 @@ function strOf(value: unknown): string | null {
   return null;
 }
 
-// ── Sérialisation des ressources ─────────────────────────────────────────────
-/** Représentation SCIM 2.0 d'un utilisateur (RFC 7643 §4.1). */
+// -- Resource serialization ---------------------------------------------------
+/** SCIM 2.0 representation of a user (RFC 7643 §4.1). */
 export function toScimUser(row: ScimUserRow): Record<string, unknown> {
   const out: Record<string, unknown> = {
     schemas: [SCIM_SCHEMA_CORE_USER],
@@ -83,7 +83,7 @@ export function toScimUser(row: ScimUserRow): Record<string, unknown> {
   return out;
 }
 
-/** Représentation SCIM 2.0 d'un groupe + ses membres (RFC 7643 §4.2). */
+/** SCIM 2.0 representation of a group + its members (RFC 7643 §4.2). */
 export function toScimGroup(row: ScimGroupRow): Record<string, unknown> {
   const out: Record<string, unknown> = {
     schemas: [SCIM_SCHEMA_GROUP],
@@ -117,7 +117,7 @@ function buildListResponse(
   };
 }
 
-/** `ListResponse` SCIM d'une page d'utilisateurs (RFC 7644 §3.4.2). */
+/** SCIM `ListResponse` of a page of users (RFC 7644 §3.4.2). */
 export function userListResponse(page: ScimListPage<ScimUserRow>): Record<string, unknown> {
   return buildListResponse(
     page.resources.map((row) => toScimUser(row)),
@@ -126,7 +126,7 @@ export function userListResponse(page: ScimListPage<ScimUserRow>): Record<string
   );
 }
 
-/** `ListResponse` SCIM d'une page de groupes. */
+/** SCIM `ListResponse` of a page of groups. */
 export function groupListResponse(page: ScimListPage<ScimGroupRow>): Record<string, unknown> {
   return buildListResponse(
     page.resources.map((row) => toScimGroup(row)),
@@ -135,7 +135,7 @@ export function groupListResponse(page: ScimListPage<ScimGroupRow>): Record<stri
   );
 }
 
-/** Enveloppe d'erreur SCIM (RFC 7644 §3.12) : `status` (chaîne) + `scimType` + `detail`. */
+/** SCIM error envelope (RFC 7644 §3.12): `status` (string) + `scimType` + `detail`. */
 export function scimError(
   status: number,
   detail: string,
@@ -152,8 +152,8 @@ export function scimError(
   return out;
 }
 
-// ── Lecture des corps entrants ───────────────────────────────────────────────
-/** E-mail d'un corps SCIM : `userName` prioritaire, sinon l'e-mail primaire, sinon null. */
+// -- Reading incoming bodies --------------------------------------------------
+/** Email of a SCIM body: `userName` first, otherwise the primary email, otherwise null. */
 export function emailOf(body: Record<string, unknown>): string | null {
   const userName = body['userName'];
   if (typeof userName === 'string' && userName.trim() !== '') {
@@ -174,7 +174,7 @@ export function emailOf(body: Record<string, unknown>): string | null {
   return null;
 }
 
-/** Prénom (`name.givenName`) non vide, sinon null. */
+/** First name (`name.givenName`) non-empty, otherwise null. */
 export function givenNameOf(body: Record<string, unknown>): string | null {
   const name = body['name'];
   if (isRecord(name)) {
@@ -186,7 +186,7 @@ export function givenNameOf(body: Record<string, unknown>): string | null {
   return null;
 }
 
-/** Nom de famille (`name.familyName`) non vide, sinon null. */
+/** Last name (`name.familyName`) non-empty, otherwise null. */
 export function familyNameOf(body: Record<string, unknown>): string | null {
   const name = body['name'];
   if (isRecord(name)) {
@@ -198,7 +198,7 @@ export function familyNameOf(body: Record<string, unknown>): string | null {
   return null;
 }
 
-/** Nom d'affichage : `displayName` explicite, sinon `givenName + familyName`, sinon null. */
+/** Display name: explicit `displayName`, otherwise `givenName + familyName`, otherwise null. */
 export function displayNameOf(body: Record<string, unknown>): string | null {
   const dn = body['displayName'];
   if (typeof dn === 'string' && dn.trim() !== '') {
@@ -210,28 +210,28 @@ export function displayNameOf(body: Record<string, unknown>): string | null {
   return parts.length > 0 ? parts.join(' ') : null;
 }
 
-/** `displayName` d'un groupe (obligatoire) : chaîne non vide, sinon null. */
+/** Group `displayName` (required): non-empty string, otherwise null. */
 export function groupDisplayNameOf(body: Record<string, unknown>): string | null {
   const dn = body['displayName'];
   return typeof dn === 'string' && dn.trim() !== '' ? dn.trim() : null;
 }
 
-/** `externalId` non vide, sinon null. */
+/** `externalId` non-empty, otherwise null. */
 export function externalIdOf(body: Record<string, unknown>): string | null {
   const value = body['externalId'];
   return typeof value === 'string' && value.trim() !== '' ? value.trim() : null;
 }
 
-/** Champ `active` d'une ressource complète (PUT). Absent ⇒ true (défaut SCIM). */
+/** `active` field of a full resource (PUT). Absent => true (SCIM default). */
 export function activeOf(body: Record<string, unknown>): boolean {
   const value = body['active'];
   return value === undefined ? true : coerceBool(value);
 }
 
 /**
- * Interprète un PATCH SCIM `/Users` (RFC 7644 §3.5.2). Gère les opérations à `path`
- * explicite (`active`, `displayName`, `name.givenName`, `name.familyName`) ET la forme
- * « sans path » (objet `value` partiel émis par certains IdP). `remove` ⇒ valeur effacée.
+ * Interprets a SCIM `/Users` PATCH (RFC 7644 §3.5.2). Handles operations with an explicit
+ * `path` (`active`, `displayName`, `name.givenName`, `name.familyName`) AND the "pathless"
+ * form (partial `value` object emitted by some IdPs). `remove` => value cleared.
  */
 export function parseUserPatch(body: Record<string, unknown>): ScimUserPatch {
   const identity: {
@@ -291,7 +291,7 @@ export function parseUserPatch(body: Record<string, unknown>): ScimUserPatch {
   return { active, identity };
 }
 
-/** Ids des membres (`members[].value`) d'un corps de groupe SCIM. */
+/** Member ids (`members[].value`) of a SCIM group body. */
 export function memberIdsOf(body: Record<string, unknown>): readonly string[] {
   return valuesOf(body['members']);
 }
@@ -317,9 +317,9 @@ const MEMBERS_PATH = /^members\[/i;
 const MEMBER_VALUE_EQ = /value eq "?([^"\]]{1,256})"?/i;
 
 /**
- * Interprète un PATCH SCIM `/Groups` (membres, RFC 7644 §3.5.2) → opérations normalisées.
- * Gère add/remove/replace sur `members` et le retrait ciblé `members[value eq "<id>"]`
- * (émis par Entra/Okta). Filtre borné (anti-ReDoS).
+ * Interprets a SCIM `/Groups` PATCH (members, RFC 7644 §3.5.2) -> normalized operations.
+ * Handles add/remove/replace on `members` and the targeted removal `members[value eq "<id>"]`
+ * (emitted by Entra/Okta). Bounded filter (anti-ReDoS).
  */
 export function parseGroupMemberPatch(body: Record<string, unknown>): readonly GroupMemberPatch[] {
   const ops = body['Operations'];
@@ -359,12 +359,12 @@ export function parseGroupMemberPatch(body: Record<string, unknown>): readonly G
   return out;
 }
 
-// ── Filtres `eq` (bornés) + pagination ───────────────────────────────────────
+// -- `eq` filters (bounded) + pagination ---------------------------------------
 const USERNAME_FILTER = /^userName eq "([^"]{1,320})"$/i;
 const EXTERNALID_FILTER = /^externalId eq "([^"]{1,320})"$/i;
 const DISPLAYNAME_FILTER = /^displayName eq "([^"]{1,320})"$/i;
 
-/** Valeur d'un filtre `userName eq "..."` (regex bornée), sinon null. */
+/** Value of a `userName eq "..."` filter (bounded regex), otherwise null. */
 export function parseUserNameFilter(filter: string | undefined): string | null {
   if (filter === undefined) {
     return null;
@@ -374,8 +374,8 @@ export function parseUserNameFilter(filter: string | undefined): string | null {
 }
 
 /**
- * Valeur d'un filtre `externalId eq "..."` (regex bornée), sinon null. Exigé par le
- * validateur Microsoft Entra pour retrouver un utilisateur par son ancre `externalId`.
+ * Value of an `externalId eq "..."` filter (bounded regex), otherwise null. Required by the
+ * Microsoft Entra validator to look up a user by its `externalId` anchor.
  */
 export function parseExternalIdFilter(filter: string | undefined): string | null {
   if (filter === undefined) {
@@ -385,7 +385,7 @@ export function parseExternalIdFilter(filter: string | undefined): string | null
   return matched === null ? null : (matched[1] ?? null);
 }
 
-/** Valeur d'un filtre `displayName eq "..."` (regex bornée), sinon null. */
+/** Value of a `displayName eq "..."` filter (bounded regex), otherwise null. */
 export function parseDisplayNameFilter(filter: string | undefined): string | null {
   if (filter === undefined) {
     return null;
@@ -411,7 +411,7 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
-/** Pagination SCIM : `startIndex` ≥ 1 (1-based) et `count` borné à [0, MAX_PAGE_SIZE]. */
+/** SCIM pagination: `startIndex` >= 1 (1-based) and `count` bounded to [0, MAX_PAGE_SIZE]. */
 export function parsePagination(query: ScimQuery | undefined): {
   readonly startIndex: number;
   readonly count: number;

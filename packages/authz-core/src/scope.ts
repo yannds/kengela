@@ -1,16 +1,16 @@
 /**
- * Portees et relations organisationnelles.
+ * Organizational scopes and relations.
  *
- * Un droit accorde a une portee couvre toutes les portees plus etroites :
+ * A right granted at a scope covers all narrower scopes:
  *   own subset unit subset subtree subset tenant subset global
  *
- * La *relation* est la position de la ressource par rapport a l'acteur, resolue
- * en amont sur l'organigramme (RelationResolver). On la convertit en rang de
- * portee minimal requis pour couvrir la ressource.
+ * The *relation* is the position of the resource relative to the actor, resolved
+ * upstream against the org chart (RelationResolver). We convert it into the
+ * minimal scope rank required to cover the resource.
  */
 import type { OrgRelation, Scope } from '@kengela/contracts';
 
-/** Portees de la plus etroite (0) a la plus large (4). */
+/** Scopes from the narrowest (0) to the broadest (4). */
 export const SCOPE_RANK: Readonly<Record<Scope, number>> = {
   own: 0,
   unit: 1,
@@ -19,7 +19,7 @@ export const SCOPE_RANK: Readonly<Record<Scope, number>> = {
   global: 4,
 };
 
-/** Rang de portee minimal qu'un grant doit avoir pour couvrir cette relation. */
+/** Minimal scope rank a grant must have to cover this relation. */
 export function relationRank(relation: OrgRelation): number {
   switch (relation) {
     case 'self':
@@ -31,12 +31,12 @@ export function relationRank(relation: OrgRelation): number {
     case 'tenant':
       return SCOPE_RANK.tenant;
     case 'none':
-      // Aucun lien organisationnel : seul un grant `global` peut couvrir.
+      // No organizational link: only a `global` grant can cover.
       return SCOPE_RANK.global;
   }
 }
 
-/** La portee d'un grant couvre-t-elle la relation demandee ? */
+/** Does a grant's scope cover the requested relation? */
 export function scopeCoversRelation(grantScope: Scope, relation: OrgRelation): boolean {
   return SCOPE_RANK[grantScope] >= relationRank(relation);
 }

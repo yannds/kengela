@@ -1,26 +1,26 @@
 /**
- * `LdapClientLike` - surface **NARROW** du client LDAP dont dépend cet adapter.
+ * `LdapClientLike` - **NARROW** surface of the LDAP client this adapter depends on.
  *
- * DOCTRINE (le port est un sas, pas une planque) : on n'importe RIEN de `ldapts` dans le contrat.
- * On décrit exactement les trois méthodes utilisées - `bind`, `search` (paginée), `unbind` - avec
- * des types de retour explicites. Le vrai `Client` de `ldapts` est **structurellement compatible**
- * (voir la fabrique par défaut dans `ldap-directory-source.ts`), et un fake en mémoire l'est tout
- * autant côté test. Lecture seule : aucune méthode de modification d'annuaire n'est exposée.
+ * DOCTRINE (the port is an airlock, not a hideout): we import NOTHING from `ldapts` in the contract.
+ * We describe exactly the three methods used - `bind`, `search` (paginated), `unbind` - with
+ * explicit return types. The real `Client` from `ldapts` is **structurally compatible**
+ * (see the default factory in `ldap-directory-source.ts`), and an in-memory fake is just as much so
+ * on the test side. Read-only: no directory-modification method is exposed.
  */
 
-/** Portée de recherche LDAP (RFC 4511), alignée sur `ldapts`. */
+/** LDAP search scope (RFC 4511), aligned with `ldapts`. */
 export type LdapSearchScope = 'base' | 'one' | 'sub';
 
-/** Options du contrôle de résultats paginés (Paged Results Control). */
+/** Options for the Paged Results Control. */
 export interface LdapPagedOptions {
-  /** Nombre d'entrées par page. */
+  /** Number of entries per page. */
   readonly pageSize?: number;
 }
 
 /**
- * Options de recherche passées au client. Sous-ensemble STRICT des `SearchOptions` de `ldapts` :
- * uniquement ce que l'adapter utilise, avec des types assez étroits pour qu'un vrai `Client` reste
- * structurellement assignable à `LdapClientLike`.
+ * Search options passed to the client. STRICT subset of the `SearchOptions` from `ldapts`:
+ * only what the adapter uses, with types narrow enough that a real `Client` stays
+ * structurally assignable to `LdapClientLike`.
  */
 export interface LdapSearchOptions {
   readonly scope?: LdapSearchScope;
@@ -31,24 +31,24 @@ export interface LdapSearchOptions {
 }
 
 /**
- * Entrée brute renvoyée par une recherche : DN + attributs. Les valeurs sont laissées en `unknown`
- * car le client `ldapts` renvoie des `Buffer` pour les attributs binaires (ex. `objectGUID`) ; la
- * normalisation (stringify + base64) vit dans l'adapter, pas dans le contrat.
+ * Raw entry returned by a search: DN + attributes. Values are left as `unknown`
+ * because the `ldapts` client returns `Buffer` for binary attributes (e.g. `objectGUID`); the
+ * normalization (stringify + base64) lives in the adapter, not in the contract.
  */
 export interface LdapSearchEntry {
   readonly dn: string;
   readonly [attribute: string]: unknown;
 }
 
-/** Résultat d'une recherche LDAP - sous-ensemble de `SearchResult` de `ldapts`. */
+/** Result of an LDAP search - subset of `SearchResult` from `ldapts`. */
 export interface LdapSearchResult {
   readonly searchEntries: readonly LdapSearchEntry[];
   readonly searchReferences?: readonly string[];
 }
 
 /**
- * Surface NARROW du client LDAP. Un vrai `Client` de `ldapts` la satisfait structurellement ; le
- * fake de test aussi. Aucune écriture (add/modify/del) n'est déclarée : cet adapter est en lecture.
+ * NARROW surface of the LDAP client. A real `Client` from `ldapts` satisfies it structurally; so
+ * does the test fake. No write (add/modify/del) is declared: this adapter is read-only.
  */
 export interface LdapClientLike {
   bind(dn: string, password: string): Promise<void>;
@@ -56,5 +56,5 @@ export interface LdapClientLike {
   unbind(): Promise<void>;
 }
 
-/** Fabrique de client injectable (tests, client alternatif). Défaut : vrai `Client` de `ldapts`. */
+/** Injectable client factory (tests, alternative client). Default: real `Client` from `ldapts`. */
 export type LdapClientFactory = () => LdapClientLike;

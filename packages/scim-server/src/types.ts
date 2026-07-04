@@ -1,15 +1,15 @@
 /**
- * Contrats du cœur SCIM 2.0 (RFC 7643/7644) - port `ScimStore` + formes de requête /
- * réponse. Framework-agnostique : aucune référence HTTP, aucune dépendance vendor.
+ * SCIM 2.0 core contracts (RFC 7643/7644) - `ScimStore` port + request/response shapes.
+ * Framework-agnostic: no HTTP reference, no vendor dependency.
  *
- * Le port est NARROW et orienté SCIM : il expose exactement ce dont les handlers ont
- * besoin (réconciliation par e-mail, pagination, désactivation ≠ suppression, membres de
- * groupe). Un adapter (Prisma, NestJS…) l'implémente ; les handlers le consomment.
+ * The port is NARROW and SCIM-oriented: it exposes exactly what the handlers need (email
+ * reconciliation, pagination, deactivation != deletion, group members). An adapter
+ * (Prisma, NestJS...) implements it; the handlers consume it.
  */
 import type { TenantId } from '@kengela/contracts';
 
-// ── Lignes de persistance (formes explicites) ────────────────────────────────
-/** Utilisateur SCIM tel que stocké/relu. `userName` porte l'e-mail (clé de réconciliation). */
+// -- Persistence rows (explicit shapes) ---------------------------------------
+/** SCIM user as stored/reread. `userName` carries the email (reconciliation key). */
 export interface ScimUserRow {
   readonly id: string;
   readonly userName: string;
@@ -18,13 +18,13 @@ export interface ScimUserRow {
   readonly lastName: string | null;
   readonly displayName: string | null;
   readonly active: boolean;
-  /** Horodatage ISO 8601 de création. */
+  /** ISO 8601 creation timestamp. */
   readonly createdAt: string;
-  /** Horodatage ISO 8601 de dernière modification. */
+  /** ISO 8601 last-modification timestamp. */
   readonly lastModified: string;
 }
 
-/** Groupe SCIM tel que stocké/relu, avec ses membres (ids d'utilisateurs). */
+/** SCIM group as stored/reread, with its members (user ids). */
 export interface ScimGroupRow {
   readonly id: string;
   readonly displayName: string;
@@ -34,8 +34,8 @@ export interface ScimGroupRow {
   readonly lastModified: string;
 }
 
-// ── Entrées d'écriture ───────────────────────────────────────────────────────
-/** Champs d'un utilisateur à créer (POST) ou remplacer intégralement (PUT). */
+// -- Write inputs -------------------------------------------------------------
+/** Fields of a user to create (POST) or fully replace (PUT). */
 export interface ScimUserWriteInput {
   readonly userName: string;
   readonly externalId: string | null;
@@ -46,8 +46,8 @@ export interface ScimUserWriteInput {
 }
 
 /**
- * Champs d'identité touchés par un PATCH. `undefined` = non touché ; `null` = effacé ;
- * chaîne = valeur posée (RFC 7644 §3.5.2, sémantique add/replace/remove).
+ * Identity fields touched by a PATCH. `undefined` = untouched; `null` = cleared;
+ * string = value set (RFC 7644 §3.5.2, add/replace/remove semantics).
  */
 export interface ScimUserIdentityPatch {
   readonly firstName?: string | null;
@@ -55,31 +55,31 @@ export interface ScimUserIdentityPatch {
   readonly displayName?: string | null;
 }
 
-/** PATCH utilisateur normalisé : activation + champs d'identité touchés. */
+/** Normalized user PATCH: activation + touched identity fields. */
 export interface ScimUserPatch {
-  /** Nouvelle valeur d'`active`, ou `null` si le PATCH ne la touche pas. */
+  /** New value of `active`, or `null` if the PATCH does not touch it. */
   readonly active: boolean | null;
   readonly identity: ScimUserIdentityPatch;
 }
 
-/** Champs d'un groupe à créer (POST) ou remplacer intégralement (PUT). */
+/** Fields of a group to create (POST) or fully replace (PUT). */
 export interface ScimGroupWriteInput {
   readonly displayName: string;
   readonly externalId: string | null;
   readonly memberIds: readonly string[];
 }
 
-/** Opération de membre de groupe normalisée depuis un PATCH SCIM (RFC 7644 §3.5.2). */
+/** Normalized group-member operation from a SCIM PATCH (RFC 7644 §3.5.2). */
 export type GroupMemberPatch =
   | { readonly kind: 'add'; readonly members: readonly string[] }
   | { readonly kind: 'remove'; readonly members: readonly string[] }
   | { readonly kind: 'replace'; readonly members: readonly string[] };
 
-// ── Options de liste + page ──────────────────────────────────────────────────
+// -- List options + page ------------------------------------------------------
 /**
- * Options de `listUsers` : filtres `userName eq` / `externalId eq` optionnels (au moins l'un
- * des deux, jamais les deux à la fois) + pagination 1-based. `userName` s'égale de façon
- * INSENSIBLE À LA CASSE ; `externalId` est `caseExact` (comparaison exacte).
+ * `listUsers` options: optional `userName eq` / `externalId eq` filters (at least one of the
+ * two, never both at once) + 1-based pagination. `userName` equals in a CASE-INSENSITIVE way;
+ * `externalId` is `caseExact` (exact comparison).
  */
 export interface ScimUserListOptions {
   readonly userName?: string;
@@ -88,7 +88,7 @@ export interface ScimUserListOptions {
   readonly count: number;
 }
 
-/** Options de `listGroups` : filtre `displayName eq` optionnel + pagination 1-based. */
+/** `listGroups` options: optional `displayName eq` filter + 1-based pagination. */
 export interface ScimGroupListOptions {
   readonly displayName?: string;
   readonly startIndex: number;
@@ -96,8 +96,8 @@ export interface ScimGroupListOptions {
 }
 
 /**
- * Page de résultats renvoyée par le store. `totalResults` = total AVANT pagination ;
- * `resources` = tranche demandée ; `itemsPerPage` = taille de la tranche.
+ * Page of results returned by the store. `totalResults` = total BEFORE pagination;
+ * `resources` = requested slice; `itemsPerPage` = slice size.
  */
 export interface ScimListPage<TRow> {
   readonly resources: readonly TRow[];
@@ -106,14 +106,14 @@ export interface ScimListPage<TRow> {
   readonly itemsPerPage: number;
 }
 
-// ── Port de persistance ──────────────────────────────────────────────────────
+// -- Persistence port ---------------------------------------------------------
 /**
- * Port de persistance SCIM (Users + Groups). Toute opération est bornée au tenant.
+ * SCIM persistence port (Users + Groups). Every operation is bounded to the tenant.
  *
- * Invariants attendus de l'implémentation :
- *  - `findUserByEmail` : réconciliation INSENSIBLE À LA CASSE (idempotence du provisioning).
- *  - `deactivateUser` : DÉSACTIVE (active=false), ne SUPPRIME jamais (déprovisionnement RGPD-safe).
- *  - `listUsers`/`listGroups` : renvoient `totalResults` = total filtré AVANT pagination.
+ * Invariants expected from the implementation:
+ *  - `findUserByEmail`: CASE-INSENSITIVE reconciliation (provisioning idempotency).
+ *  - `deactivateUser`: DEACTIVATES (active=false), never DELETES (GDPR-safe deprovisioning).
+ *  - `listUsers`/`listGroups`: return `totalResults` = filtered total BEFORE pagination.
  */
 export interface ScimStore {
   getUser(tenantId: TenantId, id: string): Promise<ScimUserRow | null>;
@@ -147,8 +147,8 @@ export interface ScimStore {
   deleteGroup(tenantId: TenantId, id: string): Promise<boolean>;
 }
 
-// ── Requête / réponse des handlers purs ──────────────────────────────────────
-/** Paramètres de requête SCIM déjà extraits par la couche HTTP (adapter). */
+// -- Request / response of the pure handlers ----------------------------------
+/** SCIM query parameters already extracted by the HTTP layer (adapter). */
 export interface ScimQuery {
   readonly filter?: string;
   readonly startIndex?: string | number;
@@ -156,8 +156,8 @@ export interface ScimQuery {
 }
 
 /**
- * Requête SCIM parsée, indépendante du transport. `pathId` = segment `/:id` ; `body` =
- * JSON déjà désérialisé (validé par le handler) ; `query` = paramètres de liste.
+ * Parsed SCIM request, transport-independent. `pathId` = `/:id` segment; `body` =
+ * already-deserialized JSON (validated by the handler); `query` = list parameters.
  */
 export interface ScimRequest {
   readonly tenantId: TenantId;
@@ -167,13 +167,13 @@ export interface ScimRequest {
 }
 
 /**
- * Réponse SCIM neutre : un statut HTTP + un corps JSON (absent pour 204). L'adapter la
- * sérialise en `application/scim+json`.
+ * Neutral SCIM response: an HTTP status + a JSON body (absent for 204). The adapter
+ * serializes it as `application/scim+json`.
  */
 export interface ScimResponse {
   readonly status: number;
   readonly body?: Readonly<Record<string, unknown>>;
 }
 
-/** Signature commune d'un handler SCIM pur : `(store, requête) → réponse`. */
+/** Common signature of a pure SCIM handler: `(store, request) -> response`. */
 export type ScimHandler = (store: ScimStore, request: ScimRequest) => Promise<ScimResponse>;

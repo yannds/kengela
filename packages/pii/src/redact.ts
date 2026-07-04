@@ -17,9 +17,9 @@ function maskValue(value: string): string {
 }
 
 /**
- * Redaction/masquage des données personnelles pour affichage/journaux sans exposer
- * la PII en clair. Masque l'identité (email/nom) ET les attributs classés `pii`
- * (téléphone, adresse...). Les champs non personnels restent inchangés.
+ * Redaction/masking of personal data for display/logs without exposing
+ * PII in cleartext. Masks identity (email/name) AND attributes classified `pii`
+ * (phone, address...). Non-personal fields stay unchanged.
  */
 export function redactProfile(profile: DirectoryProfile): DirectoryProfile {
   const attributes: Record<string, unknown> = {};

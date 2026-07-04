@@ -1,8 +1,8 @@
 /**
- * Surface NARROW d'une instance better-auth réellement utilisée par l'adapter :
- * la vérification de session. Une vraie instance better-auth est structurellement
- * compatible. On n'enveloppe PAS tout le framework - better-auth gère l'OIDC/OAuth,
- * la DB et les routes côté app ; Kengela ne consomme que la session vérifiée.
+ * NARROW surface of a better-auth instance actually used by the adapter: session
+ * verification. A real better-auth instance is structurally compatible. We do NOT wrap
+ * the whole framework - better-auth handles OIDC/OAuth, the DB and the routes on the app
+ * side; Kengela only consumes the verified session.
  */
 export interface BetterAuthUser {
   readonly id: string;

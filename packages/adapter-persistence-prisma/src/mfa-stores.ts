@@ -11,8 +11,8 @@ import type { MfaChallengeDelegate, MfaSecretDelegate } from './prisma-like.js';
 const SYSTEM_CLOCK: Clock = { now: () => Date.now() };
 
 /**
- * MfaSecretStore Prisma : persiste le secret TOTP DÉJÀ chiffré (la MfaService le
- * chiffre via KeyManagement avant de le passer). Idempotent par (tenant, user).
+ * Prisma MfaSecretStore: persists the ALREADY encrypted TOTP secret (MfaService
+ * encrypts it via KeyManagement before passing it). Idempotent per (tenant, user).
  */
 export class PrismaMfaSecretStore implements MfaSecretStore {
   readonly #secrets: MfaSecretDelegate;
@@ -37,9 +37,9 @@ export interface PrismaMfaChallengeStoreOptions {
 }
 
 /**
- * MfaChallengeStore Prisma : défi opaque expirant, consommé une seule fois
- * (one-shot). `consume` supprime toujours le défi (même expiré) puis vérifie
- * l'expiration - anti-rejeu.
+ * Prisma MfaChallengeStore: opaque expiring challenge, consumed only once
+ * (one-shot). `consume` always deletes the challenge (even if expired) then checks
+ * expiration - anti-replay.
  */
 export class PrismaMfaChallengeStore implements MfaChallengeStore {
   readonly #challenges: MfaChallengeDelegate;

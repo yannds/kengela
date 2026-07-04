@@ -1,12 +1,12 @@
 /**
- * `LdapDirectorySource` - adapter d'annuaire **AD / LDAP** (jumeau « pull » des connecteurs Graph /
- * Google / SCIM). Se lie en LDAP(S) (`bind`), parcourt l'annuaire par recherche paginée sous une
- * `baseDN`, et renvoie des `LdapEntryParts` **normalisés** (DN + attributs en chaînes, binaires en
- * base64) - directement consommables par `profileFromLdap` de `@kengela/iam-mapping`. Aucune logique
- * de mapping de rôles ici : cet adapter ne fait QUE parler LDAP, la projection reste dans la lib pure.
+ * `LdapDirectorySource` - **AD / LDAP** directory adapter ("pull" twin of the Graph /
+ * Google / SCIM connectors). Binds over LDAP(S) (`bind`), walks the directory via paginated search
+ * under a `baseDN`, and returns **normalized** `LdapEntryParts` (DN + attributes as strings, binaries
+ * in base64) - directly consumable by `profileFromLdap` from `@kengela/iam-mapping`. No role-mapping
+ * logic here: this adapter ONLY speaks LDAP, the projection stays in the pure lib.
  *
- * TLS vérifié par défaut (LDAPS). Le mot de passe de bind n'est JAMAIS journalisé (ce module ne
- * journalise rien) ; il est conservé en champ privé et transmis au seul client injecté.
+ * TLS verified by default (LDAPS). The bind password is NEVER logged (this module logs
+ * nothing); it is kept in a private field and passed only to the injected client.
  */
 import { Client } from 'ldapts';
 import {
@@ -24,73 +24,73 @@ import type {
 } from './ldap-client-like.js';
 
 /**
- * Bornes et défauts LDAP (Active Directory), source unique de vérité - aucun nombre/chaîne magique
- * dans le code. Surchargeables par `LdapConnectionConfig` (config connecteur, jamais en dur).
+ * LDAP bounds and defaults (Active Directory), single source of truth - no magic number/string
+ * in the code. Overridable via `LdapConnectionConfig` (connector config, never hardcoded).
  */
 export const LDAP_SOURCE_DEFAULTS = {
-  /** Filtre des comptes personnels (AD) : exclut les comptes machine. */
+  /** Personal-account filter (AD): excludes machine accounts. */
   userFilter: '(&(objectCategory=person)(objectClass=user))',
-  /** Attributs demandés (`*` couvre les usuels ; `memberOf` explicite pour les groupes). */
+  /** Requested attributes (`*` covers the usual ones; `memberOf` explicit for groups). */
   attributes: ['*', 'memberOf'],
-  /** Timeout bind + recherche (ms). */
+  /** Bind + search timeout (ms). */
   timeoutMs: 15_000,
-  /** Taille de page (Paged Results Control). */
+  /** Page size (Paged Results Control). */
   pageSize: 200,
-  /** Plafond d'entrées lues par pull. */
+  /** Cap on entries read per pull. */
   maxUsers: 1000,
-  /** Vérifie le certificat TLS du serveur (LDAPS). */
+  /** Verifies the server's TLS certificate (LDAPS). */
   tlsRejectUnauthorized: true,
 } as const;
 
-/** Paramètres de connexion et de lecture de l'annuaire (résolus par l'appelant depuis sa config). */
+/** Directory connection and read parameters (resolved by the caller from its config). */
 export interface LdapConnectionConfig {
-  /** URL du serveur (`ldaps://dc.corp.local:636` recommandé ; `ldap://` en dev seulement). */
+  /** Server URL (`ldaps://dc.corp.local:636` recommended; `ldap://` in dev only). */
   readonly url: string;
-  /** DN de service pour le bind (compte de lecture d'annuaire). */
+  /** Service DN for the bind (directory read account). */
   readonly bindDN: string;
-  /** Mot de passe du compte de service (résolu depuis un coffre par l'appelant ; jamais journalisé). */
+  /** Service account password (resolved from a vault by the caller; never logged). */
   readonly bindPassword: string;
-  /** Racine de recherche (`OU=Users,DC=corp,DC=local`). */
+  /** Search root (`OU=Users,DC=corp,DC=local`). */
   readonly baseDN: string;
-  /** Filtre de recherche par défaut (sinon défaut Active Directory). */
+  /** Default search filter (otherwise the Active Directory default). */
   readonly userFilter?: string;
-  /** Attributs demandés par défaut (sinon `["*","memberOf"]`). */
+  /** Default requested attributes (otherwise `["*","memberOf"]`). */
   readonly attributes?: readonly string[];
-  /** Timeout bind + recherche (ms). */
+  /** Bind + search timeout (ms). */
   readonly timeoutMs?: number;
-  /** Vérifie le certificat TLS (LDAPS). Défaut `true` ; ne désactiver que pour un annuaire de test. */
+  /** Verifies the TLS certificate (LDAPS). Default `true`; disable only for a test directory. */
   readonly tlsRejectUnauthorized?: boolean;
-  /** Taille de page de la recherche paginée. */
+  /** Page size of the paginated search. */
   readonly pageSize?: number;
-  /** Plafond d'entrées lues par pull. */
+  /** Cap on entries read per pull. */
   readonly maxUsers?: number;
 }
 
-/** Options de construction de la source (injection de client pour les tests). */
+/** Source construction options (client injection for tests). */
 export interface LdapDirectorySourceOptions {
-  /** Fabrique de client injectable. Défaut : un vrai `Client` de `ldapts` configuré depuis la config. */
+  /** Injectable client factory. Default: a real `Client` from `ldapts` configured from the config. */
   readonly clientFactory?: LdapClientFactory;
 }
 
-/** Options d'un appel `fetchEntries`. */
+/** Options of a `fetchEntries` call. */
 export interface FetchEntriesOptions {
-  /** Attributs demandés (sinon ceux de la config, sinon défauts AD). */
+  /** Requested attributes (otherwise those from config, otherwise AD defaults). */
   readonly attributes?: readonly string[];
-  /** Plafond d'entrées (sinon `maxUsers`). */
+  /** Entry cap (otherwise `maxUsers`). */
   readonly max?: number;
-  /** Portée de recherche (sinon `sub`). */
+  /** Search scope (otherwise `sub`). */
   readonly scope?: LdapSearchScope;
-  /** Carte d'attributs LDAP à attacher à chaque entrée (pour `profileFromLdap`). */
+  /** LDAP attribute map to attach to each entry (for `profileFromLdap`). */
   readonly attributeMap?: LdapAttributeMap;
 }
 
-/** Profil normalisé + état d'activation du compte (dé-provisioning via `userAccountControl`). */
+/** Normalized profile + account activation state (de-provisioning via `userAccountControl`). */
 export interface DirectoryRecord {
   readonly profile: DirectoryProfile;
   readonly active: boolean;
 }
 
-/** Convertit une valeur scalaire d'attribut LDAP (chaîne ou binaire) en chaîne stable, ou undefined. */
+/** Converts a scalar LDAP attribute value (string or binary) into a stable string, or undefined. */
 function stringifyScalar(value: unknown): string | undefined {
   if (Buffer.isBuffer(value)) return value.toString('base64');
   if (typeof value === 'string') return value;
@@ -98,7 +98,7 @@ function stringifyScalar(value: unknown): string | undefined {
   return undefined;
 }
 
-/** Normalise une valeur d'attribut (mono- ou multi-valuée) en chaîne(s) ; binaires en base64. */
+/** Normalizes an attribute value (single- or multi-valued) into string(s); binaries in base64. */
 function normalizeValue(value: unknown): string | readonly string[] | undefined {
   if (Array.isArray(value)) {
     const out: string[] = [];
@@ -112,8 +112,8 @@ function normalizeValue(value: unknown): string | readonly string[] | undefined 
 }
 
 /**
- * Source d'annuaire LDAP. Un seul point d'entrée réseau (`fetchEntries`) et un health-check
- * (`checkConnection`) ; la projection vers `DirectoryProfile` passe par les helpers statiques
+ * LDAP directory source. A single network entry point (`fetchEntries`) and a health-check
+ * (`checkConnection`); the projection to `DirectoryProfile` goes through the static helpers
  * `toProfiles` / `toRecords` (SSoT `@kengela/iam-mapping`).
  */
 export class LdapDirectorySource {
@@ -140,9 +140,9 @@ export class LdapDirectorySource {
   }
 
   /**
-   * Se lie, parcourt l'annuaire (recherche paginée sous `baseDN`), normalise et se délie. Renvoie des
-   * `LdapEntryParts` (DN + attributs en chaînes, `objectGUID` en base64) plafonnés par `max`. Lecture
-   * réseau pure (hors transaction DB). Le `unbind` est garanti même en cas d'échec.
+   * Binds, walks the directory (paginated search under `baseDN`), normalizes and unbinds. Returns
+   * `LdapEntryParts` (DN + attributes as strings, `objectGUID` in base64) capped by `max`. Pure
+   * network read (outside any DB transaction). The `unbind` is guaranteed even on failure.
    */
   public async fetchEntries(
     filter?: string,
@@ -172,8 +172,8 @@ export class LdapDirectorySource {
   }
 
   /**
-   * Health-check : se lie, vérifie l'accès puis se délie. `true` si connectivité + identifiants +
-   * TLS sont valides, `false` sinon (aucune exception ne fuit ; le mot de passe n'est pas journalisé).
+   * Health-check: binds, verifies access then unbinds. `true` if connectivity + credentials +
+   * TLS are valid, `false` otherwise (no exception leaks; the password is not logged).
    */
   public async checkConnection(): Promise<boolean> {
     const client = this.#factory();
@@ -188,8 +188,8 @@ export class LdapDirectorySource {
   }
 
   /**
-   * Projette des entrées normalisées en `DirectoryProfile` via `profileFromLdap` (SSoT). Si `map` est
-   * fournie et que l'entrée n'a pas déjà sa propre carte, elle est appliquée.
+   * Projects normalized entries into `DirectoryProfile` via `profileFromLdap` (SSoT). If `map` is
+   * provided and the entry does not already have its own map, it is applied.
    */
   public static toProfiles(
     entries: readonly LdapEntryParts[],
@@ -199,8 +199,8 @@ export class LdapDirectorySource {
   }
 
   /**
-   * Comme `toProfiles`, mais joint l'état d'activation du compte (`accountActiveFromLdap` : bit
-   * `ACCOUNTDISABLE` 0x2 de `userAccountControl`) pour piloter le dé-provisioning.
+   * Like `toProfiles`, but joins the account activation state (`accountActiveFromLdap`: the
+   * `ACCOUNTDISABLE` 0x2 bit of `userAccountControl`) to drive de-provisioning.
    */
   public static toRecords(
     entries: readonly LdapEntryParts[],
@@ -213,7 +213,7 @@ export class LdapDirectorySource {
   }
 }
 
-/** Applique `map` à une entrée dépourvue de carte, sinon la laisse telle quelle. */
+/** Applies `map` to an entry that lacks a map, otherwise leaves it as-is. */
 function withAttributeMap(
   entry: LdapEntryParts,
   map: LdapAttributeMap | undefined,
@@ -222,7 +222,7 @@ function withAttributeMap(
   return { ...entry, attributeMap: map };
 }
 
-/** Normalise une entrée brute de recherche en `LdapEntryParts` (attributs en chaînes, binaires base64). */
+/** Normalizes a raw search entry into `LdapEntryParts` (attributes as strings, binaries base64). */
 function normalizeEntry(
   entry: LdapSearchEntry,
   attributeMap: LdapAttributeMap | undefined,
@@ -237,7 +237,7 @@ function normalizeEntry(
   return attributeMap !== undefined ? { dn, attributes, attributeMap } : { dn, attributes };
 }
 
-/** Fabrique par défaut : un vrai `Client` de `ldapts` (LDAPS vérifié), structurellement `LdapClientLike`. */
+/** Default factory: a real `Client` from `ldapts` (LDAPS verified), structurally `LdapClientLike`. */
 function createLdapClientFactory(config: LdapConnectionConfig): LdapClientFactory {
   const timeout = config.timeoutMs ?? LDAP_SOURCE_DEFAULTS.timeoutMs;
   const rejectUnauthorized =

@@ -1,23 +1,23 @@
 /**
- * PrismaCredentialStore - implemente `CredentialStore` sur une surface NARROW
- * `CredentialPrismaLike` (Account + User), calque generique de
+ * PrismaCredentialStore - implements `CredentialStore` on a NARROW surface
+ * `CredentialPrismaLike` (Account + User), a generic analogue of
  * `TranslogCredentialStore` (connector-translog).
  *
- * Une identite par mot de passe vit dans `Account` (providerId='credential',
- * accountId=email), le hash dans `Account.password`, l'etat du compte dans `User`.
- * La resolution joint les deux :
- *  - findByEmail(email, tenantId)    : compte credential du tenant + son User.
- *  - findByEmailAcrossTenants(email) : tous les comptes credential (tous tenants),
- *                                      Users charges EN LOT (anti N+1).
+ * A password identity lives in `Account` (providerId='credential',
+ * accountId=email), the hash in `Account.password`, the account state in `User`.
+ * Resolution joins the two:
+ *  - findByEmail(email, tenantId)    : the tenant's credential account + its User.
+ *  - findByEmailAcrossTenants(email) : all credential accounts (all tenants),
+ *                                      Users loaded IN BATCH (anti N+1).
  *
- * Un compte credential orphelin (User introuvable) est ecarte FAIL-CLOSED.
+ * An orphan credential account (User not found) is discarded FAIL-CLOSED.
  */
 import type { CredentialRecord, CredentialStore, TenantId } from '@kengela/contracts';
 import type { AccountRow, CredentialPrismaLike, CredentialUserRow } from './prisma-like.js';
 
 const CREDENTIAL_PROVIDER = 'credential';
 
-/** Options du store : nom du provider d'identifiants (defaut `credential`). */
+/** Store options: name of the credential provider (default `credential`). */
 export interface PrismaCredentialStoreOptions {
   readonly providerId?: string;
 }

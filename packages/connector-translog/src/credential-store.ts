@@ -1,14 +1,14 @@
 /**
- * TranslogCredentialStore - implemente CredentialStore sur TranslogPrismaLike.
+ * TranslogCredentialStore - implements CredentialStore on TranslogPrismaLike.
  *
- * Une identite par mot de passe vit dans `Account` (providerId='credential',
- * accountId=email), le hash bcrypt dans `Account.password`, l'etat du compte dans
- * `User`. La resolution joint les deux :
- *  - findByEmail(email, tenantId)         : compte credential du tenant + son User.
- *  - findByEmailAcrossTenants(email)      : tous les comptes credential (tous tenants),
- *                                           charges en lot pour eviter le N+1.
+ * A password identity lives in `Account` (providerId='credential', accountId=email),
+ * the bcrypt hash in `Account.password`, the account state in `User`. Resolution joins
+ * the two:
+ *  - findByEmail(email, tenantId)         : the tenant's credential account + its User.
+ *  - findByEmailAcrossTenants(email)      : all credential accounts (all tenants),
+ *                                           loaded in a batch to avoid the N+1.
  *
- * Un compte credential orphelin (User introuvable) est ecarte fail-closed.
+ * An orphan credential account (User not found) is discarded fail-closed.
  */
 import type { CredentialRecord, CredentialStore, TenantId } from '@kengela/contracts';
 import type { AccountRow, TranslogPrismaLike, UserRow } from './translog-prisma-like.js';

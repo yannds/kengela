@@ -1,9 +1,9 @@
 /**
- * PrismaPolicyStore - implemente PolicyStore sur PrismaLike.
+ * PrismaPolicyStore - implements PolicyStore on PrismaLike.
  *
- * Charge les policies d'un tenant avec leurs regles jointes. Le narrowing des
- * effets/scopes est fail-closed (voir mapping.ts) : une regle illisible est
- * ecartee plutot qu'elargie.
+ * Loads a tenant's policies with their joined rules. The narrowing of
+ * effects/scopes is fail-closed (see mapping.ts): an unreadable rule is
+ * discarded rather than widened.
  */
 import type { Policy, PolicyStore, TenantId } from '@kengela/contracts';
 import type { PrismaLike } from './prisma-like.js';

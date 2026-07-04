@@ -74,7 +74,7 @@ describe('PrismaSessionStore.rotate', () => {
 
   it('leve si la session a tourner est absente', async () => {
     const store = new PrismaSessionStore(new FakePrisma());
-    await expect(store.rotate('ghost')).rejects.toThrow(/introuvable/);
+    await expect(store.rotate('ghost')).rejects.toThrow(/not found/);
   });
 });
 

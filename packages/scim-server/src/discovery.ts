@@ -1,13 +1,13 @@
 /**
- * Endpoints de DÉCOUVERTE SCIM 2.0 (RFC 7644 §4) - handlers PURS, sans HTTP ni store.
+ * SCIM 2.0 DISCOVERY endpoints (RFC 7644 §4) - PURE handlers, no HTTP nor store.
  *
- * Fournit l'AUTO-DESCRIPTION du cœur : capacités du fournisseur de service
- * (`/ServiceProviderConfig`), types de ressources (`/ResourceTypes`) et définitions de
- * schéma (`/Schemas`) pour NOTRE schéma - core User (RFC 7643 §4.1), extension enterprise
- * (§4.3) et Group (§4.2). Le validateur Microsoft Entra les interroge pour se configurer.
+ * Provides the core SELF-DESCRIPTION: service provider capabilities
+ * (`/ServiceProviderConfig`), resource types (`/ResourceTypes`) and schema definitions
+ * (`/Schemas`) for OUR schema - core User (RFC 7643 §4.1), enterprise extension (§4.3)
+ * and Group (§4.2). The Microsoft Entra validator queries them to configure itself.
  *
- * Les définitions décrivent exactement ce que `KengelaScimUser` / `toScimUser` savent
- * porter : elles sont la source de vérité consommée par `validateScimUser`.
+ * The definitions describe exactly what `KengelaScimUser` / `toScimUser` can carry:
+ * they are the source of truth consumed by `validateScimUser`.
  */
 import {
   SCIM_SCHEMA_CORE_USER,
@@ -17,13 +17,13 @@ import {
 import { MAX_PAGE_SIZE, SCIM_SCHEMA_LIST_RESPONSE } from './serialize.js';
 import type { ScimResponse } from './types.js';
 
-// ── URNs des ressources de découverte (RFC 7643 §5/§6/§7) ────────────────────
+// -- URNs of the discovery resources (RFC 7643 §5/§6/§7) ----------------------
 export const SCIM_SCHEMA_SERVICE_PROVIDER_CONFIG =
   'urn:ietf:params:scim:schemas:core:2.0:ServiceProviderConfig';
 export const SCIM_SCHEMA_RESOURCE_TYPE = 'urn:ietf:params:scim:schemas:core:2.0:ResourceType';
 export const SCIM_SCHEMA_SCHEMA = 'urn:ietf:params:scim:schemas:core:2.0:Schema';
 
-// ── Définition d'attribut de schéma (RFC 7643 §7) ────────────────────────────
+// -- Schema attribute definition (RFC 7643 §7) --------------------------------
 type ScimAttributeType = 'string' | 'boolean' | 'complex' | 'reference';
 type ScimMutability = 'readOnly' | 'readWrite' | 'immutable' | 'writeOnly';
 type ScimReturned = 'always' | 'never' | 'default' | 'request';
@@ -43,7 +43,7 @@ interface AttributeSpec {
   readonly subAttributes?: readonly AttributeSpec[];
 }
 
-/** Développe une `AttributeSpec` en attribut de schéma SCIM complet (défauts RFC 7643 §7). */
+/** Expands an `AttributeSpec` into a full SCIM schema attribute (RFC 7643 §7 defaults). */
 function attribute(spec: AttributeSpec): Record<string, unknown> {
   const out: Record<string, unknown> = {
     name: spec.name,
@@ -66,19 +66,19 @@ function attribute(spec: AttributeSpec): Record<string, unknown> {
 }
 
 const MULTI_VALUE_SUBS: readonly AttributeSpec[] = [
-  { name: 'value', description: "Valeur de l'entrée (ex. adresse e-mail)." },
-  { name: 'type', description: 'Étiquette de type (ex. work, home).' },
-  { name: 'primary', type: 'boolean', description: "Marque l'entrée primaire." },
-  { name: 'display', mutability: 'readOnly', description: 'Libellé lisible.' },
+  { name: 'value', description: 'Entry value (e.g. email address).' },
+  { name: 'type', description: 'Type label (e.g. work, home).' },
+  { name: 'primary', type: 'boolean', description: 'Marks the primary entry.' },
+  { name: 'display', mutability: 'readOnly', description: 'Human-readable label.' },
 ];
 
 const NAME_SUBS: readonly AttributeSpec[] = [
-  { name: 'formatted', description: 'Nom complet formaté.' },
-  { name: 'familyName', description: 'Nom de famille.' },
-  { name: 'givenName', description: 'Prénom.' },
-  { name: 'middleName', description: 'Deuxième prénom.' },
-  { name: 'honorificPrefix', description: 'Civilité (Mme, M.).' },
-  { name: 'honorificSuffix', description: 'Suffixe honorifique.' },
+  { name: 'formatted', description: 'Full formatted name.' },
+  { name: 'familyName', description: 'Family name.' },
+  { name: 'givenName', description: 'Given name.' },
+  { name: 'middleName', description: 'Middle name.' },
+  { name: 'honorificPrefix', description: 'Honorific prefix (Mrs, Mr).' },
+  { name: 'honorificSuffix', description: 'Honorific suffix.' },
 ];
 
 const USER_ATTRIBUTES: readonly AttributeSpec[] = [
@@ -86,51 +86,51 @@ const USER_ATTRIBUTES: readonly AttributeSpec[] = [
     name: 'userName',
     required: true,
     uniqueness: 'server',
-    description: "Identifiant de connexion unique (porte l'e-mail).",
+    description: 'Unique login identifier (carries the email).',
   },
-  { name: 'name', type: 'complex', subAttributes: NAME_SUBS, description: 'Composants du nom.' },
-  { name: 'displayName', description: "Nom affiché de l'utilisateur." },
-  { name: 'nickName', description: 'Surnom.' },
-  { name: 'title', description: 'Intitulé de poste.' },
-  { name: 'userType', description: "Catégorie d'utilisateur." },
-  { name: 'preferredLanguage', description: 'Langue préférée (BCP 47).' },
-  { name: 'locale', description: 'Locale (ex. fr-FR).' },
-  { name: 'timezone', description: 'Fuseau horaire (IANA).' },
+  { name: 'name', type: 'complex', subAttributes: NAME_SUBS, description: 'Name components.' },
+  { name: 'displayName', description: "User's display name." },
+  { name: 'nickName', description: 'Nickname.' },
+  { name: 'title', description: 'Job title.' },
+  { name: 'userType', description: 'User category.' },
+  { name: 'preferredLanguage', description: 'Preferred language (BCP 47).' },
+  { name: 'locale', description: 'Locale (e.g. fr-FR).' },
+  { name: 'timezone', description: 'Time zone (IANA).' },
   {
     name: 'active',
     type: 'boolean',
-    description: 'Statut administratif (provisioning/déprovisioning).',
+    description: 'Administrative status (provisioning/deprovisioning).',
   },
   {
     name: 'emails',
     type: 'complex',
     multiValued: true,
     subAttributes: MULTI_VALUE_SUBS,
-    description: "Adresses e-mail de l'utilisateur.",
+    description: "User's email addresses.",
   },
   {
     name: 'phoneNumbers',
     type: 'complex',
     multiValued: true,
     subAttributes: MULTI_VALUE_SUBS,
-    description: 'Numéros de téléphone.',
+    description: 'Phone numbers.',
   },
 ];
 
 const ENTERPRISE_ATTRIBUTES: readonly AttributeSpec[] = [
-  { name: 'employeeNumber', description: "Matricule de l'employé." },
-  { name: 'costCenter', description: 'Centre de coût.' },
-  { name: 'organization', description: 'Organisation.' },
+  { name: 'employeeNumber', description: "Employee's staff number." },
+  { name: 'costCenter', description: 'Cost center.' },
+  { name: 'organization', description: 'Organization.' },
   { name: 'division', description: 'Division.' },
-  { name: 'department', description: 'Département.' },
+  { name: 'department', description: 'Department.' },
   {
     name: 'manager',
     type: 'complex',
-    description: "Manager de l'utilisateur.",
+    description: "User's manager.",
     subAttributes: [
-      { name: 'value', description: 'Id du manager.' },
-      { name: 'displayName', mutability: 'readOnly', description: 'Nom du manager.' },
-      { name: '$ref', type: 'reference', description: 'URI de la ressource manager.' },
+      { name: 'value', description: 'Manager id.' },
+      { name: 'displayName', mutability: 'readOnly', description: 'Manager name.' },
+      { name: '$ref', type: 'reference', description: 'URI of the manager resource.' },
     ],
   },
 ];
@@ -139,18 +139,18 @@ const GROUP_ATTRIBUTES: readonly AttributeSpec[] = [
   {
     name: 'displayName',
     required: true,
-    description: 'Nom affiché du groupe.',
+    description: "Group's display name.",
   },
   {
     name: 'members',
     type: 'complex',
     multiValued: true,
-    description: 'Membres du groupe.',
+    description: 'Group members.',
     subAttributes: [
-      { name: 'value', mutability: 'immutable', description: 'Id du membre.' },
-      { name: '$ref', type: 'reference', mutability: 'immutable', description: 'URI du membre.' },
-      { name: 'type', mutability: 'immutable', description: 'Type de membre (User/Group).' },
-      { name: 'display', mutability: 'immutable', description: 'Libellé du membre.' },
+      { name: 'value', mutability: 'immutable', description: 'Member id.' },
+      { name: '$ref', type: 'reference', mutability: 'immutable', description: 'Member URI.' },
+      { name: 'type', mutability: 'immutable', description: 'Member type (User/Group).' },
+      { name: 'display', mutability: 'immutable', description: 'Member label.' },
     ],
   },
 ];
@@ -171,33 +171,28 @@ function schemaResource(
 }
 
 /**
- * Définitions de schéma SCIM de NOTRE cœur (RFC 7643 §7) : core User, extension enterprise
- * et Group. Auto-description de `KengelaScimUser`, consommée par `validateScimUser`.
+ * SCIM schema definitions of OUR core (RFC 7643 §7): core User, enterprise extension
+ * and Group. Self-description of `KengelaScimUser`, consumed by `validateScimUser`.
  */
 export function schemaDefinitions(): readonly Record<string, unknown>[] {
   return [
     schemaResource(
       SCIM_SCHEMA_CORE_USER,
       'User',
-      'Utilisateur SCIM 2.0 (RFC 7643 §4.1).',
+      'SCIM 2.0 user (RFC 7643 §4.1).',
       USER_ATTRIBUTES,
     ),
     schemaResource(
       SCIM_SCHEMA_ENTERPRISE_USER,
       'EnterpriseUser',
-      "Extension enterprise de l'utilisateur (RFC 7643 §4.3).",
+      'Enterprise extension of the user (RFC 7643 §4.3).',
       ENTERPRISE_ATTRIBUTES,
     ),
-    schemaResource(
-      SCIM_SCHEMA_GROUP,
-      'Group',
-      'Groupe SCIM 2.0 (RFC 7643 §4.2).',
-      GROUP_ATTRIBUTES,
-    ),
+    schemaResource(SCIM_SCHEMA_GROUP, 'Group', 'SCIM 2.0 group (RFC 7643 §4.2).', GROUP_ATTRIBUTES),
   ];
 }
 
-/** Types de ressources exposés (RFC 7643 §6) : User (+ extension enterprise) et Group. */
+/** Exposed resource types (RFC 7643 §6): User (+ enterprise extension) and Group. */
 export function resourceTypes(): readonly Record<string, unknown>[] {
   return [
     {
@@ -205,7 +200,7 @@ export function resourceTypes(): readonly Record<string, unknown>[] {
       id: 'User',
       name: 'User',
       endpoint: '/Users',
-      description: 'Utilisateur provisionné (RFC 7643 §4.1).',
+      description: 'Provisioned user (RFC 7643 §4.1).',
       schema: SCIM_SCHEMA_CORE_USER,
       schemaExtensions: [{ schema: SCIM_SCHEMA_ENTERPRISE_USER, required: false }],
       meta: { resourceType: 'ResourceType', location: 'ResourceTypes/User' },
@@ -215,7 +210,7 @@ export function resourceTypes(): readonly Record<string, unknown>[] {
       id: 'Group',
       name: 'Group',
       endpoint: '/Groups',
-      description: 'Groupe provisionné (RFC 7643 §4.2).',
+      description: 'Provisioned group (RFC 7643 §4.2).',
       schema: SCIM_SCHEMA_GROUP,
       meta: { resourceType: 'ResourceType', location: 'ResourceTypes/Group' },
     },
@@ -223,9 +218,9 @@ export function resourceTypes(): readonly Record<string, unknown>[] {
 }
 
 /**
- * Configuration du fournisseur de service (RFC 7643 §5) : capacités RÉELLES de ce cœur.
- * PATCH supporté, filtre supporté (borné), bulk/sort/etag/changePassword non supportés ;
- * authentification par jeton porteur OAuth.
+ * Service provider configuration (RFC 7643 §5): the REAL capabilities of this core.
+ * PATCH supported, filter supported (bounded), bulk/sort/etag/changePassword unsupported;
+ * authentication via OAuth bearer token.
  */
 export function serviceProviderConfig(): Record<string, unknown> {
   return {
@@ -241,7 +236,7 @@ export function serviceProviderConfig(): Record<string, unknown> {
       {
         type: 'oauthbearertoken',
         name: 'OAuth Bearer Token',
-        description: 'Authentification via jeton porteur OAuth 2.0 (en-tête Authorization).',
+        description: 'Authentication via OAuth 2.0 bearer token (Authorization header).',
         specUri: 'https://datatracker.ietf.org/doc/html/rfc6750',
         documentationUri: 'https://datatracker.ietf.org/doc/html/rfc6750',
         primary: true,
@@ -276,14 +271,14 @@ function notFound(detail: string): ScimResponse {
   };
 }
 
-/** GET `/ServiceProviderConfig` : 200 avec la configuration du fournisseur. */
+/** GET `/ServiceProviderConfig`: 200 with the provider configuration. */
 export function handleServiceProviderConfig(): ScimResponse {
   return { status: 200, body: serviceProviderConfig() };
 }
 
 /**
- * GET `/ResourceTypes` (liste) ou `/ResourceTypes/:id` (ressource unique). 404 si l'`id`
- * demandé est inconnu.
+ * GET `/ResourceTypes` (list) or `/ResourceTypes/:id` (single resource). 404 if the requested
+ * `id` is unknown.
  */
 export function handleResourceTypes(pathId?: string): ScimResponse {
   const all = resourceTypes();
@@ -292,13 +287,13 @@ export function handleResourceTypes(pathId?: string): ScimResponse {
   }
   const found = all.find((rt) => rt['id'] === pathId);
   return found === undefined
-    ? notFound(`Type de ressource introuvable : ${pathId}.`)
+    ? notFound(`Resource type not found: ${pathId}.`)
     : { status: 200, body: found };
 }
 
 /**
- * GET `/Schemas` (liste) ou `/Schemas/:id` (définition unique par URN). 404 si l'URN
- * demandée n'est pas l'une des nôtres.
+ * GET `/Schemas` (list) or `/Schemas/:id` (single definition by URN). 404 if the requested
+ * URN is not one of ours.
  */
 export function handleSchemas(pathId?: string): ScimResponse {
   const all = schemaDefinitions();
@@ -307,6 +302,6 @@ export function handleSchemas(pathId?: string): ScimResponse {
   }
   const found = all.find((s) => s['id'] === pathId);
   return found === undefined
-    ? notFound(`Schéma introuvable : ${pathId}.`)
+    ? notFound(`Schema not found: ${pathId}.`)
     : { status: 200, body: found };
 }

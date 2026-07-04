@@ -119,7 +119,7 @@ describe('TranslogSessionStore.rotate', () => {
 
   it('leve si la session a tourner est absente', async () => {
     const store = new TranslogSessionStore(new FakeTranslogPrisma());
-    await expect(store.rotate('ghost')).rejects.toThrow(/introuvable/);
+    await expect(store.rotate('ghost')).rejects.toThrow(/not found/);
   });
 });
 

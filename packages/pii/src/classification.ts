@@ -1,22 +1,22 @@
 /**
- * Classification des attributs par sensibilité (RGPD).
- *  - `none`      : non personnel (identifiant technique, rattachement org).
- *  - `pii`       : donnée personnelle (identifiabilité directe/indirecte).
- *  - `sensitive` : catégorie particulière (RGPD art. 9 : santé, biométrie...) -
- *                  aucune dans un annuaire standard, prévu pour extension.
+ * Attribute classification by sensitivity (GDPR).
+ *  - `none`      : non-personal (technical identifier, org attachment).
+ *  - `pii`       : personal datum (direct/indirect identifiability).
+ *  - `sensitive` : special category (GDPR art. 9: health, biometrics...) -
+ *                  none in a standard directory, reserved for extension.
  *
- * Clés = champs du `DirectoryProfile` / `DirectoryAttributes` normalisés.
+ * Keys = normalized `DirectoryProfile` / `DirectoryAttributes` fields.
  */
 export type PiiSensitivity = 'none' | 'pii' | 'sensitive';
 
 const REGISTRY: Readonly<Record<string, PiiSensitivity>> = {
-  // Identité
+  // Identity
   email: 'pii',
   firstName: 'pii',
   lastName: 'pii',
   displayName: 'pii',
   externalId: 'none',
-  // Coordonnées
+  // Contact details
   phoneNumber: 'pii',
   mobilePhone: 'pii',
   streetAddress: 'pii',
@@ -24,7 +24,7 @@ const REGISTRY: Readonly<Record<string, PiiSensitivity>> = {
   state: 'pii',
   postalCode: 'pii',
   country: 'pii',
-  // Rattachement organisationnel (non personnel)
+  // Organizational attachment (non-personal)
   department: 'none',
   division: 'none',
   title: 'none',
@@ -36,22 +36,22 @@ const REGISTRY: Readonly<Record<string, PiiSensitivity>> = {
   preferredLanguage: 'none',
   locale: 'none',
   timezone: 'none',
-  // Numéro d'employé = identifiant indirect d'une personne
+  // Employee number = indirect identifier of a person
   employeeNumber: 'pii',
   manager: 'pii',
 };
 
-/** Sensibilité d'un champ (défaut `none` si inconnu). */
+/** Sensitivity of a field (default `none` if unknown). */
 export function classify(field: string): PiiSensitivity {
   return REGISTRY[field] ?? 'none';
 }
 
-/** true si le champ est une donnée personnelle (pii ou sensible). */
+/** true if the field is a personal datum (pii or sensitive). */
 export function isPii(field: string): boolean {
   return classify(field) !== 'none';
 }
 
-/** Liste des champs classés comme données personnelles. */
+/** List of fields classified as personal data. */
 export const PII_FIELDS: readonly string[] = Object.keys(REGISTRY).filter(
   (field) => REGISTRY[field] !== 'none',
 );

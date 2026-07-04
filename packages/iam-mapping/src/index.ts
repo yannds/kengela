@@ -1,14 +1,14 @@
 /**
- * `@kengela/iam-mapping` - pont entre l'identité d'entreprise (Entra/AD/ADFS/Okta via
- * OIDC, SAML, SCIM, Microsoft Graph ou Google Workspace) et le modèle interne rôles +
- * organigramme (ADR-014).
+ * `@kengela/iam-mapping` - bridge between enterprise identity (Entra/AD/ADFS/Okta via
+ * OIDC, SAML, SCIM, Microsoft Graph or Google Workspace) and the internal roles +
+ * org-chart model (ADR-014).
  *
- * - `profile`    : normalisation des 6 sources IdP → `DirectoryProfile`.
- * - `rules`      : moteur de mapping groupes/claims/attributs → rôles + unité.
- * - `safe-regex` : compilation/évaluation de regex sûres (anti-ReDoS), fail-closed.
+ * - `profile`    : normalization of the 6 IdP sources -> `DirectoryProfile`.
+ * - `rules`      : group/claim/attribute -> roles + unit mapping engine.
+ * - `safe-regex` : safe regex compilation/evaluation (anti-ReDoS), fail-closed.
  *
- * Tout est PUR (testable hors infra) ; les adapters (SCIM controller, login SSO)
- * fournissent le payload IdP et appliquent le résultat via les repos.
+ * Everything is PURE (testable outside infra); the adapters (SCIM controller, SSO login)
+ * provide the IdP payload and apply the result through the repos.
  */
 export {
   type DirectoryAttributes,

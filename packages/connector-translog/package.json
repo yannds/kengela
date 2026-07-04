@@ -1,6 +1,6 @@
 {
   "name": "@kengela/connector-translog",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Kengela reference connector implementing CredentialStore, AuthorizationRepository, SessionStore and PolicyStore against a real Prisma schema. Private reference package.",
   "license": "Apache-2.0",
   "type": "module",
@@ -36,5 +36,27 @@
     "type": "git",
     "url": "git+https://github.com/yannds/kengela.git",
     "directory": "packages/connector-translog"
-  }
+  },
+  "homepage": "https://github.com/yannds/kengela/wiki",
+  "bugs": {
+    "url": "https://github.com/yannds/kengela/issues"
+  },
+  "author": "yannds",
+  "keywords": [
+    "kengela",
+    "zero-trust",
+    "ztna",
+    "iam",
+    "identity",
+    "authentication",
+    "authorization",
+    "rbac",
+    "abac",
+    "multi-tenant",
+    "typescript",
+    "esm",
+    "connector",
+    "reference"
+  ],
+  "private": true
 }

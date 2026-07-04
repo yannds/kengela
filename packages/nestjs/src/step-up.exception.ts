@@ -2,9 +2,9 @@ import { ForbiddenException } from '@nestjs/common';
 import type { Obligation } from '@kengela/contracts';
 
 /**
- * Levee quand le PDP renvoie `step_up` : l'acces est conditionnel a la
- * satisfaction d'obligations (ex. re-authentification passkey). Le lien intime
- * authz -> authn : l'autorisation exige un facteur d'authentification.
+ * Thrown when the PDP returns `step_up`: access is conditional on satisfying
+ * obligations (e.g. passkey re-authentication). The intimate authz -> authn
+ * link: authorization requires an authentication factor.
  */
 export class StepUpRequiredException extends ForbiddenException {
   public readonly obligations: readonly Obligation[];

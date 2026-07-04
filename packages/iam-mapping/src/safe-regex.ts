@@ -1,24 +1,24 @@
 /**
- * Compilation/évaluation d'expressions régulières sûres (anti-ReDoS).
+ * Safe regular expression compilation/evaluation (anti-ReDoS).
  *
- * L'opérateur de mapping `matches` (rules.ts) compile une regex fournie par l'admin, puis la teste
- * contre des valeurs d'annuaire (groupes, claims). Une regex « catastrophique » (quantificateurs
- * imbriqués type `(a+)+`) peut faire exploser le temps d'évaluation sur une entrée adverse → déni de
- * service. Le moteur étant PUR (pas de dépendance native type `re2`), on borne le risque par deux
- * garde-fous déterministes :
+ * The `matches` mapping operator (rules.ts) compiles a regex provided by the admin, then tests it
+ * against directory values (groups, claims). A "catastrophic" regex (nested quantifiers such as
+ * `(a+)+`) can blow up the evaluation time on an adversarial input -> denial of service. Since the
+ * engine is PURE (no native dependency such as `re2`), the risk is bounded by two deterministic
+ * guardrails:
  *
- *  1. Borne de longueur (source + entrée testée).
- *  2. Heuristique de rejet des motifs à quantificateurs imbriqués (cause classique de ReDoS).
+ *  1. Length bound (source + tested input).
+ *  2. Rejection heuristic for patterns with nested quantifiers (classic ReDoS cause).
  *
- * Fail-closed : tout motif suspect ou trop long ⇒ `null` (la condition ne correspond pas), jamais
- * d'exception ni d'évaluation non bornée. PUR : aucune dépendance infra.
+ * Fail-closed: any suspicious or overly long pattern => `null` (the condition does not match), never
+ * an exception nor an unbounded evaluation. PURE: no infra dependency.
  */
 
-/** Bornes de sûreté, source unique de vérité (jamais en dur chez les appelants). */
+/** Safety bounds, single source of truth (never hardcoded at the callers). */
 export interface SafeRegexLimits {
-  /** Longueur maximale du motif (source de la regex). */
+  /** Maximum length of the pattern (regex source). */
   readonly maxSourceLength: number;
-  /** Longueur maximale de l'entrée testée (l'excédent est tronqué avant `.test`). */
+  /** Maximum length of the tested input (the excess is truncated before `.test`). */
   readonly maxInputLength: number;
 }
 
@@ -28,17 +28,16 @@ export const SAFE_REGEX_LIMITS: SafeRegexLimits = {
 };
 
 /**
- * Détecte les quantificateurs imbriqués, principale cause de retour arrière catastrophique :
- * un groupe `( … )` lui-même quantifié (`* + ? {…}`, éventuellement suivi de `?` lazy) dont le
- * contenu porte déjà un quantificateur. Ex. `(a+)+`, `(a*)*`, `(.+)+`, `([a-z]+)*`. Heuristique
- * volontairement large (fail-closed) : un faux positif rejette un motif légitime mais exotique,
- * jamais l'inverse.
+ * Detects nested quantifiers, the main cause of catastrophic backtracking: a group `( ... )` that
+ * is itself quantified (`* + ? {...}`, possibly followed by a lazy `?`) whose content already
+ * carries a quantifier. E.g. `(a+)+`, `(a*)*`, `(.+)+`, `([a-z]+)*`. Deliberately broad heuristic
+ * (fail-closed): a false positive rejects a legitimate but exotic pattern, never the opposite.
  */
 const NESTED_QUANTIFIER = /\([^()]*[+*}][^()]*\)[+*]|\([^()]*[+*][^()]*\)\{\d/;
 
 /**
- * Compile une regex « sûre » (toujours insensible à la casse, comme l'usage `matches` actuel) ou
- * renvoie `null` si le motif est invalide, trop long, ou suspecté de ReDoS. Ne lève jamais.
+ * Compiles a "safe" regex (always case-insensitive, as the current `matches` usage) or returns
+ * `null` if the pattern is invalid, too long, or suspected of ReDoS. Never throws.
  */
 export function compileSafeRegex(
   source: string,
@@ -56,8 +55,8 @@ export function compileSafeRegex(
 }
 
 /**
- * Teste un motif contre une entrée, de façon bornée : motif refusé (cf. `compileSafeRegex`) ⇒
- * `false` ; entrée tronquée à `maxInputLength` avant le test. Jamais d'exception.
+ * Tests a pattern against an input, in a bounded way: rejected pattern (cf. `compileSafeRegex`) =>
+ * `false`; input truncated to `maxInputLength` before the test. Never throws.
  */
 export function safeRegexTest(
   source: string,

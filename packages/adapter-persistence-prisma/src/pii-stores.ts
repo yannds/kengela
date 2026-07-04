@@ -1,17 +1,17 @@
 /**
- * Stores PII Prisma : clé PAR SUJET (crypto-shredding) + journal d'accès (RGPD art. 30).
+ * Prisma PII stores: PER-SUBJECT key (crypto-shredding) + access log (GDPR art. 30).
  *
- * `PrismaSubjectKeyStore` implémente `SubjectKeyStore` : une clé AES-256 par personne
- * concernée, base du crypto-shredding (détruire la ligne rend les PII du sujet illisibles,
- * RGPD art. 17). `PrismaPiiAccessLogSink` implémente `PiiAccessLogSink` : chaque lecture/export
- * de PII est tracé (qui, quel sujet, quels champs, quelle finalité).
+ * `PrismaSubjectKeyStore` implements `SubjectKeyStore`: one AES-256 key per data
+ * subject, the basis of crypto-shredding (destroying the row makes the subject's PII
+ * unreadable, GDPR art. 17). `PrismaPiiAccessLogSink` implements `PiiAccessLogSink`: every
+ * PII read/export is traced (who, which subject, which fields, which purpose).
  *
- * CHIFFREMENT AT-REST de la clé de sujet : si un `KeyManagementPort` (chiffrement enveloppe
- * par tenant) est injecté, la clé est WRAPPÉE avant persistance et la colonne ne contient
- * jamais de matériel clair - une fuite de la base seule ne révèle rien sans la clé maître.
- * Sans KMS injecté, la clé est stockée en base64 EN CLAIR : mode dégradé, à réserver au
- * développement (documenté ; le crypto-shredding reste effectif dans les deux cas puisqu'il
- * repose sur la SUPPRESSION de la ligne, pas sur le chiffrement).
+ * AT-REST ENCRYPTION of the subject key: if a `KeyManagementPort` (per-tenant envelope
+ * encryption) is injected, the key is WRAPPED before persistence and the column never
+ * holds cleartext material. A leak of the database alone reveals nothing without the master
+ * key. Without an injected KMS, the key is stored in CLEARTEXT base64: a degraded mode,
+ * reserved for development (documented; crypto-shredding stays effective in both cases since
+ * it relies on DELETING the row, not on encryption).
  */
 import { randomBytes } from 'node:crypto';
 import type {
@@ -26,9 +26,9 @@ import type { PiiAccessLogDelegate, SubjectKeyDelegate } from './prisma-like.js'
 const SUBJECT_KEY_BYTES = 32;
 
 export interface PrismaSubjectKeyStoreOptions {
-  /** Chiffrement enveloppe de la clé at-rest (recommandé). Absent = stockage base64 en clair. */
+  /** Envelope encryption of the key at-rest (recommended). Absent = cleartext base64 storage. */
   readonly keyManagement?: KeyManagementPort;
-  /** Taille de la clé générée, en octets. Défaut : 32 (AES-256). */
+  /** Size of the generated key, in bytes. Default: 32 (AES-256). */
   readonly keyBytes?: number;
 }
 
@@ -62,7 +62,7 @@ export class PrismaSubjectKeyStore implements SubjectKeyStore {
     return this.#unwrap(tenantId, row.key);
   }
 
-  /** Crypto-shredding : détruire la clé rend toutes les PII du sujet illisibles (RGPD art. 17). */
+  /** Crypto-shredding: destroying the key makes all of the subject's PII unreadable (GDPR art. 17). */
   public async deleteKey(tenantId: TenantId, subjectId: string): Promise<void> {
     await this.#keys.deleteMany({ where: { tenantId, subjectId } });
   }
@@ -78,7 +78,7 @@ export class PrismaSubjectKeyStore implements SubjectKeyStore {
   }
 }
 
-/** Journal d'accès aux PII : insère une ligne d'audit par accès (RGPD art. 30). */
+/** PII access log: inserts one audit row per access (GDPR art. 30). */
 export class PrismaPiiAccessLogSink implements PiiAccessLogSink {
   readonly #log: PiiAccessLogDelegate;
 

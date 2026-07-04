@@ -1,12 +1,12 @@
 import type { DirectoryProfile } from '@kengela/iam-mapping';
 
 /**
- * Minimisation des données (RGPD art. 5.1.c) : ne conserve QUE les attributs
- * explicitement autorisés pour la finalité de l'app. Les `claims` bruts sont
- * supprimés, les champs d'identité non autorisés sont neutralisés (`null`).
+ * Data minimization (GDPR art. 5.1.c): keeps ONLY the attributes explicitly
+ * allowed for the app's purpose. Raw `claims` are dropped, and unauthorized
+ * identity fields are nulled out (`null`).
  *
- * C'est le pendant "données" du principe Kengela « chaque app pioche son
- * sous-ensemble » : TransLog n'a pas besoin de la moitié des attributs.
+ * This is the "data" counterpart of the Kengela principle "each app picks its
+ * own subset": TransLog does not need half of the attributes.
  */
 export function minimizeProfile(
   profile: DirectoryProfile,

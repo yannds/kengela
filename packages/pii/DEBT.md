@@ -1,7 +1,7 @@
 # DEBT.md - @kengela/pii
 
-> Le port est un sas, pas une planque. Dettes tracées, retirées quand résolues.
+> The port is an airlock, not a hideout. Debts tracked, removed once resolved.
 
-| #   | Sujet                          | Etat  | Note                                                                                                                           | Cible                                              | Prio |
-| --- | ------------------------------ | ----- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------- | ---- |
-| 3   | Classification par chemin SCIM | scope | Registre indexé sur les champs normalisés ; les chemins SCIM bruts (name.givenName, emails...) ne sont pas classés séparément. | Table de correspondance chemin SCIM -> sensibilité | P3   |
+| #   | Subject                     | State | Note                                                                                                             | Target                                 | Prio |
+| --- | --------------------------- | ----- | ---------------------------------------------------------------------------------------------------------------- | -------------------------------------- | ---- |
+| 3   | Classification by SCIM path | scope | Registry indexed on normalized fields; raw SCIM paths (name.givenName, emails...) are not classified separately. | SCIM path -> sensitivity mapping table | P3   |

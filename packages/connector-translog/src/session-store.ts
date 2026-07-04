@@ -1,12 +1,12 @@
 /**
- * TranslogSessionStore - implemente SessionStore sur TranslogPrismaLike.
+ * TranslogSessionStore - implements SessionStore on TranslogPrismaLike.
  *
- * Token opaque = 32 octets aleatoires (node:crypto) en hex. L'horloge est
- * injectable (Clock) pour des tests deterministes ; defaut = Date.now. Seuls
- * `ipAddress` (<- ctx.ip) et `userAgent` (<- ctx.device.userAgent) sont persistes :
- * le reste du `AuthContext` n'a pas de colonne cote TransLog (voir DEBT.md). La
- * rotation est atomique si le client fournit `$transaction`, sinon degrade en
- * delete + create sequentiels.
+ * Opaque token = 32 random bytes (node:crypto) in hex. The clock is injectable
+ * (Clock) for deterministic tests; default = Date.now. Only `ipAddress` (<- ctx.ip)
+ * and `userAgent` (<- ctx.device.userAgent) are persisted: the rest of the
+ * `AuthContext` has no column on the TransLog side (see DEBT.md). Rotation is atomic
+ * if the client provides `$transaction`, otherwise it degrades to sequential
+ * delete + create.
  */
 import { randomBytes } from 'node:crypto';
 import type {
@@ -65,8 +65,8 @@ export class TranslogSessionStore implements SessionStore {
     if (row === null) {
       return null;
     }
-    // Fail-closed (durci) : une session expiree n'est JAMAIS restituee comme valide,
-    // meme si le balayage differe (cleanup) ne l'a pas encore purgee.
+    // Fail-closed (hardened): an expired session is NEVER returned as valid,
+    // even if the deferred sweep (cleanup) has not purged it yet.
     if (row.expiresAt.getTime() <= this.#clock.now()) {
       return null;
     }
@@ -76,7 +76,7 @@ export class TranslogSessionStore implements SessionStore {
   public async rotate(token: string): Promise<SessionHandle> {
     const current = await this.#prisma.session.findUnique({ where: { token } });
     if (current === null) {
-      throw new Error('TranslogSessionStore.rotate: session introuvable');
+      throw new Error('TranslogSessionStore.rotate: session not found');
     }
     const data: SessionCreateData = {
       token: newToken(),

@@ -1,5 +1,5 @@
 # DEBT.md - @kengela/adapter-expr-cel
 
-> Le port est un sas, pas une planque. Ce qui est enveloppe et faible figure ici.
+> The port is an airlock, not a hideout. What is wrapped and weak is listed here.
 
-Aucune dette ouverte.
+No open debt.

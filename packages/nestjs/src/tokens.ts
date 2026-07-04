@@ -1,5 +1,5 @@
 /**
- * Jeton d'injection NestJS pour le PolicyDecisionPoint.
- * L'application fournit l'implementation (ex. LayeredDecisionPoint d'authz-core).
+ * NestJS injection token for the PolicyDecisionPoint.
+ * The application provides the implementation (e.g. authz-core's LayeredDecisionPoint).
  */
 export const KENGELA_PDP = Symbol('KENGELA_PDP');

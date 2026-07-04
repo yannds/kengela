@@ -1,11 +1,11 @@
 /**
- * `@kengela/adapter-directory-ldap` - connecteur d'annuaire **AD / LDAP** (chantier IdP « pull »).
+ * `@kengela/adapter-directory-ldap` - **AD / LDAP** directory connector ("pull" IdP work).
  *
- * - `LdapDirectorySource` : bind LDAP(S) + recherche paginée → `LdapEntryParts` normalisés, health-check.
- * - `LdapClientLike`      : surface NARROW du client (le vrai `Client` de `ldapts` la satisfait).
- * - Helpers `toProfiles` / `toRecords` : composent `profileFromLdap` / `accountActiveFromLdap` (SSoT).
+ * - `LdapDirectorySource` : LDAP(S) bind + paginated search -> normalized `LdapEntryParts`, health-check.
+ * - `LdapClientLike`      : NARROW surface of the client (the real `Client` from `ldapts` satisfies it).
+ * - Helpers `toProfiles` / `toRecords` : compose `profileFromLdap` / `accountActiveFromLdap` (SSoT).
  *
- * L'adapter ne fait QUE parler LDAP ; le mapping des rôles reste dans `@kengela/iam-mapping` (pur).
+ * The adapter ONLY speaks LDAP; role mapping stays in `@kengela/iam-mapping` (pure).
  */
 export { LdapDirectorySource, LDAP_SOURCE_DEFAULTS } from './ldap-directory-source.js';
 export type {
@@ -23,6 +23,6 @@ export type {
   LdapSearchResult,
   LdapSearchScope,
 } from './ldap-client-like.js';
-// Ré-exports pratiques (SSoT `@kengela/iam-mapping`) pour composer sans double dépendance.
+// Convenient re-exports (SSoT `@kengela/iam-mapping`) to compose without a double dependency.
 export { accountActiveFromLdap, profileFromLdap } from '@kengela/iam-mapping';
 export type { DirectoryProfile, LdapAttributeMap, LdapEntryParts } from '@kengela/iam-mapping';

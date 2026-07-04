@@ -1,9 +1,9 @@
 /**
- * Handlers SCIM 2.0 `/Users` - PURS (`(store, requête) → réponse`), sans HTTP.
+ * SCIM 2.0 `/Users` handlers - PURE (`(store, request) -> response`), no HTTP.
  *
- * Doctrine (RFC 7644) : provisioning RÉCONCILIÉ PAR E-MAIL (insensible à la casse, jamais
- * de doublon), déprovisionnement = DÉSACTIVATION (jamais de suppression), erreurs SCIM
- * conformes. L'adapter (NestJS…) résout tenant + parse le corps, puis délègue ici.
+ * Doctrine (RFC 7644): provisioning RECONCILED BY EMAIL (case-insensitive, never a
+ * duplicate), deprovisioning = DEACTIVATION (never deletion), conforming SCIM errors.
+ * The adapter (NestJS...) resolves the tenant + parses the body, then delegates here.
  */
 import type { ScimRequest, ScimResponse, ScimStore, ScimUserListOptions } from './types.js';
 import {
@@ -24,16 +24,16 @@ import {
 } from './serialize.js';
 
 function missingId(): ScimResponse {
-  return { status: 400, body: scimError(400, 'Identifiant de ressource requis.', 'invalidValue') };
+  return { status: 400, body: scimError(400, 'Resource identifier required.', 'invalidValue') };
 }
 
 function notFound(): ScimResponse {
-  return { status: 404, body: scimError(404, 'Utilisateur introuvable.') };
+  return { status: 404, body: scimError(404, 'User not found.') };
 }
 
 /**
- * POST `/Users` : crée l'utilisateur, ou RÉCONCILIE un existant par e-mail (idempotent).
- * Existant ⇒ 200 sans doublon ; nouveau ⇒ 201. `userName`/e-mail obligatoire (400 sinon).
+ * POST `/Users`: creates the user, or RECONCILES an existing one by email (idempotent).
+ * Existing => 200 without duplicate; new => 201. `userName`/email required (400 otherwise).
  */
 export async function handleUsersPost(
   store: ScimStore,
@@ -42,7 +42,7 @@ export async function handleUsersPost(
   const body = asRecord(request.body);
   const email = emailOf(body);
   if (email === null) {
-    return { status: 400, body: scimError(400, 'userName (e-mail) requis.', 'invalidValue') };
+    return { status: 400, body: scimError(400, 'userName (email) required.', 'invalidValue') };
   }
   const existing = await store.findUserByEmail(request.tenantId, email);
   if (existing !== null) {
@@ -60,9 +60,9 @@ export async function handleUsersPost(
 }
 
 /**
- * POST `/Users` en mode STRICT RFC 7644 §3.3 / validateur Microsoft Entra : un `userName`
- * déjà présent (insensible à la casse) ⇒ 409 `uniqueness` (JAMAIS de réconciliation). À
- * câbler quand l'IdP attend le rejet de doublon plutôt que l'idempotence par e-mail.
+ * POST `/Users` in STRICT mode RFC 7644 §3.3 / Microsoft Entra validator: a `userName`
+ * already present (case-insensitive) => 409 `uniqueness` (NEVER reconciliation). To be
+ * wired when the IdP expects duplicate rejection rather than email idempotency.
  */
 export async function handleUsersPostStrict(
   store: ScimStore,
@@ -71,13 +71,13 @@ export async function handleUsersPostStrict(
   const body = asRecord(request.body);
   const email = emailOf(body);
   if (email === null) {
-    return { status: 400, body: scimError(400, 'userName (e-mail) requis.', 'invalidValue') };
+    return { status: 400, body: scimError(400, 'userName (email) required.', 'invalidValue') };
   }
   const existing = await store.findUserByEmail(request.tenantId, email);
   if (existing !== null) {
     return {
       status: 409,
-      body: scimError(409, `userName déjà utilisé : ${email}.`, 'uniqueness'),
+      body: scimError(409, `userName already in use: ${email}.`, 'uniqueness'),
     };
   }
   const created = await store.createUser(request.tenantId, {
@@ -91,7 +91,7 @@ export async function handleUsersPostStrict(
   return { status: 201, body: toScimUser(created) };
 }
 
-/** GET `/Users/:id` : 200 avec la ressource, ou 404 SCIM. */
+/** GET `/Users/:id`: 200 with the resource, or 404 SCIM. */
 export async function handleUsersGet(
   store: ScimStore,
   request: ScimRequest,
@@ -104,9 +104,9 @@ export async function handleUsersGet(
 }
 
 /**
- * GET `/Users` : `ListResponse` SCIM. Supporte les filtres `userName eq "..."` ET
- * `externalId eq "..."` (exigés par le validateur Entra) + pagination (`startIndex`/`count`).
- * Filtre présent mais non supporté ⇒ liste vide (jamais d'erreur).
+ * GET `/Users`: SCIM `ListResponse`. Supports the `userName eq "..."` AND
+ * `externalId eq "..."` filters (required by the Entra validator) + pagination (`startIndex`/`count`).
+ * Filter present but unsupported => empty list (never an error).
  */
 export async function handleUsersList(
   store: ScimStore,
@@ -133,8 +133,8 @@ export async function handleUsersList(
 }
 
 /**
- * PATCH `/Users/:id` (RFC 7644 §3.5.2) : activation/désactivation et champs d'identité.
- * Partiel : les champs absents ne sont pas touchés. 404 si l'utilisateur n'existe pas.
+ * PATCH `/Users/:id` (RFC 7644 §3.5.2): activation/deactivation and identity fields.
+ * Partial: absent fields are not touched. 404 if the user does not exist.
  */
 export async function handleUsersPatch(
   store: ScimStore,
@@ -149,8 +149,8 @@ export async function handleUsersPatch(
 }
 
 /**
- * PUT `/Users/:id` : remplacement complet (identité + `active`). L'activation peut changer
- * (réactivation/déprovisionnement IdP). 404 si absent, 400 si l'e-mail manque.
+ * PUT `/Users/:id`: full replacement (identity + `active`). Activation can change
+ * (reactivation/IdP deprovisioning). 404 if absent, 400 if the email is missing.
  */
 export async function handleUsersPut(
   store: ScimStore,
@@ -162,7 +162,7 @@ export async function handleUsersPut(
   const body = asRecord(request.body);
   const email = emailOf(body);
   if (email === null) {
-    return { status: 400, body: scimError(400, 'userName (e-mail) requis.', 'invalidValue') };
+    return { status: 400, body: scimError(400, 'userName (email) required.', 'invalidValue') };
   }
   const updated = await store.replaceUser(request.tenantId, request.pathId, {
     userName: email,
@@ -176,8 +176,8 @@ export async function handleUsersPut(
 }
 
 /**
- * DELETE `/Users/:id` : DÉPROVISIONNEMENT = DÉSACTIVATION (active=false), jamais de
- * suppression physique. 204 si effectué, 404 si l'utilisateur n'existe pas.
+ * DELETE `/Users/:id`: DEPROVISIONING = DEACTIVATION (active=false), never physical
+ * deletion. 204 if done, 404 if the user does not exist.
  */
 export async function handleUsersDelete(
   store: ScimStore,

@@ -1,6 +1,6 @@
 const DAY_MS = 86_400_000;
 
-/** Convertit une valeur d'expression (bigint/number/Date/string ISO) en epoch ms. */
+/** Converts an expression value (bigint/number/Date/ISO string) to epoch ms. */
 export function toEpochMs(value: unknown): number {
   if (typeof value === 'bigint') {
     return Number(value);
@@ -17,10 +17,10 @@ export function toEpochMs(value: unknown): number {
       return parsed;
     }
   }
-  throw new Error(`Date invalide dans une expression CEL : ${typeof value}`);
+  throw new Error(`Invalid date in a CEL expression: ${typeof value}`);
 }
 
-/** Nombre de jours calendaires (arrondi) de `fromMs` à `toMs`. */
+/** Number of calendar days (rounded) from `fromMs` to `toMs`. */
 export function daysBetween(fromMs: number, toMs: number): number {
   return Math.round((toMs - fromMs) / DAY_MS);
 }
@@ -30,7 +30,7 @@ function startOfUtcDay(ms: number): number {
   return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
 }
 
-/** Jours ouvrés (lun-ven) entre deux instants, bornes incluses. */
+/** Business days (Mon-Fri) between two instants, bounds included. */
 export function businessDaysBetween(aMs: number, bMs: number): number {
   const start = startOfUtcDay(Math.min(aMs, bMs));
   const end = Math.max(aMs, bMs);

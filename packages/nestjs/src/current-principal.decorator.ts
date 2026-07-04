@@ -2,8 +2,8 @@ import { createParamDecorator, type ExecutionContext } from '@nestjs/common';
 import type { Principal } from '@kengela/contracts';
 
 /**
- * Injecte le Principal courant (pose sur `req.user` par la couche d'authentification).
- * Ex. `foo(@CurrentPrincipal() principal: Principal) {}`.
+ * Injects the current Principal (set on `req.user` by the authentication layer).
+ * E.g. `foo(@CurrentPrincipal() principal: Principal) {}`.
  */
 export const CurrentPrincipal = createParamDecorator(
   (_data: unknown, context: ExecutionContext): Principal | undefined => {

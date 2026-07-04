@@ -1,9 +1,9 @@
 /**
- * PrismaAuthorizationRepository - implemente AuthorizationRepository sur PrismaLike.
+ * PrismaAuthorizationRepository - implements AuthorizationRepository on PrismaLike.
  *
- * Charge les grants d'un utilisateur et les roles depuis Postgres. Le filtrage
- * des grants expires est fait par la couche engine (activeGrants) ; ici on
- * expose `expiresAt` tel quel. Le narrowing des unions est fail-closed.
+ * Loads a user's grants and roles from Postgres. Filtering of expired grants is
+ * done by the engine layer (activeGrants); here we expose `expiresAt` as-is.
+ * Union narrowing is fail-closed.
  */
 import type { AuthorizationRepository, Grant, Role, TenantId, UserId } from '@kengela/contracts';
 import type { PrismaLike } from './prisma-like.js';

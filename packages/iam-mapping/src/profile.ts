@@ -1,18 +1,18 @@
 /**
- * Profil d'annuaire normalisé (ADR-014, intégration IdP entreprise).
+ * Normalized directory profile (ADR-014, enterprise IdP integration).
  *
- * Source unique de vérité interne pour le mapping des rôles et la classification
- * organisationnelle, quelle que soit l'origine : claims OIDC (Entra/Okta), assertion
- * SAML 2.0 (ADFS via bridge), ou attributs + groupes SCIM 2.0. L'app ne raisonne JAMAIS
- * sur la forme brute d'un IdP : chaque adapter projette vers ce `DirectoryProfile`.
+ * Single internal source of truth for role mapping and organizational classification,
+ * whatever the origin: OIDC claims (Entra/Okta), SAML 2.0 assertion (ADFS via bridge),
+ * or SCIM 2.0 attributes + groups. The app NEVER reasons about the raw shape of an IdP:
+ * each adapter projects to this `DirectoryProfile`.
  *
- * PUR : aucune dépendance infra (testable sans base ni réseau).
+ * PURE: no infra dependency (testable without database or network).
  */
 
 /**
- * Attributs d'annuaire « standards entreprise » (extension SCIM enterprise + claims
- * usuels Entra/AD). Tous facultatifs : un compte AD peut être incomplet - c'est
- * précisément le cas que la classification doit rattraper via les groupes.
+ * "Enterprise standard" directory attributes (SCIM enterprise extension + usual Entra/AD
+ * claims). All optional: an AD account can be incomplete, and that is precisely the case
+ * the classification must catch through groups.
  */
 export interface DirectoryAttributes {
   readonly department?: string;
@@ -21,9 +21,9 @@ export interface DirectoryAttributes {
   readonly employeeNumber?: string;
   readonly costCenter?: string;
   readonly officeLocation?: string;
-  /** e-mail/identifiant du responsable hiérarchique (alimente la chaîne d'approbation). */
+  /** email/identifier of the reporting manager (feeds the approval chain). */
   readonly manager?: string;
-  // --- Superset Kengela (au-delà d'un seul IdP : Okta, Entra, Google, LDAP...) ---
+  // --- Kengela superset (beyond a single IdP: Okta, Entra, Google, LDAP...) ---
   readonly organization?: string;
   readonly companyName?: string;
   readonly employeeType?: string;
@@ -38,34 +38,34 @@ export interface DirectoryAttributes {
   readonly postalCode?: string;
   readonly country?: string;
   /**
-   * Attributs additionnels non modélisés en premier plan (schémas custom Okta/Entra,
-   * extensions propriétaires...). EXTENSIBLE : chaque application pioche ce dont elle a
-   * besoin sans que la lib fige la liste.
+   * Additional attributes not modeled up front (custom Okta/Entra schemas, proprietary
+   * extensions...). EXTENSIBLE: each application picks what it needs without the library
+   * freezing the list.
    */
   readonly extensions?: Readonly<Record<string, unknown>>;
 }
 
-/** Profil normalisé d'un utilisateur tel que vu par l'IdP au login / à la synchro SCIM. */
+/** Normalized profile of a user as seen by the IdP at login / SCIM sync time. */
 export interface DirectoryProfile {
   readonly email: string;
-  /** Identifiant stable côté IdP (`sub` OIDC / `nameID` SAML / `externalId` SCIM). */
+  /** Stable IdP-side identifier (`sub` OIDC / `nameID` SAML / `externalId` SCIM). */
   readonly externalId: string | null;
-  /** Prénom (SCIM `name.givenName` · OIDC `given_name`), ou null. */
+  /** First name (SCIM `name.givenName` / OIDC `given_name`), or null. */
   readonly firstName: string | null;
-  /** Nom de famille (SCIM `name.familyName` · OIDC `family_name`), ou null. */
+  /** Last name (SCIM `name.familyName` / OIDC `family_name`), or null. */
   readonly lastName: string | null;
   readonly displayName: string | null;
   readonly attributes: DirectoryAttributes;
-  /** Groupes de sécurité (noms ou ids selon l'IdP), source du mapping par groupe. */
+  /** Security groups (names or ids depending on the IdP), source of group-based mapping. */
   readonly groups: readonly string[];
-  /** Claims bruts restants (ex. `roles`, `wids`…), pour des règles avancées. */
+  /** Remaining raw claims (e.g. `roles`, `wids`...), for advanced rules. */
   readonly claims: Readonly<Record<string, unknown>>;
 }
 
 /**
- * Clés d'attributs d'annuaire reconnues par le moteur de mapping (source `ATTRIBUTE`).
- * Source unique de vérité : alimente la découverte/autocomplétion côté admin (jamais en dur
- * dans l'UI). Reste aligné avec `DirectoryAttributes`.
+ * Directory attribute keys recognized by the mapping engine (source `ATTRIBUTE`).
+ * Single source of truth: feeds admin-side discovery/autocompletion (never hardcoded in
+ * the UI). Stays aligned with `DirectoryAttributes`.
  */
 export const DIRECTORY_ATTRIBUTE_KEYS: readonly (keyof DirectoryAttributes)[] = [
   'department',
@@ -91,8 +91,8 @@ export const DIRECTORY_ATTRIBUTE_KEYS: readonly (keyof DirectoryAttributes)[] = 
 ];
 
 /**
- * Champs d'identité du profil (hors attributs d'annuaire), mappables depuis l'IdP.
- * Source unique de vérité : alimente la validation des cartes et l'UI du mapper (jamais en dur).
+ * Profile identity fields (outside directory attributes), mappable from the IdP.
+ * Single source of truth: feeds map validation and the mapper UI (never hardcoded).
  */
 export const IDENTITY_FIELD_KEYS: readonly string[] = [
   'email',
@@ -104,8 +104,8 @@ export const IDENTITY_FIELD_KEYS: readonly string[] = [
 ];
 
 /**
- * Tous les champs canoniques mappables (identité + attributs d'annuaire). C'est l'ensemble des clés
- * autorisées d'une carte d'attributs (`ScimAttributeMap`/`OidcAttributeMap`/…). Source unique.
+ * All canonical mappable fields (identity + directory attributes). This is the set of
+ * allowed keys of an attribute map (`ScimAttributeMap`/`OidcAttributeMap`/...). Single source.
  */
 export const ATTRIBUTE_MAP_FIELDS: readonly string[] = [
   ...IDENTITY_FIELD_KEYS,
@@ -131,7 +131,7 @@ function asStringArray(v: unknown): string[] {
   return v.map((x) => str(x)).filter((x): x is string => !!x);
 }
 
-/** Retire les clés `undefined` (respecte `exactOptionalPropertyTypes`). */
+/** Removes `undefined` keys (respects `exactOptionalPropertyTypes`). */
 function compact(o: Record<string, string | undefined>): DirectoryAttributes {
   const out: Record<string, string> = {};
   for (const [k, v] of Object.entries(o)) if (v !== undefined) out[k] = v;
@@ -139,9 +139,9 @@ function compact(o: Record<string, string | undefined>): DirectoryAttributes {
 }
 
 /**
- * Construit un `DirectoryProfile` à partir de morceaux déjà normalisés (état persisté :
- * attributs déchiffrés + noms de groupes en base). Utilisé pour re-synchroniser depuis le
- * stockage (changement de groupe) sans le payload IdP d'origine.
+ * Builds a `DirectoryProfile` from already-normalized pieces (persisted state: decrypted
+ * attributes + group names in database). Used to re-sync from storage (group change)
+ * without the original IdP payload.
  */
 export function profileFromParts(input: {
   email: string;
@@ -167,11 +167,11 @@ export function profileFromParts(input: {
 const ENTERPRISE_EXT = 'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User';
 
 /**
- * Carte d'attributs **SCIM → champs de profil** (config-driven, ADR-014). Une ressource SCIM mêle
- * attributs « core » (top-level) et extension enterprise (`urn:…:User`). Comme pour LDAP/SAML,
- * l'admin peut surcharger, champ par champ, le **chemin** lu côté SCIM ; à défaut on essaie une
- * liste de candidats usuels (le chemin fourni prime, puis les défauts). Mini-syntaxe de chemin :
- * `enterprise.<attr>` (extension), `name.givenName` (imbriqué), `emails[primary]` (e-mail primaire).
+ * Attribute map **SCIM -> profile fields** (config-driven, ADR-014). A SCIM resource mixes
+ * "core" attributes (top-level) and the enterprise extension (`urn:...:User`). As for LDAP/SAML,
+ * the admin can override, field by field, the **path** read on the SCIM side; otherwise a list
+ * of usual candidates is tried (the provided path wins, then the defaults). Mini path syntax:
+ * `enterprise.<attr>` (extension), `name.givenName` (nested), `emails[primary]` (primary email).
  */
 export interface ScimAttributeMap {
   readonly email?: string;
@@ -190,8 +190,8 @@ export interface ScimAttributeMap {
 }
 
 /**
- * Chemins SCIM candidats par champ (source unique de vérité), essayés dans l'ordre. Reproduit à
- * l'identique l'extraction historique : sans surcharge, le profil est strictement le même qu'avant.
+ * Candidate SCIM paths per field (single source of truth), tried in order. Reproduces the
+ * historical extraction exactly: without an override, the profile is strictly the same as before.
  */
 export const SCIM_DEFAULT_ATTRIBUTE_KEYS: Record<keyof ScimAttributeMap, readonly string[]> = {
   email: ['userName', 'emails[primary]'],
@@ -213,20 +213,20 @@ function isRecord(v: unknown): v is Record<string, unknown> {
   return !!v && typeof v === 'object' && !Array.isArray(v);
 }
 
-/** Le `manager` SCIM peut être un objet `{value,$ref}` (référence) ou une chaîne (e-mail/UPN). */
+/** The SCIM `manager` can be an object `{value,$ref}` (reference) or a string (email/UPN). */
 function scimManagerValue(manager: unknown): string | undefined {
   if (isRecord(manager)) return firstString(manager['value'], manager['$ref']);
   return str(manager);
 }
 
-/** Clés candidates pour un champ : la surcharge admin (si présente) prime, puis les défauts. */
+/** Candidate keys for a field: the admin override (if present) wins, then the defaults. */
 function scimKeysFor(field: keyof ScimAttributeMap, map: ScimAttributeMap | undefined): string[] {
   const override = map?.[field];
   const defaults = SCIM_DEFAULT_ATTRIBUTE_KEYS[field];
   return override ? [override, ...defaults] : [...defaults];
 }
 
-/** Résout une valeur scalaire SCIM à partir d'un chemin (mini-syntaxe), ou undefined. */
+/** Resolves a scalar SCIM value from a path (mini syntax), or undefined. */
 function scimResolve(
   body: Record<string, unknown>,
   enterprise: Record<string, unknown>,
@@ -252,7 +252,7 @@ function scimResolve(
   return str(body[path]);
 }
 
-/** Première valeur SCIM non vide parmi les chemins candidats d'un champ. */
+/** First non-empty SCIM value among a field's candidate paths. */
 function scimFirst(
   body: Record<string, unknown>,
   enterprise: Record<string, unknown>,
@@ -265,7 +265,7 @@ function scimFirst(
   return undefined;
 }
 
-/** Groupes SCIM depuis le premier chemin candidat portant une liste (objets `{display,value}` ou chaînes). */
+/** SCIM groups from the first candidate path carrying a list (objects `{display,value}` or strings). */
 function scimGroups(body: Record<string, unknown>, keys: readonly string[]): string[] {
   for (const k of keys) {
     const raw = isRecord(body[k]) ? undefined : body[k];
@@ -279,10 +279,10 @@ function scimGroups(body: Record<string, unknown>, keys: readonly string[]): str
 }
 
 /**
- * Projette un utilisateur SCIM 2.0 (core + extension enterprise) vers `DirectoryProfile`.
- * Tolérant : champs absents → undefined. `attributeMap` (config tenant) surcharge les chemins lus ;
- * sans elle, l'extraction est strictement identique à l'historique. `groups` provient des
- * memberships SCIM (`groups`) lorsqu'ils sont présents.
+ * Projects a SCIM 2.0 user (core + enterprise extension) to `DirectoryProfile`.
+ * Tolerant: missing fields -> undefined. `attributeMap` (tenant config) overrides the read paths;
+ * without it, the extraction is strictly identical to the historical one. `groups` comes from the
+ * SCIM memberships (`groups`) when present.
  */
 export function profileFromScim(
   body: Record<string, unknown>,
@@ -317,7 +317,7 @@ export function profileFromScim(
   };
 }
 
-/** Utilisateur d'annuaire lu via Microsoft Graph (`/users`) - forme structurelle (sans dépendre de l'infra). */
+/** Directory user read via Microsoft Graph (`/users`) - structural shape (no infra dependency). */
 export interface GraphUserParts {
   readonly id?: string | null;
   readonly userPrincipalName?: string | null;
@@ -329,15 +329,15 @@ export interface GraphUserParts {
   readonly department?: string | null;
   readonly officeLocation?: string | null;
   readonly employeeId?: string | null;
-  /** e-mail/UPN du responsable hiérarchique (propriété de navigation Graph `manager`). */
+  /** email/UPN of the reporting manager (Graph `manager` navigation property). */
   readonly manager?: string | null;
   readonly groups?: readonly string[];
 }
 
 /**
- * Projette un utilisateur **Microsoft Graph** (`/users` + groupes) vers `DirectoryProfile`.
- * Pendant « pull » du provisioning SCIM « push » : même cible normalisée ⇒ **même mapping de
- * rôles et même classification** que SCIM/OIDC, quel que soit le sens de la synchro.
+ * Projects a **Microsoft Graph** user (`/users` + groups) to `DirectoryProfile`.
+ * The "pull" counterpart of SCIM "push" provisioning: same normalized target => **same role
+ * mapping and same classification** as SCIM/OIDC, whatever the sync direction.
  */
 export function profileFromGraph(user: GraphUserParts): DirectoryProfile {
   return {
@@ -363,10 +363,10 @@ export function profileFromGraph(user: GraphUserParts): DirectoryProfile {
 }
 
 /**
- * Carte d'attributs **LDAP → champs de profil** (config-driven, ADR-014). Un annuaire LDAP n'a pas
- * de schéma d'attributs universel : Active Directory dit `sn`/`memberOf`, un OpenLDAP peut dire
- * `surname`/`groupMembership`. L'admin peut donc surcharger chaque nom d'attribut par tenant. Tout
- * champ absent retombe sur le défaut Active Directory (`LDAP_AD_ATTRIBUTE_DEFAULTS`).
+ * Attribute map **LDAP -> profile fields** (config-driven, ADR-014). An LDAP directory has no
+ * universal attribute schema: Active Directory says `sn`/`memberOf`, an OpenLDAP may say
+ * `surname`/`groupMembership`. The admin can therefore override each attribute name per tenant.
+ * Any missing field falls back to the Active Directory default (`LDAP_AD_ATTRIBUTE_DEFAULTS`).
  */
 export interface LdapAttributeMap {
   readonly email?: string;
@@ -385,9 +385,9 @@ export interface LdapAttributeMap {
 }
 
 /**
- * Noms d'attributs LDAP par défaut (**Active Directory**), source unique de vérité. Surchargeables
- * un par un via `attributeMap` (jamais en dur dans l'UI : alimente aussi la saisie assistée côté admin).
- * `costCenter` n'a pas d'attribut AD standard (chaîne vide ⇒ aucun défaut).
+ * Default LDAP attribute names (**Active Directory**), single source of truth. Overridable
+ * one by one via `attributeMap` (never hardcoded in the UI: also feeds admin-side assisted input).
+ * `costCenter` has no standard AD attribute (empty string => no default).
  */
 export const LDAP_AD_ATTRIBUTE_DEFAULTS: Required<LdapAttributeMap> = {
   email: 'mail',
@@ -405,16 +405,16 @@ export const LDAP_AD_ATTRIBUTE_DEFAULTS: Required<LdapAttributeMap> = {
   manager: 'manager',
 };
 
-/** Entrée d'annuaire LDAP normalisée : DN + attributs (mono- ou multi-valués déjà en chaînes). */
+/** Normalized LDAP directory entry: DN + attributes (single- or multi-valued already as strings). */
 export interface LdapEntryParts {
   readonly dn: string;
-  /** Attributs LDAP. Le client est responsable de stringifier les binaires (ex. `objectGUID`). */
+  /** LDAP attributes. The client is responsible for stringifying binaries (e.g. `objectGUID`). */
   readonly attributes: Readonly<Record<string, string | readonly string[] | undefined>>;
-  /** Surcharge des noms d'attributs (sinon défauts Active Directory). */
+  /** Override of attribute names (otherwise Active Directory defaults). */
   readonly attributeMap?: LdapAttributeMap;
 }
 
-/** Valeurs (chaînes non vides) d'un attribut LDAP, toujours sous forme de tableau. */
+/** Values (non-empty strings) of an LDAP attribute, always as an array. */
 function ldapValues(attrs: LdapEntryParts['attributes'], name: string | undefined): string[] {
   if (!name) return [];
   const v = attrs[name];
@@ -422,7 +422,7 @@ function ldapValues(attrs: LdapEntryParts['attributes'], name: string | undefine
   return (Array.isArray(v) ? v : [v]).map((x) => str(x)).filter((x): x is string => !!x);
 }
 
-/** Première valeur d'un attribut LDAP, ou undefined. */
+/** First value of an LDAP attribute, or undefined. */
 function ldapFirst(
   attrs: LdapEntryParts['attributes'],
   name: string | undefined,
@@ -430,17 +430,17 @@ function ldapFirst(
   return ldapValues(attrs, name)[0];
 }
 
-/** Extrait le CN du 1er RDN d'un DN (`CN=Groupe RH,OU=Groupes,DC=corp` → `Groupe RH`). Repli : DN brut. */
+/** Extracts the CN of a DN's first RDN (`CN=HR Group,OU=Groups,DC=corp` -> `HR Group`). Fallback: raw DN. */
 function cnFromDn(dn: string): string {
   const m = /^\s*cn\s*=\s*([^,]+)/i.exec(dn);
   return (m?.[1] ?? dn).trim();
 }
 
 /**
- * Projette une entrée **LDAP / Active Directory** vers `DirectoryProfile`. Même cible normalisée que
- * Graph/OIDC/SCIM ⇒ **même mapping de rôles et même classification**, sans réécrire le moteur. Les
- * groupes proviennent de `memberOf` (DN ⇒ CN). Le responsable (`manager`, un DN en AD) est réduit à
- * son CN faute de second appel (dette V2 : résoudre le DN du manager en e-mail).
+ * Projects an **LDAP / Active Directory** entry to `DirectoryProfile`. Same normalized target as
+ * Graph/OIDC/SCIM => **same role mapping and same classification**, without rewriting the engine.
+ * Groups come from `memberOf` (DN => CN). The manager (`manager`, a DN in AD) is reduced to its CN
+ * for lack of a second call (V2 debt: resolve the manager DN to an email).
  */
 export function profileFromLdap(e: LdapEntryParts): DirectoryProfile {
   const map = { ...LDAP_AD_ATTRIBUTE_DEFAULTS, ...(e.attributeMap ?? {}) };
@@ -472,9 +472,9 @@ export function profileFromLdap(e: LdapEntryParts): DirectoryProfile {
 }
 
 /**
- * Compte LDAP actif ? Active Directory encode la désactivation dans `userAccountControl` (bit
- * `0x2`, ACCOUNTDISABLE). Attribut absent (OpenLDAP et dérivés) ⇒ considéré **actif** (le
- * déprovisionnement passe alors par le périmètre d'import, pas par ce drapeau).
+ * Active LDAP account? Active Directory encodes deactivation in `userAccountControl` (bit
+ * `0x2`, ACCOUNTDISABLE). Missing attribute (OpenLDAP and derivatives) => considered **active**
+ * (deprovisioning then goes through the import scope, not this flag).
  */
 export function accountActiveFromLdap(e: LdapEntryParts): boolean {
   const uac = Number(ldapFirst(e.attributes, 'userAccountControl'));
@@ -482,7 +482,7 @@ export function accountActiveFromLdap(e: LdapEntryParts): boolean {
   return true;
 }
 
-/** Organisation Google Workspace (Admin SDK Directory `users.organizations[]`). */
+/** Google Workspace organization (Admin SDK Directory `users.organizations[]`). */
 export interface GoogleOrganization {
   readonly department?: string | null;
   readonly title?: string | null;
@@ -491,13 +491,13 @@ export interface GoogleOrganization {
   readonly primary?: boolean | null;
 }
 
-/** Relation Google Workspace (`users.relations[]`) - porte notamment le responsable hiérarchique. */
+/** Google Workspace relation (`users.relations[]`) - carries the reporting manager in particular. */
 export interface GoogleRelation {
   readonly type?: string | null;
   readonly value?: string | null;
 }
 
-/** Utilisateur Google Workspace (Admin SDK Directory `users.list` + groupes résolus côté client). */
+/** Google Workspace user (Admin SDK Directory `users.list` + client-resolved groups). */
 export interface GoogleDirectoryUserParts {
   readonly id?: string | null;
   readonly primaryEmail?: string | null;
@@ -509,21 +509,21 @@ export interface GoogleDirectoryUserParts {
   readonly organizations?: readonly GoogleOrganization[] | null;
   readonly relations?: readonly GoogleRelation[] | null;
   readonly suspended?: boolean | null;
-  /** Noms (ou e-mails) des groupes de l'utilisateur, résolus par le client (`groups.list`). */
+  /** Names (or emails) of the user's groups, resolved by the client (`groups.list`). */
   readonly groups?: readonly string[];
 }
 
-/** Organisation « principale » d'un compte Google (drapeau `primary`, sinon la première). */
+/** "Primary" organization of a Google account (`primary` flag, otherwise the first one). */
 function primaryOrganization(orgs: GoogleDirectoryUserParts['organizations']): GoogleOrganization {
   if (!orgs?.length) return {};
   return orgs.find((o) => o.primary) ?? orgs[0] ?? {};
 }
 
 /**
- * Projette un utilisateur **Google Workspace** (Admin SDK Directory) vers `DirectoryProfile`. Même
- * cible normalisée que Graph/OIDC/SCIM/LDAP ⇒ **même mapping de rôles et même classification**. Les
- * groupes sont fournis pré-résolus par le client (`groups.list per user`). Le responsable provient
- * de la relation typée `manager`.
+ * Projects a **Google Workspace** user (Admin SDK Directory) to `DirectoryProfile`. Same
+ * normalized target as Graph/OIDC/SCIM/LDAP => **same role mapping and same classification**.
+ * Groups are provided pre-resolved by the client (`groups.list per user`). The manager comes
+ * from the typed `manager` relation.
  */
 export function profileFromGoogle(u: GoogleDirectoryUserParts): DirectoryProfile {
   const org = primaryOrganization(u.organizations);
@@ -551,16 +551,16 @@ export function profileFromGoogle(u: GoogleDirectoryUserParts): DirectoryProfile
   };
 }
 
-/** Compte Google actif ? `suspended === true` ⇒ désactivé (déprovisionnement). */
+/** Active Google account? `suspended === true` => deactivated (deprovisioning). */
 export function accountActiveFromGoogle(u: GoogleDirectoryUserParts): boolean {
   return u.suspended !== true;
 }
 
 /**
- * Carte d'attributs **SAML → champs de profil** (config-driven, ADR-014). Une assertion SAML n'a pas
- * de nom d'attribut universel : ADFS émet des URI longues (`http://schemas.xmlsoap.org/.../emailaddress`),
- * d'autres IdP des noms courts (`mail`, `givenName`). L'admin peut donc surcharger chaque champ par
- * tenant ; à défaut on essaie une liste de **candidats usuels** (ADFS + Entra + noms courts + urn:oid).
+ * Attribute map **SAML -> profile fields** (config-driven, ADR-014). A SAML assertion has no
+ * universal attribute name: ADFS emits long URIs (`http://schemas.xmlsoap.org/.../emailaddress`),
+ * other IdPs use short names (`mail`, `givenName`). The admin can therefore override each field per
+ * tenant; otherwise a list of **usual candidates** is tried (ADFS + Entra + short names + urn:oid).
  */
 export interface SamlAttributeMap {
   readonly email?: string;
@@ -578,9 +578,9 @@ export interface SamlAttributeMap {
 }
 
 /**
- * Candidats d'attributs SAML par champ (source unique de vérité), essayés dans l'ordre. Couvre les
- * conventions ADFS (URI `schemas.xmlsoap.org`/`schemas.microsoft.com`), Entra, les noms courts et
- * `urn:oid`. Surchargeable champ par champ via `SamlAttributeMap` (le nom fourni prime).
+ * Candidate SAML attributes per field (single source of truth), tried in order. Covers the ADFS
+ * conventions (URIs `schemas.xmlsoap.org`/`schemas.microsoft.com`), Entra, short names and
+ * `urn:oid`. Overridable field by field via `SamlAttributeMap` (the provided name wins).
  */
 export const SAML_DEFAULT_ATTRIBUTE_KEYS: Record<keyof SamlAttributeMap, readonly string[]> = {
   email: [
@@ -625,22 +625,22 @@ export const SAML_DEFAULT_ATTRIBUTE_KEYS: Record<keyof SamlAttributeMap, readonl
   manager: ['manager', 'managerEmail'],
 };
 
-/** Assertion SAML 2.0 normalisée : nameID + attributs (mono- ou multi-valués) + carte optionnelle. */
+/** Normalized SAML 2.0 assertion: nameID + attributes (single- or multi-valued) + optional map. */
 export interface SamlAssertionParts {
-  /** Identifiant de sujet SAML (`<NameID>`), souvent l'e-mail. Sert d'externalId et de repli d'e-mail. */
+  /** SAML subject identifier (`<NameID>`), often the email. Used as externalId and email fallback. */
   readonly nameId: string | null;
   readonly attributes: Readonly<Record<string, string | readonly string[] | undefined>>;
   readonly attributeMap?: SamlAttributeMap;
 }
 
-/** Clés candidates pour un champ : la surcharge admin (si présente) prime, puis les défauts. */
+/** Candidate keys for a field: the admin override (if present) wins, then the defaults. */
 function samlKeysFor(field: keyof SamlAttributeMap, map: SamlAttributeMap | undefined): string[] {
   const override = map?.[field];
   const defaults = SAML_DEFAULT_ATTRIBUTE_KEYS[field];
   return override ? [override, ...defaults] : [...defaults];
 }
 
-/** Valeurs (chaînes non vides) du premier attribut SAML présent parmi les clés candidates. */
+/** Values (non-empty strings) of the first SAML attribute present among the candidate keys. */
 function samlValues(attrs: SamlAssertionParts['attributes'], keys: readonly string[]): string[] {
   for (const k of keys) {
     const v = attrs[k];
@@ -659,11 +659,11 @@ function samlFirst(
 }
 
 /**
- * Projette une **assertion SAML 2.0** (ADFS, Entra, Okta, Keycloak via SAML) vers `DirectoryProfile`.
- * C'est le « point dur » du connecteur SAML : une fois l'assertion projetée vers cette cible commune,
- * **le mapping de rôles et la classification existants marchent tels quels**, comme pour OIDC/SCIM.
- * `nameID` sert d'externalId stable et de repli d'e-mail. Les groupes proviennent du claim de groupe
- * ou de rôle de l'IdP. Les attributs bruts sont conservés dans `claims` pour des règles avancées.
+ * Projects a **SAML 2.0 assertion** (ADFS, Entra, Okta, Keycloak via SAML) to `DirectoryProfile`.
+ * This is the "hard part" of the SAML connector: once the assertion is projected to this common
+ * target, **the existing role mapping and classification work as is**, as for OIDC/SCIM.
+ * `nameID` serves as a stable externalId and email fallback. Groups come from the IdP's group or
+ * role claim. The raw attributes are kept in `claims` for advanced rules.
  */
 export function profileFromSaml(a: SamlAssertionParts): DirectoryProfile {
   const map = a.attributeMap;
@@ -695,10 +695,10 @@ export function profileFromSaml(a: SamlAssertionParts): DirectoryProfile {
 }
 
 /**
- * Carte d'attributs **OIDC → champs de profil** (config-driven, ADR-014). Les claims varient selon
- * l'IdP (Entra `jobTitle`, Okta `title`…). L'admin peut surcharger, claim par claim, le nom lu ; à
- * défaut on essaie une liste de claims usuels (le nom fourni prime, puis les défauts). Les `groups`
- * agrègent (union) **tous** les claims candidats (un IdP peut peupler `groups`, `roles` et `wids`).
+ * Attribute map **OIDC -> profile fields** (config-driven, ADR-014). Claims vary by IdP
+ * (Entra `jobTitle`, Okta `title`...). The admin can override, claim by claim, the read name;
+ * otherwise a list of usual claims is tried (the provided name wins, then the defaults). The
+ * `groups` aggregate (union) **all** candidate claims (an IdP may populate `groups`, `roles` and `wids`).
  */
 export interface OidcAttributeMap {
   readonly email?: string;
@@ -717,8 +717,8 @@ export interface OidcAttributeMap {
 }
 
 /**
- * Claims OIDC candidats par champ (source unique de vérité), essayés dans l'ordre. Reproduit à
- * l'identique l'extraction historique : sans surcharge, le profil est strictement le même qu'avant.
+ * Candidate OIDC claims per field (single source of truth), tried in order. Reproduces the
+ * historical extraction exactly: without an override, the profile is strictly the same as before.
  */
 export const OIDC_DEFAULT_ATTRIBUTE_KEYS: Record<keyof OidcAttributeMap, readonly string[]> = {
   email: ['email', 'preferred_username', 'upn'],
@@ -742,15 +742,15 @@ function oidcKeysFor(field: keyof OidcAttributeMap, map: OidcAttributeMap | unde
   return override ? [override, ...defaults] : [...defaults];
 }
 
-/** Première valeur de claim non vide parmi les candidats. */
+/** First non-empty claim value among the candidates. */
 function oidcFirst(claims: Record<string, unknown>, keys: readonly string[]): string | undefined {
   return firstString(...keys.map((key) => claims[key]));
 }
 
 /**
- * Projette les claims d'un jeton OIDC (Entra ID / Okta / Keycloak) vers `DirectoryProfile`.
- * `attributeMap` (config tenant) surcharge les claims lus ; sans elle, l'extraction est strictement
- * identique à l'historique. Les groupes agrègent tous les claims candidats (`groups`/`roles`/`wids`).
+ * Projects the claims of an OIDC token (Entra ID / Okta / Keycloak) to `DirectoryProfile`.
+ * `attributeMap` (tenant config) overrides the read claims; without it, the extraction is strictly
+ * identical to the historical one. Groups aggregate all candidate claims (`groups`/`roles`/`wids`).
  */
 export function profileFromOidcClaims(
   claims: Record<string, unknown>,

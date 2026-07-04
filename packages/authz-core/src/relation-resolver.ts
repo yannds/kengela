@@ -1,48 +1,48 @@
 /**
- * RelationResolver par defaut, PUR (aucun vendor, aucune DB).
+ * Default RelationResolver, PURE (no vendor, no DB).
  *
- * Les deux PDP (`RbacDecisionPoint`, `PolicyDecisionPoint`) EXIGENT un
- * `RelationResolver` en dependance, mais aucun n'etait livre : chaque app devait
- * ecrire le sien. Ce resolver comble le cas le plus courant en calculant la
- * relation organisationnelle DIRECTEMENT depuis les champs org deja portes par le
- * `Principal` (`orgUnitId`, `agencyId`, `coverageUnits`) confrontes a la
+ * Both PDPs (`RbacDecisionPoint`, `PolicyDecisionPoint`) REQUIRE a
+ * `RelationResolver` as a dependency, but none was shipped: every app had to
+ * write its own. This resolver covers the most common case by computing the
+ * organizational relation DIRECTLY from the org fields already carried by the
+ * `Principal` (`orgUnitId`, `agencyId`, `coverageUnits`) matched against the
  * `ResourceRef` (`id` + `attributes.ownerId` / `attributes.unitId`...).
  *
- * DOCTRINE deny-by-default : on ne CLASSE une relation plus etroite (self > unit >
- * subtree) que si elle est PROUVABLE par les donnees fournies. A defaut de preuve,
- * on retombe sur la relation la plus faible defendable - `tenant` si la ressource
- * appartient au meme tenant, sinon `none`. Une relation plus etroite exige un grant
- * de portee plus NARROW (self=own) : ne la rendre que sur preuve evite d'ouvrir un
- * acces qu'un simple grant `own` couvrirait a tort.
+ * deny-by-default DOCTRINE: we only CLASSIFY a narrower relation (self > unit >
+ * subtree) if it is PROVABLE from the supplied data. Without proof, we fall back
+ * to the weakest defensible relation - `tenant` if the resource belongs to the
+ * same tenant, otherwise `none`. A narrower relation requires a NARROWER scope
+ * grant (self=own): only returning it on proof avoids opening an access that a
+ * plain `own` grant would wrongly cover.
  *
- * LIMITE (par conception) : la couverture organisationnelle se limite aux unites
- * DEJA presentes dans le `Principal` (`coverageUnits`). Un vrai sous-arbre calcule
- * hors du jeton (traversee de l'organigramme en base) reste du ressort d'un
- * `RelationResolver` cote app, adosse a la persistance - ce resolver-ci ne fait
- * AUCUN acces I/O et reste donc composable/testable sans infra.
+ * LIMIT (by design): organizational coverage is limited to the units ALREADY
+ * present in the `Principal` (`coverageUnits`). A true subtree computed outside
+ * the token (org chart traversal in the database) remains the responsibility of
+ * an app-side `RelationResolver` backed by persistence - this resolver does NO
+ * I/O access and thus stays composable/testable without infra.
  */
 import type { OrgRelation, Principal, RelationResolver, ResourceRef } from '@kengela/contracts';
 
 /**
- * Options du resolver : noms d'attributs de ressource a lire (config-driven, jamais
- * en dur cote app). Les defauts couvrent les conventions usuelles.
+ * Resolver options: names of resource attributes to read (config-driven, never
+ * hardcoded app-side). The defaults cover the usual conventions.
  */
 export interface PrincipalRelationResolverOptions {
-  /** Attributs portant le proprietaire de la ressource (essayes dans l'ordre). Defaut : `ownerId`. */
+  /** Attributes carrying the resource owner (tried in order). Default: `ownerId`. */
   readonly ownerAttributeKeys?: readonly string[];
-  /** Attributs portant l'unite organisationnelle de la ressource. Defaut : `unitId`, `orgUnitId`, `agencyId`. */
+  /** Attributes carrying the resource's organizational unit. Default: `unitId`, `orgUnitId`, `agencyId`. */
   readonly unitAttributeKeys?: readonly string[];
 }
 
 const DEFAULT_OWNER_KEYS: readonly string[] = ['ownerId'];
 const DEFAULT_UNIT_KEYS: readonly string[] = ['unitId', 'orgUnitId', 'agencyId'];
 
-/** Chaine non vide, ou `undefined` (fail-closed sur toute autre forme). */
+/** Non-empty string, or `undefined` (fail-closed on any other shape). */
 function asId(value: unknown): string | undefined {
   return typeof value === 'string' && value.length > 0 ? value : undefined;
 }
 
-/** Premiere valeur d'identifiant non vide parmi les cles candidates. */
+/** First non-empty id value among the candidate keys. */
 function firstAttr(
   attributes: Readonly<Record<string, unknown>> | undefined,
   keys: readonly string[],
@@ -59,7 +59,7 @@ function firstAttr(
   return undefined;
 }
 
-/** Unites organisationnelles propres au principal (unite directe + agence). */
+/** Organizational units owned by the principal (direct unit + agency). */
 function principalUnitIds(principal: Principal): ReadonlySet<string> {
   const ids = new Set<string>();
   if (principal.orgUnitId !== undefined) {
@@ -85,22 +85,22 @@ export class PrincipalRelationResolver implements RelationResolver {
   }
 
   #relate(principal: Principal, resource: ResourceRef): OrgRelation {
-    // Isolation multi-tenant, defense-en-profondeur : cross-tenant => aucun lien.
+    // Multi-tenant isolation, defense-in-depth: cross-tenant => no link.
     if (resource.tenantId !== principal.tenantId) {
       return 'none';
     }
 
     const attributes = resource.attributes;
 
-    // 1. self : proprietaire PROUVE (attribut owner === userId), ou la ressource
-    //    EST le sujet lui-meme (`resource.id === userId`, cas d'un profil `user`).
+    // 1. self: PROVEN owner (owner attribute === userId), or the resource
+    //    IS the subject itself (`resource.id === userId`, case of a `user` profile).
     const ownerId = firstAttr(attributes, this.#ownerKeys);
     if (ownerId === principal.userId || asId(resource.id) === principal.userId) {
       return 'self';
     }
 
-    // 2/3. unite : l'unite de la ressource est-elle celle du principal (unit) ou
-    //       une unite qu'il couvre (subtree) ? Sans unite lisible => on n'affirme rien.
+    // 2/3. unit: is the resource's unit the principal's own (unit) or a unit it
+    //       covers (subtree)? Without a readable unit => we assert nothing.
     const resourceUnitId = firstAttr(attributes, this.#unitKeys);
     if (resourceUnitId !== undefined) {
       if (principalUnitIds(principal).has(resourceUnitId)) {
@@ -111,8 +111,8 @@ export class PrincipalRelationResolver implements RelationResolver {
       }
     }
 
-    // 4. meme tenant, aucun lien plus etroit prouvable => la relation la plus faible
-    //    defendable est `tenant` (exige un grant de portee tenant pour couvrir).
+    // 4. same tenant, no narrower link provable => the weakest defensible
+    //    relation is `tenant` (requires a tenant scope grant to cover).
     return 'tenant';
   }
 }

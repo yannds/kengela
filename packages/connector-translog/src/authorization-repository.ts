@@ -1,12 +1,12 @@
 /**
- * TranslogAuthorizationRepository - implemente AuthorizationRepository sur
+ * TranslogAuthorizationRepository - implements AuthorizationRepository on
  * TranslogPrismaLike.
  *
- * TransLog est MONO-ROLE : `User.roleId` designe l'unique role, dont les droits
- * vivent dans `RolePermission`. Chaque `permission` est une chaine
- * `plane.module.action.SCOPE` : le dernier segment est le jeton de portee (voir
- * mapping.ts). Le filtrage des grants expires n'a pas lieu ici (TransLog n'a pas
- * d'expiration sur ces droits statiques).
+ * TransLog is SINGLE-ROLE: `User.roleId` designates the single role, whose rights
+ * live in `RolePermission`. Each `permission` is a string
+ * `plane.module.action.SCOPE`: the last segment is the scope token (see
+ * mapping.ts). Filtering of expired grants does not happen here (TransLog has no
+ * expiration on these static rights).
  */
 import type { AuthorizationRepository, Grant, Role, TenantId, UserId } from '@kengela/contracts';
 import type { TranslogPrismaLike } from './translog-prisma-like.js';

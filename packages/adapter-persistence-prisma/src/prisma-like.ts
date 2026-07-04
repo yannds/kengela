@@ -1,18 +1,18 @@
 /**
- * PrismaLike - la surface NARROW dont cet adapter depend.
+ * PrismaLike - the NARROW surface this adapter depends on.
  *
- * DOCTRINE : le port est un sas, pas une planque. On ne genere PAS de client
- * Prisma ici et on n'importe RIEN de `@prisma/client`. On decrit exactement les
- * delegues et methodes utilises, avec des types de lignes explicites. Un vrai
- * `PrismaClient` (genere depuis prisma/schema.prisma) est structurellement
- * compatible cote application : il se passe la ou `PrismaLike` est attendu.
+ * DOCTRINE: the port is an airlock, not a hideout. We do NOT generate a Prisma
+ * client here and we import NOTHING from `@prisma/client`. We describe exactly the
+ * delegates and methods used, with explicit row types. A real `PrismaClient`
+ * (generated from prisma/schema.prisma) is structurally compatible on the
+ * application side: it fits wherever `PrismaLike` is expected.
  *
- * Les colonnes d'union (scope, source, effect, ctx JSON) restent des `string` /
- * `unknown` cote base : le narrowing fail-closed vit dans mapping.ts.
+ * The union columns (scope, source, effect, ctx JSON) stay as `string` /
+ * `unknown` on the database side: the fail-closed narrowing lives in mapping.ts.
  */
 import type { TenantId, UserId } from '@kengela/contracts';
 
-/** Ligne `Grant` telle que stockee (unions gardees en `string`). */
+/** `Grant` row as stored (unions kept as `string`). */
 export interface GrantRow {
   readonly permission: string;
   readonly scope: string;
@@ -20,14 +20,14 @@ export interface GrantRow {
   readonly expiresAt: Date | null;
 }
 
-/** Ligne `Role` avec ses grants joints. */
+/** `Role` row with its joined grants. */
 export interface RoleRow {
   readonly key: string;
   readonly tenantId: TenantId;
   readonly grants: readonly GrantRow[];
 }
 
-/** Ligne `Session`. `ctx` est une colonne JSON opaque (`unknown`). */
+/** `Session` row. `ctx` is an opaque JSON column (`unknown`). */
 export interface SessionRow {
   readonly token: string;
   readonly userId: UserId;
@@ -37,7 +37,7 @@ export interface SessionRow {
   readonly ctx: unknown;
 }
 
-/** Payload d'ecriture d'une session (meme forme que la ligne). */
+/** Write payload for a session (same shape as the row). */
 export interface SessionCreateData {
   readonly token: string;
   readonly userId: UserId;
@@ -47,7 +47,7 @@ export interface SessionCreateData {
   readonly ctx: unknown;
 }
 
-/** Ligne `PolicyRule` (imbriquee sous une policy). */
+/** `PolicyRule` row (nested under a policy). */
 export interface PolicyRuleRow {
   readonly effect: string;
   readonly scope: string | null;
@@ -56,7 +56,7 @@ export interface PolicyRuleRow {
   readonly reason: string | null;
 }
 
-/** Ligne `Policy` avec ses regles jointes. */
+/** `Policy` row with its joined rules. */
 export interface PolicyRow {
   readonly resource: string;
   readonly action: string;
@@ -95,9 +95,9 @@ export interface PolicyDelegate {
 }
 
 /**
- * Le client injecte. `$transaction` est OPTIONNEL : les operations atomiques
- * (rotation de session) l'utilisent si le client injecte le fournit, sinon
- * degradent en operations sequentielles.
+ * The injected client. `$transaction` is OPTIONAL: the atomic operations
+ * (session rotation) use it if the injected client provides it, otherwise they
+ * degrade to sequential operations.
  */
 export interface PrismaLike {
   readonly grant: GrantDelegate;
@@ -107,9 +107,9 @@ export interface PrismaLike {
   readonly $transaction?: (<T>(fn: (tx: PrismaLike) => Promise<T>) => Promise<T>) | undefined;
 }
 
-// ── MFA : secret chiffre at-rest + defis one-shot expirants ──────────────────
+// ── MFA: encrypted at-rest secret + one-shot expiring challenges ─────────────
 
-/** Ligne stockant le secret TOTP chiffre (le clair n'est jamais persiste). */
+/** Row storing the encrypted TOTP secret (cleartext is never persisted). */
 export interface MfaSecretRow {
   readonly secret: string;
 }
@@ -150,30 +150,30 @@ export interface MfaChallengeDelegate {
   delete(args: { readonly where: { readonly id: string } }): Promise<unknown>;
 }
 
-// ── Credentials : identite par mot de passe (Account) + etat du compte (User) ─
+// ── Credentials: password identity (Account) + account state (User) ──────────
 //
-// Schema de reference (modele « better-auth-like », generique) :
+// Reference schema (generic "better-auth-like" model):
 //  - User    { id, tenantId, isActive, deletedAt?, mfaEnabled, roles String[] }
 //  - Account { userId, tenantId, providerId, accountId, password? }
-// Le hash vit dans `Account` (providerId='credential', accountId=email) ; l'etat du
-// compte (actif, mfa, roles) dans `User`. Un vrai `PrismaClient` (User/Account) est
-// structurellement compatible avec les delegues NARROW ci-dessous.
+// The hash lives in `Account` (providerId='credential', accountId=email); the
+// account state (active, mfa, roles) in `User`. A real `PrismaClient` (User/Account) is
+// structurally compatible with the NARROW delegates below.
 
-/** Ligne `Account` - sous-ensemble NARROW (le hash `password` est optionnel). */
+/** `Account` row - NARROW subset (the `password` hash is optional). */
 export interface AccountRow {
   readonly userId: UserId;
   readonly tenantId: TenantId;
   readonly password: string | null;
 }
 
-/** Ligne `User` - sous-ensemble NARROW lu pour resoudre un `CredentialRecord`. */
+/** `User` row - NARROW subset read to resolve a `CredentialRecord`. */
 export interface CredentialUserRow {
   readonly id: UserId;
   readonly tenantId: TenantId;
   readonly isActive: boolean;
   readonly deletedAt: Date | null;
   readonly mfaEnabled: boolean;
-  /** Rôles de l'utilisateur (colonne liste, ex. `roles String[]`). */
+  /** The user's roles (list column, e.g. `roles String[]`). */
   readonly roles: readonly string[];
 }
 
@@ -199,15 +199,15 @@ export interface CredentialUserDelegate {
   }): Promise<readonly CredentialUserRow[]>;
 }
 
-/** Surface NARROW dont `PrismaCredentialStore` a besoin (Account + User). */
+/** NARROW surface that `PrismaCredentialStore` needs (Account + User). */
 export interface CredentialPrismaLike {
   readonly account: AccountDelegate;
   readonly user: CredentialUserDelegate;
 }
 
-// ── PII : clé de chiffrement PAR SUJET (crypto-shredding) + journal d'accès ───
+// ── PII: PER-SUBJECT encryption key (crypto-shredding) + access log ──────────
 
-/** Ligne stockant la clé d'un sujet, sérialisée en base64 (chiffrée-at-rest si KMS injecté). */
+/** Row storing a subject's key, serialized in base64 (encrypted-at-rest if KMS injected). */
 export interface SubjectKeyRow {
   readonly key: string;
 }

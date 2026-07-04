@@ -1,8 +1,8 @@
 /**
- * Handlers SCIM 2.0 `/Groups` - PURS (`(store, requête) → réponse`), sans HTTP.
+ * SCIM 2.0 `/Groups` handlers - PURE (`(store, request) -> response`), no HTTP.
  *
- * L'IdP (Entra/Okta) pousse ici les groupes et leurs membres (RFC 7643 §4.2). CRUD complet
- * + gestion des membres via PATCH (add/remove/replace) et remplacement complet via PUT.
+ * The IdP (Entra/Okta) pushes groups and their members here (RFC 7643 §4.2). Full CRUD
+ * + member management via PATCH (add/remove/replace) and full replacement via PUT.
  */
 import type { ScimGroupListOptions, ScimRequest, ScimResponse, ScimStore } from './types.js';
 import {
@@ -19,14 +19,14 @@ import {
 } from './serialize.js';
 
 function missingId(): ScimResponse {
-  return { status: 400, body: scimError(400, 'Identifiant de ressource requis.', 'invalidValue') };
+  return { status: 400, body: scimError(400, 'Resource identifier required.', 'invalidValue') };
 }
 
 function notFound(): ScimResponse {
-  return { status: 404, body: scimError(404, 'Groupe introuvable.') };
+  return { status: 404, body: scimError(404, 'Group not found.') };
 }
 
-/** POST `/Groups` : crée un groupe (+ membres initiaux). `displayName` obligatoire (400 sinon). */
+/** POST `/Groups`: creates a group (+ initial members). `displayName` required (400 otherwise). */
 export async function handleGroupsPost(
   store: ScimStore,
   request: ScimRequest,
@@ -34,7 +34,7 @@ export async function handleGroupsPost(
   const body = asRecord(request.body);
   const displayName = groupDisplayNameOf(body);
   if (displayName === null) {
-    return { status: 400, body: scimError(400, 'displayName requis.', 'invalidValue') };
+    return { status: 400, body: scimError(400, 'displayName required.', 'invalidValue') };
   }
   const created = await store.createGroup(request.tenantId, {
     displayName,
@@ -44,7 +44,7 @@ export async function handleGroupsPost(
   return { status: 201, body: toScimGroup(created) };
 }
 
-/** GET `/Groups/:id` : 200 avec la ressource, ou 404 SCIM. */
+/** GET `/Groups/:id`: 200 with the resource, or 404 SCIM. */
 export async function handleGroupsGet(
   store: ScimStore,
   request: ScimRequest,
@@ -57,8 +57,8 @@ export async function handleGroupsGet(
 }
 
 /**
- * GET `/Groups` : `ListResponse` SCIM. Supporte le filtre `displayName eq "..."` +
- * pagination. Filtre présent mais non supporté ⇒ liste vide.
+ * GET `/Groups`: SCIM `ListResponse`. Supports the `displayName eq "..."` filter +
+ * pagination. Filter present but unsupported => empty list.
  */
 export async function handleGroupsList(
   store: ScimStore,
@@ -80,8 +80,8 @@ export async function handleGroupsList(
 }
 
 /**
- * PATCH `/Groups/:id` : gestion des membres (add/remove/replace, RFC 7644 §3.5.2), y
- * compris le retrait ciblé `members[value eq "<id>"]`. 404 si le groupe n'existe pas.
+ * PATCH `/Groups/:id`: member management (add/remove/replace, RFC 7644 §3.5.2), including
+ * the targeted removal `members[value eq "<id>"]`. 404 if the group does not exist.
  */
 export async function handleGroupsPatch(
   store: ScimStore,
@@ -96,8 +96,8 @@ export async function handleGroupsPatch(
 }
 
 /**
- * PUT `/Groups/:id` : remplacement complet (displayName + membres). 404 si absent, 400 si
- * `displayName` manque.
+ * PUT `/Groups/:id`: full replacement (displayName + members). 404 if absent, 400 if
+ * `displayName` is missing.
  */
 export async function handleGroupsPut(
   store: ScimStore,
@@ -109,7 +109,7 @@ export async function handleGroupsPut(
   const body = asRecord(request.body);
   const displayName = groupDisplayNameOf(body);
   if (displayName === null) {
-    return { status: 400, body: scimError(400, 'displayName requis.', 'invalidValue') };
+    return { status: 400, body: scimError(400, 'displayName required.', 'invalidValue') };
   }
   const updated = await store.replaceGroup(request.tenantId, request.pathId, {
     displayName,
@@ -119,7 +119,7 @@ export async function handleGroupsPut(
   return updated === null ? notFound() : { status: 200, body: toScimGroup(updated) };
 }
 
-/** DELETE `/Groups/:id` : suppression du groupe (les membres ne sont pas supprimés). 204/404. */
+/** DELETE `/Groups/:id`: deletes the group (members are not deleted). 204/404. */
 export async function handleGroupsDelete(
   store: ScimStore,
   request: ScimRequest,

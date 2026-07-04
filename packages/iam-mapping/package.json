@@ -1,6 +1,6 @@
 {
   "name": "@kengela/iam-mapping",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Kengela pure IdP identity normalization (OIDC/SCIM/SAML/LDAP/Graph/Google) to DirectoryProfile + role mapping engine.",
   "license": "Apache-2.0",
   "type": "module",
@@ -33,5 +33,30 @@
     "url": "git+https://github.com/yannds/kengela.git",
     "directory": "packages/iam-mapping"
   },
-  "module": "./dist/esm/index.js"
+  "module": "./dist/esm/index.js",
+  "homepage": "https://github.com/yannds/kengela/wiki",
+  "bugs": {
+    "url": "https://github.com/yannds/kengela/issues"
+  },
+  "author": "yannds",
+  "keywords": [
+    "kengela",
+    "zero-trust",
+    "ztna",
+    "iam",
+    "identity",
+    "authentication",
+    "authorization",
+    "rbac",
+    "abac",
+    "multi-tenant",
+    "typescript",
+    "esm",
+    "scim",
+    "oidc",
+    "saml",
+    "ldap",
+    "directory",
+    "federation"
+  ]
 }

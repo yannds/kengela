@@ -1,26 +1,26 @@
 /**
- * Coeur de decision RBAC, deny-by-default. PUR : aucune dependance infra ni vendor.
- * Un grant couvre une permission requise a une relation donnee ssi son motif couvre
- * la permission ET sa portee couvre la relation.
+ * RBAC decision core, deny-by-default. PURE: no infra or vendor dependency.
+ * A grant covers a required permission at a given relation iff its pattern covers
+ * the permission AND its scope covers the relation.
  */
 import type { Grant, OrgRelation, TenantId } from '@kengela/contracts';
 import { permissionCovers } from './grant.js';
 import { scopeCoversRelation } from './scope.js';
 
-/** Un grant couvre-t-il la permission requise a cette relation ? */
+/** Does a grant cover the required permission at this relation? */
 export function grantCovers(grant: Grant, required: string, relation: OrgRelation): boolean {
   return permissionCovers(grant.permission, required) && scopeCoversRelation(grant.scope, relation);
 }
 
 /**
- * Isolation multi-tenant, defense-en-profondeur (fail-closed).
+ * Multi-tenant isolation, defense-in-depth (fail-closed).
  *
- * Si la ressource visee n'appartient PAS au tenant du principal, la relation
- * organisationnelle resolue est RAMENEE a `none` : seul un grant de portee `global`
- * (plan plateforme) peut alors couvrir. Cela ferme tout franchissement cross-tenant
- * meme si le `RelationResolver` injecte se trompe et renvoie une relation trop large
- * (ex. `tenant`) pour une ressource d'un autre tenant. Le PDP n'accorde jamais sa
- * confiance aveugle a l'organigramme pour l'isolation : l'egalite de tenant prime.
+ * If the target resource does NOT belong to the principal's tenant, the resolved
+ * organizational relation is DOWNGRADED to `none`: only a `global` scope grant
+ * (platform plane) can then cover. This closes any cross-tenant crossing even if
+ * the injected `RelationResolver` is wrong and returns a relation that is too broad
+ * (e.g. `tenant`) for a resource in another tenant. The PDP never blindly trusts
+ * the org chart for isolation: tenant equality prevails.
  */
 export function tenantScopedRelation(
   principalTenantId: TenantId,
@@ -30,14 +30,14 @@ export function tenantScopedRelation(
   return principalTenantId === resourceTenantId ? resolved : 'none';
 }
 
-/** Grants encore actifs a l'instant `now` (exclut les grants expires). */
+/** Grants still active at instant `now` (excludes expired grants). */
 export function activeGrants(grants: readonly Grant[], now: number): readonly Grant[] {
   return grants.filter((g) => g.expiresAt === undefined || g.expiresAt.getTime() > now);
 }
 
 /**
- * Autorise ssi un grant actif couvre la permission a une portee >= relation.
- * Deny-by-default : aucun grant couvrant => refus.
+ * Authorizes iff an active grant covers the permission at a scope >= relation.
+ * Deny-by-default: no covering grant => deny.
  */
 export function isAuthorized(
   grants: readonly Grant[],

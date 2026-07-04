@@ -1,12 +1,12 @@
 /**
- * Point de decision (PDP) - couche RBAC.
+ * Policy Decision Point (PDP) - RBAC layer.
  *
- * Deny-by-default, evalue PAR REQUETE (Zero Trust). Les grants sont recharges a
- * chaque check via l'AuthorizationRepository (anti-staleness : un droit revoque
- * cesse d'agir immediatement, on ne fait pas confiance au Principal.roles cache).
+ * Deny-by-default, evaluated PER REQUEST (Zero Trust). Grants are reloaded on
+ * every check via the AuthorizationRepository (anti-staleness: a revoked right
+ * stops acting immediately, we do not trust the cached Principal.roles).
  *
- * Les couches ABAC (conditions CEL) et conditional access (geo/heure/risque) se
- * greffent au-dessus dans des paquets ulterieurs ; ce PDP-ci ne tranche que le RBAC.
+ * The ABAC layers (CEL conditions) and conditional access (geo/time/risk) are
+ * grafted on top in later packages; this PDP only decides RBAC.
  */
 import type {
   AccessRequest,
@@ -41,7 +41,7 @@ export class RbacDecisionPoint implements PolicyDecisionPoint {
       request.principal,
       request.resource,
     );
-    // Isolation multi-tenant, defense-en-profondeur : cross-tenant => relation `none`.
+    // Multi-tenant isolation, defense-in-depth: cross-tenant => relation `none`.
     const relation = tenantScopedRelation(
       request.principal.tenantId,
       request.resource.tenantId,
