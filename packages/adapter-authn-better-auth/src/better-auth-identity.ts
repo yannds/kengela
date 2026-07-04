@@ -26,7 +26,7 @@ function sessionAuthTime(session: BetterAuthSession): number {
  * IdentityPort au-dessus de better-auth : vérifie une preuve de session (cookie ou
  * bearer) via `auth.api.getSession` et projette l'utilisateur en `Principal`.
  * Fail-closed : sans tenant résoluble, la session est refusée. Le `ctx` (géo/device)
- * n'est pas fourni par better-auth — l'app l'enrichit via un ContextProvider.
+ * n'est pas fourni par better-auth - l'app l'enrichit via un ContextProvider.
  */
 export class BetterAuthIdentity implements IdentityPort {
   readonly #auth: BetterAuthLike;

@@ -1,4 +1,4 @@
-# Recette 12 — Provisioning Microsoft Entra ID (Azure AD) via SCIM 2.0
+# Recette 12 - Provisioning Microsoft Entra ID (Azure AD) via SCIM 2.0
 
 Provisionner automatiquement les comptes et groupes depuis **Microsoft Entra ID** vers
 votre application, sans écrire de code de synchronisation. Entra pousse les changements
@@ -34,20 +34,20 @@ est un second temps, alimenté par `@kengela/iam-mapping`.
 
 ### Ce que Kengela fournit (aucun HTTP, aucune base)
 
-- **Handlers Users** — `handleUsersPost`, `handleUsersPostStrict`, `handleUsersGet`,
+- **Handlers Users** - `handleUsersPost`, `handleUsersPostStrict`, `handleUsersGet`,
   `handleUsersList`, `handleUsersPatch`, `handleUsersPut`, `handleUsersDelete`.
-- **Handlers Groups** — `handleGroupsPost`, `handleGroupsGet`, `handleGroupsList`,
+- **Handlers Groups** - `handleGroupsPost`, `handleGroupsGet`, `handleGroupsList`,
   `handleGroupsPatch`, `handleGroupsPut`, `handleGroupsDelete`.
-- **Découverte (auto-description)** — `handleServiceProviderConfig`, `handleResourceTypes`,
+- **Découverte (auto-description)** - `handleServiceProviderConfig`, `handleResourceTypes`,
   `handleSchemas` (+ leurs générateurs purs `serviceProviderConfig()`, `resourceTypes()`,
   `schemaDefinitions()`).
-- **Validation** — `validateScimUser`, `validateScimGroup` → `ScimValidationResult`.
-- **Sérialisation / parsing** — `toScimUser`, `toScimGroup`, `userListResponse`,
+- **Validation** - `validateScimUser`, `validateScimGroup` → `ScimValidationResult`.
+- **Sérialisation / parsing** - `toScimUser`, `toScimGroup`, `userListResponse`,
   `groupListResponse`, `scimError`, `parseUserPatch`, `parseGroupMemberPatch`,
   `parseUserNameFilter`, `parseExternalIdFilter`, `parseDisplayNameFilter`,
   `parsePagination`, et les extracteurs de corps `emailOf` / `givenNameOf` / `familyNameOf`
   / `displayNameOf` / `groupDisplayNameOf` / `externalIdOf` / `activeOf` / `memberIdsOf`.
-- **Mapping** — `profileFromScim`, `evaluateMappings` (dans `@kengela/iam-mapping`).
+- **Mapping** - `profileFromScim`, `evaluateMappings` (dans `@kengela/iam-mapping`).
 
 ### Ce que l'application fournit
 
@@ -74,7 +74,7 @@ ESM only (`"type": "module"`), TypeScript strict. Les imports internes sont en `
 
 ## 3. Implémenter la persistance : le port `ScimStore`
 
-**Attention à la nomenclature — deux ports coexistent :**
+**Attention à la nomenclature - deux ports coexistent :**
 
 | Port             | Paquet                 | Rôle                                                                                                                                                              |
 | ---------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -83,7 +83,7 @@ ESM only (`"type": "module"`), TypeScript strict. Les imports internes sont en `
 
 Les handlers SCIM de cette recette parlent à **`ScimStore`** (port CRUD riche, lignes
 `ScimUserRow`…). `ScimRepository` (contracts) est un port de fédération MINIMAL et orienté
-réconciliation — exactement **deux** méthodes vérifiées dans `contracts/src/index.ts` :
+réconciliation - exactement **deux** méthodes vérifiées dans `contracts/src/index.ts` :
 
 ```ts
 // @kengela/contracts
@@ -100,9 +100,9 @@ Les deux ports **ne sont pas interchangeables** : `ScimRepository` est une VUE d
 synchronisation par-dessus `ScimStore`. Le pont `ScimStore → ScimRepository` n'est **pas**
 livré par le cœur, À DESSEIN (documenté dans `contracts-projection.ts`) : il devrait dépendre
 à la fois de `@kengela/scim-server` et de `@kengela/contracts`, or `iam-mapping` est un paquet
-CŒUR dont `scim-server` dépend déjà — l'inverse créerait un cycle. Sa place est donc un
-adapter de composition côté app. Le vrai point dur — projeter n'importe quelle source IdP vers
-une forme commune — est résolu par `toContractsProfile` (§5). Une fois le profil contracts
+CŒUR dont `scim-server` dépend déjà - l'inverse créerait un cycle. Sa place est donc un
+adapter de composition côté app. Le vrai point dur - projeter n'importe quelle source IdP vers
+une forme commune - est résolu par `toContractsProfile` (§5). Une fois le profil contracts
 obtenu, l'appel est direct :
 
 ```ts
@@ -401,7 +401,7 @@ export function scimRouter(store: ScimStore, resolveTenant: (req: express.Reques
   const r = express.Router();
   r.use(express.json({ type: ['application/json', 'application/scim+json'] }));
 
-  // (1) Auth du Bearer token — voir §8
+  // (1) Auth du Bearer token - voir §8
   r.use((req, res, next) => {
     if (!isValidBearer(req.header('authorization'))) {
       return res
@@ -510,7 +510,7 @@ const profile = profileFromScim(scimBody); // scimBody = corps SCIM brut poussé
 //   { email, externalId, firstName, lastName, displayName, attributes, groups, claims }
 ```
 
-**Deux `DirectoryProfile` cohabitent — ne pas les confondre :**
+**Deux `DirectoryProfile` cohabitent - ne pas les confondre :**
 
 |                     | `@kengela/iam-mapping` (riche)           | `@kengela/contracts` (minimal) |
 | ------------------- | ---------------------------------------- | ------------------------------ |
@@ -546,10 +546,10 @@ Ce que `toContractsProfile` garantit, par lecture de `contracts-projection.ts` :
 
 - **`externalId` non-null** : `rich.externalId`, à défaut l'e-mail (repli stable) ; jamais
   `undefined` côté contracts.
-- **`email` / `displayName`** : omis (et non `undefined`) s'ils sont vides — respecte
+- **`email` / `displayName`** : omis (et non `undefined`) s'ils sont vides - respecte
   `exactOptionalPropertyTypes`.
 - **`firstName` / `lastName`** : reversés dans `attributes` (le profil contracts n'a pas de
-  champ nom dédié) — rien n'est perdu.
+  champ nom dédié) - rien n'est perdu.
 - **`claims` bruts NON reportés** : volume + PII potentielle.
 
 `profileFromScim` accepte un `ScimAttributeMap` optionnel (config tenant) pour surcharger les
@@ -607,7 +607,7 @@ Dans le portail Entra : **Entreprise applications → (votre app) → Provisioni
 - Bouton **Test Connection** : Entra appelle `GET /ServiceProviderConfig`, `GET /Schemas`,
   `GET /ResourceTypes`, puis un `GET /Users?filter=userName eq "..."` et un
   `GET /Users?filter=externalId eq "..."`. Les deux filtres sont supportés par
-  `handleUsersList` — indispensable pour que le test passe.
+  `handleUsersList` - indispensable pour que le test passe.
 
 **Attribute Mappings** (section Mappings) : conserver les mappings SCIM standard d'Entra.
 Les défauts d'Entra correspondent aux chemins lus par `profileFromScim` :
@@ -650,7 +650,7 @@ Endpoints obligatoires SCIM 2.0 et leur couverture :
 les capacités réelles du cœur : `patch` supporté, `filter` supporté (borné à `MAX_PAGE_SIZE`),
 `bulk`/`sort`/`etag`/`changePassword` **non** supportés, schéma d'authentification
 `oauthbearertoken`. `schemaDefinitions()` décrit core User (RFC 7643 §4.1), extension
-enterprise (§4.3) et Group (§4.2) — exactement ce que `toScimUser`/`toScimGroup` savent
+enterprise (§4.3) et Group (§4.2) - exactement ce que `toScimUser`/`toScimGroup` savent
 porter, et ce que `validateScimUser` vérifie (round-trip garanti).
 
 Points que le validateur Entra contrôle et qui sont déjà gérés :
@@ -665,7 +665,7 @@ Points que le validateur Entra contrôle et qui sont déjà gérés :
 
 ---
 
-## 8. Encadré — fourni vs à écrire
+## 8. Encadré - fourni vs à écrire
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
@@ -920,7 +920,7 @@ export function scimRouter(store: ScimStore, resolveTenant: (req: express.Reques
     body: req.body,
   });
 
-  // Découverte (aucun store) — les trois endpoints de discovery.ts.
+  // Découverte (aucun store) - les trois endpoints de discovery.ts.
   r.get('/ServiceProviderConfig', (_req, res) => send(res, handleServiceProviderConfig()));
   r.get('/ResourceTypes/:id?', (req, res) => send(res, handleResourceTypes(req.params['id'])));
   r.get('/Schemas/:id?', (req, res) => send(res, handleSchemas(req.params['id'])));

@@ -1,5 +1,5 @@
 /**
- * Suite « Microsoft Entra (Azure AD) SCIM validator » — reproduit la séquence type du
+ * Suite « Microsoft Entra (Azure AD) SCIM validator » - reproduit la séquence type du
  * validateur de provisioning : découverte, cycle de vie utilisateur (create/uniqueness/
  * filtres/activation/désactivation) et gestion de groupes, plus l'auto-vérification du
  * schéma sur chaque réponse.
@@ -37,7 +37,7 @@ function records(value: unknown): Record<string, unknown>[] {
   return Array.isArray(value) ? (value as Record<string, unknown>[]) : [];
 }
 
-describe('Entra validator — phase de découverte', () => {
+describe('Entra validator - phase de découverte', () => {
   it('GET /ServiceProviderConfig renvoie les capacités attendues', () => {
     const res = handleServiceProviderConfig();
     expect(res.status).toBe(200);
@@ -58,7 +58,7 @@ describe('Entra validator — phase de découverte', () => {
   });
 });
 
-describe('Entra validator — cycle de vie utilisateur', () => {
+describe('Entra validator - cycle de vie utilisateur', () => {
   it('POST crée (201) avec schemas + meta, re-POST même userName ⇒ 409 uniqueness', async () => {
     const store = new FakeScimStore();
     const created = await handleUsersPostStrict(store, {
@@ -237,7 +237,7 @@ describe('Entra validator — cycle de vie utilisateur', () => {
   });
 });
 
-describe('Entra validator — cycle de vie groupe', () => {
+describe('Entra validator - cycle de vie groupe', () => {
   it('create, patch membres add/remove, list filter displayName eq', async () => {
     const store = new FakeScimStore();
     const created = await handleGroupsPost(store, {

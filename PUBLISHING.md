@@ -32,8 +32,8 @@ npm add @kengela/contracts @kengela/authz-core @kengela/nestjs \
         @kengela/adapter-persistence-prisma @kengela/adapter-authn-native
 ```
 
-Chaque application n'installe QUE les paquets dont elle a besoin (le reste — SAML,
-LDAP, better-auth... — reste optionnel).
+Chaque application n'installe QUE les paquets dont elle a besoin (le reste - SAML,
+LDAP, better-auth... - reste optionnel).
 
 ## Dépendances vendor des adapters
 
@@ -45,5 +45,5 @@ par l'app, déclarés en `peerDependency` :
 | `adapter-authn-native`          | argon2, bcryptjs, otplib   | Oui (dependency)                                              |
 | `adapter-expr-cel`              | @marcbachmann/cel-js       | Oui (dependency)                                              |
 | `adapter-directory-ldap`        | ldapts                     | Oui (dependency)                                              |
-| `adapter-persistence-prisma`    | (aucun — interface narrow) | —                                                             |
-| **`adapter-authn-better-auth`** | **better-auth**            | **NON — peerDependency : `npm add better-auth` dans ton app** |
+| `adapter-persistence-prisma`    | (aucun - interface narrow) | -                                                             |
+| **`adapter-authn-better-auth`** | **better-auth**            | **NON - peerDependency : `npm add better-auth` dans ton app** |

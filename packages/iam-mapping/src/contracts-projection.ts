@@ -1,72 +1,71 @@
 /**
- * Projection `DirectoryProfile` RICHE (iam-mapping) → `DirectoryProfile` MINIMAL (contracts).
+ * Projection of the RICH `DirectoryProfile` (iam-mapping) → MINIMAL `DirectoryProfile` (contracts).
  *
- * DEUX types portent le même nom `DirectoryProfile` :
- *  - celui d'`iam-mapping` (ce paquet) est RICHE : identité éclatée (firstName/lastName/
- *    displayName), `attributes` typés (DirectoryAttributes), `claims` bruts. C'est la cible
- *    de normalisation des 6 sources IdP.
- *  - celui de `@kengela/contracts` (`ProfileForContracts` ci-dessous) est MINIMAL et STABLE :
- *    `externalId` (non-null), `email?`, `displayName?`, `groups`, `attributes` (record libre),
- *    `active`, `source`. C'est la forme que le port `ScimRepository` consomme.
+ * TWO types share the name `DirectoryProfile`:
+ *  - the one from `iam-mapping` (this package) is RICH: broken-out identity (firstName/lastName/
+ *    displayName), typed `attributes` (DirectoryAttributes), raw `claims`. It is the normalization
+ *    target for the 6 IdP sources.
+ *  - the one from `@kengela/contracts` (`ProfileForContracts` below) is MINIMAL and STABLE:
+ *    `externalId` (non-null), `email?`, `displayName?`, `groups`, `attributes` (free record),
+ *    `active`, `source`. It is the shape the `ScimRepository` port consumes.
  *
- * `toContractsProfile` est la fonction de projection PURE entre les deux. Deux champs du profil
- * contracts n'existent PAS dans le profil riche et doivent être fournis par l'appelant :
- *  - `active` : le profil riche ne porte pas l'état d'activation (il vient d'`accountActiveFrom*`
- *    ou de la sémantique du provisioning) ;
- *  - `source` : la source d'annuaire (`oidc`/`scim`/`saml`/`ldap`/`graph`/`google`), connue de
- *    l'adapter qui a produit le profil.
+ * `toContractsProfile` is the PURE projection function between the two. Two fields of the contracts
+ * profile do NOT exist in the rich profile and must be provided by the caller:
+ *  - `active`: the rich profile does not carry the activation state (it comes from `accountActiveFrom*`
+ *    or from the provisioning semantics);
+ *  - `source`: the directory source (`oidc`/`scim`/`saml`/`ldap`/`graph`/`google`), known to the
+ *    adapter that produced the profile.
  *
- * PONT `ScimStore` (scim-server) ↔ `ScimRepository` (contracts)
+ * BRIDGE `ScimStore` (scim-server) ↔ `ScimRepository` (contracts)
  * -----------------------------------------------------------------
- * `ScimStore` (paquet `@kengela/scim-server`) est un port de persistance SCIM RICHE et orienté
- * CRUD (getUser/createUser/replaceUser/patchUser/listUsers + Groups), avec ses propres lignes
- * (`ScimUserRow`…). `ScimRepository` (contracts) est un port de fédération MINIMAL et orienté
- * réconciliation (`upsertUserByEmail(tenantId, DirectoryProfile) → {id, created}` +
- * `deactivateUser(tenantId, id)`). Les deux ne sont donc PAS interchangeables : le second est
- * une VUE de synchronisation par-dessus le premier.
+ * `ScimStore` (the `@kengela/scim-server` package) is a RICH, CRUD-oriented SCIM persistence port
+ * (getUser/createUser/replaceUser/patchUser/listUsers + Groups), with its own rows
+ * (`ScimUserRow`…). `ScimRepository` (contracts) is a MINIMAL, reconciliation-oriented federation
+ * port (`upsertUserByEmail(tenantId, DirectoryProfile) → {id, created}` +
+ * `deactivateUser(tenantId, id)`). The two are therefore NOT interchangeable: the second is a
+ * synchronization VIEW on top of the first.
  *
- * Un adaptateur `ScimStore → ScimRepository` n'est pas fourni ici À DESSEIN, pour trois raisons
- * de conception :
- *  1. Emplacement : il devrait dépendre à la fois de `@kengela/scim-server` (lignes SCIM) et de
- *     `@kengela/contracts`. `iam-mapping` est un paquet CŒUR (aucun vendor, et `scim-server`
- *     dépend DÉJÀ d'`iam-mapping` — l'inverse créerait un cycle). Sa place naturelle est donc un
- *     adapter/app de composition, pas ce cœur.
- *  2. Impédance : le `DirectoryProfile` contracts a `email` OPTIONNEL, alors que SCIM impose un
- *     `userName` (clé de réconciliation) ; et il n'a pas de `firstName`/`lastName` de premier plan
- *     (portés dans `attributes`). La conversion vers `ScimUserWriteInput` suppose donc des
- *     décisions applicatives (repli d'e-mail, extraction des noms depuis `attributes`).
- *  3. Le vrai point dur — projeter n'importe quelle source IdP vers une forme commune — est
- *     précisément ce que résout `toContractsProfile`. Une fois le profil contracts obtenu,
- *     `ScimRepository.upsertUserByEmail(tenantId, profile)` est un appel direct côté app.
+ * A `ScimStore → ScimRepository` adapter is not provided here BY DESIGN, for three design reasons:
+ *  1. Placement: it would have to depend both on `@kengela/scim-server` (SCIM rows) and on
+ *     `@kengela/contracts`. `iam-mapping` is a CORE package (no vendor, and `scim-server` ALREADY
+ *     depends on `iam-mapping` - the reverse would create a cycle). Its natural home is therefore a
+ *     composition adapter/app, not this core.
+ *  2. Impedance: the contracts `DirectoryProfile` has an OPTIONAL `email`, whereas SCIM requires a
+ *     `userName` (reconciliation key); and it has no first-class `firstName`/`lastName` (they live in
+ *     `attributes`). Converting to `ScimUserWriteInput` therefore requires application-level
+ *     decisions (email fallback, extracting names from `attributes`).
+ *  3. The genuinely hard part - projecting any IdP source to a common shape - is exactly what
+ *     `toContractsProfile` solves. Once the contracts profile is obtained,
+ *     `ScimRepository.upsertUserByEmail(tenantId, profile)` is a direct call on the app side.
  *
- * Esquisse de l'adaptateur (à écrire côté app, cf. guide) :
+ * Sketch of the adapter (to be written on the app side, see guide):
  *   const profile = toContractsProfile(profileFromScim(body), { source: 'scim', active });
  *   await scimRepository.upsertUserByEmail(tenantId, profile);
  */
 import type { DirectoryProfile as ContractsDirectoryProfile } from '@kengela/contracts';
 import type { DirectoryProfile } from './profile.js';
 
-/** Métadonnées non portées par le profil riche, exigées par le profil contracts. */
+/** Metadata not carried by the rich profile, required by the contracts profile. */
 export interface ContractsProfileMeta {
   readonly source: ContractsDirectoryProfile['source'];
   readonly active: boolean;
 }
 
-/** Chaîne non vide, ou `undefined` (respecte exactOptionalPropertyTypes). */
+/** Non-empty string, or `undefined` (respects exactOptionalPropertyTypes). */
 function nonEmpty(value: string | null | undefined): string | undefined {
   return typeof value === 'string' && value.length > 0 ? value : undefined;
 }
 
 /**
- * Projette un `DirectoryProfile` riche vers la forme MINIMALE de `@kengela/contracts`.
+ * Projects a rich `DirectoryProfile` to the MINIMAL shape of `@kengela/contracts`.
  *
- * - `externalId` (requis, non-null côté contracts) : `rich.externalId`, à défaut l'e-mail
- *   (repli stable) ; jamais vide grâce à ce repli (une source sans ni l'un ni l'autre est déjà
- *   pathologique et donnera une chaîne vide, à charge de l'appelant de rejeter).
- * - `email` / `displayName` : omis (et non `undefined`) s'ils sont absents.
- * - `attributes` : les attributs d'annuaire (department/title…) plus `firstName`/`lastName`
- *   reversés (le profil contracts n'a pas de champ nom dédié) afin de ne rien perdre.
- *   Les `claims` bruts ne sont PAS reportés (volume + PII potentielle).
+ * - `externalId` (required, non-null on the contracts side): `rich.externalId`, falling back to the
+ *   email (stable fallback); never empty thanks to this fallback (a source with neither is already
+ *   pathological and yields an empty string, which the caller is responsible for rejecting).
+ * - `email` / `displayName`: omitted (not `undefined`) when absent.
+ * - `attributes`: the directory attributes (department/title…) plus `firstName`/`lastName` folded
+ *   back in (the contracts profile has no dedicated name field) so nothing is lost.
+ *   The raw `claims` are NOT carried over (volume + potential PII).
  */
 export function toContractsProfile(
   rich: DirectoryProfile,

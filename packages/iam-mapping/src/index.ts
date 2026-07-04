@@ -1,5 +1,5 @@
 /**
- * `@kengela/iam-mapping` — pont entre l'identité d'entreprise (Entra/AD/ADFS/Okta via
+ * `@kengela/iam-mapping` - pont entre l'identité d'entreprise (Entra/AD/ADFS/Okta via
  * OIDC, SAML, SCIM, Microsoft Graph ou Google Workspace) et le modèle interne rôles +
  * organigramme (ADR-014).
  *

@@ -135,7 +135,7 @@ Copy `DEBT.template.md` (root) into your package and fill in the register. Every
 without being migrated appears there with its state, problem and target:
 
 ```md
-# DEBT.md — @kengela/adapter-xxx
+# DEBT.md - @kengela/adapter-xxx
 
 | #   | What is wrapped | State               | Problem                  | Migration target              | Prio |
 | --- | --------------- | ------------------- | ------------------------ | ----------------------------- | ---- |

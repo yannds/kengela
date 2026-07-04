@@ -1,4 +1,4 @@
-# Recipe 13 — Federating identities from an LDAP / Active Directory directory
+# Recipe 13 - Federating identities from an LDAP / Active Directory directory
 
 > Goal: read the accounts and attributes of an **LDAP / Active Directory** directory (a "pull"
 > directory source), project them onto Kengela's normalized `DirectoryProfile`, then map them
@@ -27,7 +27,7 @@ export interface DirectorySourcePort {
 The `DirectoryProfile` **of the contracts port** is deliberately narrowed:
 
 ```ts
-// @kengela/contracts — forme de convergence côté application
+// @kengela/contracts - forme de convergence côté application
 export interface DirectoryProfile {
   readonly externalId: string;
   readonly email?: string;
@@ -39,7 +39,7 @@ export interface DirectoryProfile {
 }
 ```
 
-> CAUTION — there are **two** types named `DirectoryProfile` (see §7). The one from
+> CAUTION - there are **two** types named `DirectoryProfile` (see §7). The one from
 > `@kengela/iam-mapping` (produced by `profileFromLdap`) does **not** have the same shape as the
 > port's. Switching from one to the other is done by `toContractsProfile` (§3).
 
@@ -75,7 +75,7 @@ Repo doctrine: **the port is an airlock, not a hideout**. The adapter imports no
 writes):
 
 ```ts
-// @kengela/adapter-directory-ldap — surface étroite lue
+// @kengela/adapter-directory-ldap - surface étroite lue
 export interface LdapClientLike {
   bind(dn: string, password: string): Promise<void>;
   search(baseDN: string, options: LdapSearchOptions): Promise<LdapSearchResult>;
@@ -87,7 +87,7 @@ export type LdapClientFactory = () => LdapClientLike;
 The real `Client` of `ldapts` satisfies this interface **structurally**; so does an in-memory
 fake (tests). Kengela therefore depends on `LdapClientLike`, not on the concrete `ldapts` type.
 
-**Status of `ldapts` in the package** — verified in the adapter's `package.json`: `ldapts` is a
+**Status of `ldapts` in the package** - verified in the adapter's `package.json`: `ldapts` is a
 **direct dependency** (`"ldapts": "^8.1.8"` under `dependencies`), **NOT** a `peerDependency`
 nor an `optionalDependency`. It is therefore installed transitively with the adapter; the
 default client factory instantiates a real `new Client(...)` of `ldapts` with no additional
@@ -99,7 +99,7 @@ configuration.
 
 ```bash
 npm install @kengela/adapter-directory-ldap
-# ldapts est tiré automatiquement (dependency directe ^8.1.8) — aucune install séparée requise.
+# ldapts est tiré automatiquement (dependency directe ^8.1.8) - aucune install séparée requise.
 ```
 
 `@kengela/iam-mapping` (the pure mapping library) is also a dependency of the adapter, and the
@@ -139,7 +139,7 @@ The bounds/defaults live in `LDAP_SOURCE_DEFAULTS` (exported): `userFilter`, `at
 
 The second argument `LdapDirectorySourceOptions` lets you inject a client factory
 (`clientFactory?: LdapClientFactory`). **Without** injection, the source builds a real `Client`
-of `ldapts` itself (verified LDAPS) from the config — this is the nominal case:
+of `ldapts` itself (verified LDAPS) from the config - this is the nominal case:
 
 ```ts
 const source = new LdapDirectorySource(config); // clientFactory par défaut = ldapts Client réel
@@ -202,7 +202,7 @@ export const ldapPort: DirectorySourcePort = new LdapDirectoryPort();
 > `objectGUID` is missing), omits `email`/`displayName` when empty (`exactOptionalPropertyTypes`)
 > and folds `firstName`/`lastName` into `attributes`. `active` and `source` are the two fields
 > the rich profile does not carry; they are supplied explicitly here (`accountActiveFromLdap` +
-> `'ldap'`). `toContractsProfile` is imported from `@kengela/iam-mapping` — the adapter re-exports
+> `'ldap'`). `toContractsProfile` is imported from `@kengela/iam-mapping` - the adapter re-exports
 > `profileFromLdap`/`accountActiveFromLdap` but **not** `toContractsProfile`.
 
 ---
@@ -217,7 +217,7 @@ import { LdapDirectorySource, profileFromLdap } from '@kengela/adapter-directory
 // (a) Lecture réseau : bind → search paginé → normalisation → unbind
 const entries = await source.fetchEntries(); // readonly LdapEntryParts[]
 
-// (b) Projection vers DirectoryProfile (iam-mapping) — 3 voies possibles :
+// (b) Projection vers DirectoryProfile (iam-mapping) - 3 voies possibles :
 //   1. helper statique batch :
 const profiles = LdapDirectorySource.toProfiles(entries);
 //   2. helper batch avec état d'activation (dé-provisioning) :
@@ -246,7 +246,7 @@ overridable one by one per tenant via `e.attributeMap` (`LdapAttributeMap`). Rea
 | `department` / `division` / `title` | `department` / `division` / `title`                              |
 | `employeeNumber`                    | `employeeNumber` (fallback `employeeID`)                         |
 | `officeLocation`                    | `physicalDeliveryOfficeName`                                     |
-| `manager`                           | `manager` (DN reduced to its **CN** — V2 debt: resolve to email) |
+| `manager`                           | `manager` (DN reduced to its **CN** - V2 debt: resolve to email) |
 | `costCenter`                        | _(no AD default; empty string)_                                  |
 
 `accountActiveFromLdap(e)` reads `userAccountControl`: bit `0x2` (ACCOUNTDISABLE) → disabled
@@ -292,7 +292,7 @@ Conditions (`MappingCondition`): `source` = `'GROUP' | 'CLAIM' | 'ATTRIBUTE'`, `
 
 ---
 
-## 5. Active Directory case — specific notes
+## 5. Active Directory case - specific notes
 
 - **`memberOf`**: AD returns groups as **full DNs** (`CN=Groupe RH,OU=...,DC=corp`).
   `profileFromLdap` reduces each DN to its **CN**; it is that CN that feeds `profile.groups` and
@@ -314,7 +314,7 @@ Conditions (`MappingCondition`): `source` = `'GROUP' | 'CLAIM' | 'ATTRIBUTE'`, `
 
 ---
 
-## 6. Sidebar — provided by Kengela vs to write
+## 6. Sidebar - provided by Kengela vs to write
 
 | ✅ Provided by Kengela                                                                                     | ✍️ To write on the application side                                                                                |
 | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
@@ -329,7 +329,7 @@ Conditions (`MappingCondition`): `source` = `'GROUP' | 'CLAIM' | 'ATTRIBUTE'`, `
 
 ## 7. Design facts (verified by reading, affirmed)
 
-1. **Two distinct `DirectoryProfile` types — by design.** The one from `@kengela/iam-mapping`
+1. **Two distinct `DirectoryProfile` types - by design.** The one from `@kengela/iam-mapping`
    (return of `profileFromLdap` / `toProfiles`) is RICH: `{ email, externalId, firstName,
 lastName, displayName, attributes, groups, claims }` (`email: string`, `externalId: string |
 null`). The one from `@kengela/contracts` (return of the port) is MINIMAL and STABLE: `{ externalId:
@@ -337,7 +337,7 @@ string, email?, displayName?, groups, attributes, active, source }`. They **are 
    interchangeable**; the projection from one to the other is done by **`toContractsProfile`**
    (§3.4), a PURE function exported by `@kengela/iam-mapping`. So it is no longer "code to write":
    it is a library call.
-2. **`LdapDirectorySource` does NOT implement `DirectorySourcePort` — an assumed design fact.**
+2. **`LdapDirectorySource` does NOT implement `DirectorySourcePort` - an assumed design fact.**
    The class has no `fetchProfile(raw, tenantId)` method: its API is **batch**
    (`fetchEntries(filter?, options?)` + `checkConnection()`) with the static helpers
    `toProfiles` / `toRecords`. An LDAP pull reads **thousands** of entries in a single paged
@@ -355,7 +355,7 @@ string, email?, displayName?, groups, attributes, active, source }`. They **are 
    field in `DirectoryProfile`: the email comes from `mail` (fallback `userPrincipalName`). If
    your application code needs it, `sAMAccountName` remains retrievable **raw** by requesting it
    (`attributes: ['sAMAccountName', ...]`), but it populates no profile field.
-5. **`safe-regex.ts` — exported symbols.** `safeRegexTest`, `compileSafeRegex`,
+5. **`safe-regex.ts` - exported symbols.** `safeRegexTest`, `compileSafeRegex`,
    `SAFE_REGEX_LIMITS`, `SafeRegexLimits`. `matches` compiles a bounded regex (fail-closed); the
    exact bounds live in `SAFE_REGEX_LIMITS`.
 6. **`manager` as V2 debt.** `profileFromLdap` reduces the manager's DN to its CN for lack of a

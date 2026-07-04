@@ -1,8 +1,8 @@
 import type { FieldCipherPort, KeyManagementPort, TenantId } from '@kengela/contracts';
 
 /**
- * FieldCipherPort au-dessus d'un KeyManagementPort (AES-256-GCM par tenant).
- * Chiffre une chaîne PII en base64 stockable. [compliance-by-design]
+ * FieldCipherPort on top of a KeyManagementPort (AES-256-GCM per tenant).
+ * Encrypts a PII string into storable base64. [compliance-by-design]
  */
 export class AesGcmFieldCipher implements FieldCipherPort {
   readonly #keys: KeyManagementPort;

@@ -1,5 +1,5 @@
 /**
- * RED TEAM — adapter better-auth (@kengela/adapter-authn-better-auth).
+ * RED TEAM - adapter better-auth (@kengela/adapter-authn-better-auth).
  *
  * Session invalide/absente, tenant non resoluble, forge de session : le Principal projete
  * doit rester fail-closed (null) ou minimal (roles vides : l'authz recharge les grants).
@@ -14,7 +14,7 @@ function authWith(result: SessionResult): BetterAuthLike {
   return { api: { getSession: () => Promise.resolve(result) } };
 }
 
-describe('RED — better-auth : fail-closed sur session/tenant', () => {
+describe('RED - better-auth : fail-closed sur session/tenant', () => {
   it('session absente (getSession null) => Principal null', async () => {
     const identity = new BetterAuthIdentity({ auth: authWith(null) });
     expect(await identity.verifySession({ strategy: 'bearer', token: 'x' })).toBeNull();

@@ -1,5 +1,5 @@
 /**
- * RED TEAM — sessions (@kengela/adapter-persistence-prisma).
+ * RED TEAM - sessions (@kengela/adapter-persistence-prisma).
  *
  * On tente de rejouer une session EXPIREE, un ancien token apres rotation, et on verifie
  * l'entropie du token + l'effet de `revokeAllForUser`. Fake `PrismaLike` en memoire.
@@ -22,7 +22,7 @@ function mutableClock(start: number): { clock: Clock; set: (t: number) => void }
   };
 }
 
-describe('RED — session expiree n’est JAMAIS restituee comme valide (fail-closed)', () => {
+describe('RED - session expiree n’est JAMAIS restituee comme valide (fail-closed)', () => {
   it('get(token) renvoie null une fois l’expiration passee, meme si la ligne subsiste', async () => {
     const prisma = new FakePrisma();
     const { clock, set } = mutableClock(1000);
@@ -48,7 +48,7 @@ describe('RED — session expiree n’est JAMAIS restituee comme valide (fail-cl
   });
 });
 
-describe('RED — rotation & revocation', () => {
+describe('RED - rotation & revocation', () => {
   it('l’ancien token est invalide immediatement apres rotation (anti-rejeu)', async () => {
     const prisma = new FakePrisma();
     const { clock } = mutableClock(1000);
@@ -70,7 +70,7 @@ describe('RED — rotation & revocation', () => {
   });
 });
 
-describe('RED — entropie du token opaque', () => {
+describe('RED - entropie du token opaque', () => {
   it('token = 32 octets aleatoires (64 hex), non devinable et unique', async () => {
     const store = new PrismaSessionStore(new FakePrisma(), { clock: mutableClock(1000).clock });
     const tokens = new Set<string>();

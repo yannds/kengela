@@ -11,11 +11,11 @@ import type {
 } from '@kengela/contracts';
 
 /**
- * Authentification credential maison, TIMING-SAFE (différenciateur TransLog).
+ * In-house credential authentication, TIMING-SAFE (TransLog differentiator).
  *
- * Un compare bcrypt est TOUJOURS effectué (même email inconnu) contre un hash leurre
- * valide pré-calculé, pour ne pas révéler l'existence d'un compte par le temps de réponse.
- * En cross-tenant, on ne court-circuite pas au premier match.
+ * A bcrypt compare is ALWAYS performed (even for an unknown email) against a valid
+ * pre-computed decoy hash, so response time never reveals whether an account exists.
+ * Cross-tenant, we do not short-circuit on the first match.
  */
 export class NativeCredentialAuthenticator implements CredentialAuthenticator {
   readonly #store: CredentialStore;
@@ -28,7 +28,7 @@ export class NativeCredentialAuthenticator implements CredentialAuthenticator {
     this.#dummyHash = dummyHash;
   }
 
-  /** Fabrique qui pré-calcule le hash leurre (un vrai hash bcrypt aléatoire). */
+  /** Factory that pre-computes the decoy hash (a real random bcrypt hash). */
   public static async create(
     store: CredentialStore,
     hasher: PasswordHasher,
@@ -62,7 +62,7 @@ export class NativeCredentialAuthenticator implements CredentialAuthenticator {
   }): Promise<AuthOutcome> {
     const records = await this.#store.findByEmailAcrossTenants(input.email);
     if (records.length === 0) {
-      // Un compare quand même (anti-énumération).
+      // A compare all the same (anti-enumeration).
       await this.#hasher.verify(input.password, this.#dummyHash);
       return { kind: 'invalid_credentials' };
     }

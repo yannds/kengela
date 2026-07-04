@@ -1,9 +1,9 @@
 /**
- * Endpoints de DÉCOUVERTE SCIM 2.0 (RFC 7644 §4) — handlers PURS, sans HTTP ni store.
+ * Endpoints de DÉCOUVERTE SCIM 2.0 (RFC 7644 §4) - handlers PURS, sans HTTP ni store.
  *
  * Fournit l'AUTO-DESCRIPTION du cœur : capacités du fournisseur de service
  * (`/ServiceProviderConfig`), types de ressources (`/ResourceTypes`) et définitions de
- * schéma (`/Schemas`) pour NOTRE schéma — core User (RFC 7643 §4.1), extension enterprise
+ * schéma (`/Schemas`) pour NOTRE schéma - core User (RFC 7643 §4.1), extension enterprise
  * (§4.3) et Group (§4.2). Le validateur Microsoft Entra les interroge pour se configurer.
  *
  * Les définitions décrivent exactement ce que `KengelaScimUser` / `toScimUser` savent

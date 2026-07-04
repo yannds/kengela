@@ -1,5 +1,5 @@
 /**
- * RED TEAM — adapter LDAP (@kengela/adapter-directory-ldap).
+ * RED TEAM - adapter LDAP (@kengela/adapter-directory-ldap).
  *
  * L'adapter ne construit JAMAIS de filtre a partir de fragments : il transmet le filtre
  * verbatim (pas d'injection introduite ici). Le `unbind` est garanti meme en erreur, le
@@ -18,7 +18,7 @@ const CONFIG = {
   baseDN: 'OU=Users,DC=corp',
 } as const;
 
-describe('RED — LDAP : filtre transmis verbatim (pas d’injection introduite)', () => {
+describe('RED - LDAP : filtre transmis verbatim (pas d’injection introduite)', () => {
   it('le filtre fourni par l’appelant est passe TEL QUEL au client (aucune concatenation)', async () => {
     const client = new FakeLdapClient({ entries: [{ dn: 'CN=a' }] });
     const source = new LdapDirectorySource(CONFIG, { clientFactory: fakeFactory(client) });
@@ -36,7 +36,7 @@ describe('RED — LDAP : filtre transmis verbatim (pas d’injection introduite)
   });
 });
 
-describe('RED — LDAP : plafond et liberation de connexion', () => {
+describe('RED - LDAP : plafond et liberation de connexion', () => {
   it('plafonne le nombre d’entrees a `max` (anti-exhaustion memoire)', async () => {
     const many = Array.from({ length: 50 }, (_, i) => ({ dn: `CN=u${String(i)}` }));
     const client = new FakeLdapClient({ entries: many });
@@ -61,7 +61,7 @@ describe('RED — LDAP : plafond et liberation de connexion', () => {
   });
 });
 
-describe('RED — LDAP : checkConnection ne fuite pas le secret', () => {
+describe('RED - LDAP : checkConnection ne fuite pas le secret', () => {
   it('bind en echec => false, sans exception ni mot de passe propage', async () => {
     const client = new FakeLdapClient({ bindShouldFail: true });
     const source = new LdapDirectorySource(CONFIG, { clientFactory: fakeFactory(client) });
@@ -79,7 +79,7 @@ describe('RED — LDAP : checkConnection ne fuite pas le secret', () => {
 });
 
 /** Garde-fou de non-regression : ce module source ne journalise rien (pas de fuite de secret via logs). */
-describe('BLUE — LDAP : le module ne journalise aucun secret', () => {
+describe('BLUE - LDAP : le module ne journalise aucun secret', () => {
   it('aucune option de recherche ne transporte le mot de passe de bind', async () => {
     const client = new FakeLdapClient({ entries: [] });
     const source = new LdapDirectorySource(CONFIG, { clientFactory: fakeFactory(client) });

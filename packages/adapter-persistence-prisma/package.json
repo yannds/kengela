@@ -1,7 +1,7 @@
 {
   "name": "@kengela/adapter-persistence-prisma",
   "version": "0.1.0",
-  "description": "Kengela — adapter de persistance Prisma/Postgres pour AuthorizationRepository, SessionStore et PolicyStore.",
+  "description": "Kengela Prisma/Postgres persistence adapter for AuthorizationRepository, SessionStore and PolicyStore.",
   "license": "Apache-2.0",
   "type": "module",
   "exports": {

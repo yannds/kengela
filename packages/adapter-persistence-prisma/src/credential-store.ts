@@ -1,5 +1,5 @@
 /**
- * PrismaCredentialStore — implemente `CredentialStore` sur une surface NARROW
+ * PrismaCredentialStore - implemente `CredentialStore` sur une surface NARROW
  * `CredentialPrismaLike` (Account + User), calque generique de
  * `TranslogCredentialStore` (connector-translog).
  *

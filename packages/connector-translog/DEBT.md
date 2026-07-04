@@ -1,4 +1,4 @@
-# DEBT.md — @kengela/connector-translog
+# DEBT.md - @kengela/connector-translog
 
 > Le port est un sas, pas une planque. Ce qui est enveloppe, approxime ou perdu figure ici, honnetement.
 

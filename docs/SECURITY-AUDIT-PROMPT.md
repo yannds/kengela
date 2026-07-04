@@ -1,8 +1,8 @@
-# Prompt — Audit sécurité & conformité de Kengela (red team / blue team)
+# Prompt - Audit sécurité & conformité de Kengela (red team / blue team)
 
 > À confier à un agent (ou à un pentester) disposant d'un accès **lecture + écriture de tests**
 > au dépôt Kengela. L'objectif est de **casser** la lib de façon adverse, puis de **prouver**
-> les contrôles et la conformité — avant toute publication npm.
+> les contrôles et la conformité - avant toute publication npm.
 >
 > Copier tout ce qui suit comme prompt.
 
@@ -21,17 +21,17 @@ chaque hypothèse. AUCUNE mention d'un outil d'assistance IA ou de son éditeur 
 - Lire les ports dans `packages/contracts/src/index.ts` et les implémentations dans chaque `packages/*/src`.
 - Lire tous les `DEBT.md` : traiter chaque dette comme une **hypothèse de faiblesse** à confirmer/infirmer.
 
-## RED TEAM — scénarios d'attaque à tenter (écris un test qui ÉCHOUE si la lib est vulnérable)
+## RED TEAM - scénarios d'attaque à tenter (écris un test qui ÉCHOUE si la lib est vulnérable)
 
 Isolation & autorisation :
 
 1. **Cross-tenant** : un Principal du tenant A obtient-il une décision `allow` sur une ressource du
-   tenant B ? (AccessRequest, RelationResolver, grants) — tenter le smuggling de tenantId.
+   tenant B ? (AccessRequest, RelationResolver, grants) - tenter le smuggling de tenantId.
 2. **Escalade de privilège** : un grant `*.global` ou `platform.*` accordé à un tenant non-plateforme
    est-il honoré ? Le split de scope (`plane.resource.action.SCOPE`) peut-il être détourné (ex.
    `data.x.read.tenant` interprété plus large) ? Wildcards (`*`) trop permissifs ?
 3. **Fail-open** : une requête sans policy / sans grant / avec relation `none` obtient-elle `allow` ?
-   Une **condition CEL qui lève** doit donner `deny` (fail-closed) — le prouver, et tenter une
+   Une **condition CEL qui lève** doit donner `deny` (fail-closed) - le prouver, et tenter une
    expression qui contourne (variable absente, non-booléen, exception).
 4. **deny-wins** : une règle `deny` peut-elle être court-circuitée par l'ordre d'évaluation ?
 5. **Sandbox CEL** : tenter une évaluation CEL qui accède à des globals, boucle infinie, ReDoS,
@@ -46,13 +46,13 @@ via `verify` sans secret. `TotpMfaService` + stores. 10. **Sessions** : forger/r
 
 Fédération / SCIM : 11. **SCIM** : injection via filtre (`userName eq`), PATCH malveillant (op inconnue, path forgé),
 contournement de la désactivation (delete = deactivate), unicité `userName` (409) contournable,
-validation d'entrée `validateScimUser` bypassable, ReDoS des filtres/regex. `@kengela/scim-server`. 12. **LDAP** : injection de filtre LDAP, bind password loggé ? TLS désactivable ? `adapter-directory-ldap`. 13. **Mapping IdP** : `iam-mapping` — regex de règles ReDoS (`safe-regex`), profil malveillant
+validation d'entrée `validateScimUser` bypassable, ReDoS des filtres/regex. `@kengela/scim-server`. 12. **LDAP** : injection de filtre LDAP, bind password loggé ? TLS désactivable ? `adapter-directory-ldap`. 13. **Mapping IdP** : `iam-mapping` - regex de règles ReDoS (`safe-regex`), profil malveillant
 (SAML non signé accepté ? gate emailVerified ?), élévation via mapping de groupes.
 
 Intégration : 14. **Guard NestJS** : route non annotée = `deny` (deny-by-default) ? `@PublicRoute` sur une classe
 neutralise-t-il un `@RequirePermission` de handler de façon dangereuse ? Principal absent = 401. 15. **better-auth adapter** : session invalide/expirée acceptée ? tenant non résoluble = `null` ?
 
-## BLUE TEAM — prouver les contrôles & la conformité
+## BLUE TEAM - prouver les contrôles & la conformité
 
 - Écris/complète les tests adverses ci-dessus qui **passent** (contrôle prouvé) ou **échouent**
   (faille trouvée → à corriger).
@@ -77,5 +77,5 @@ neutralise-t-il un `@RequirePermission` de handler de façon dangereuse ? Princi
 ## Contraintes
 
 - Ne casse pas l'API publique des ports sans le justifier dans le rapport.
-- Reste hermétique (fakes en mémoire) — pas de vrai réseau/DB.
+- Reste hermétique (fakes en mémoire) - pas de vrai réseau/DB.
 - Ne commit/push pas ; laisse l'orchestrateur committer après revue.

@@ -1,4 +1,4 @@
-# Recipe 15 — End-to-end GDPR compliance (PII)
+# Recipe 15 - End-to-end GDPR compliance (PII)
 
 > Kengela, TypeScript / ESM. Classify PII, encrypt sensitive fields at-rest
 > (per tenant), erase by crypto-shredding, minimize/redact, apply retention and
@@ -18,7 +18,7 @@ the `@kengela/pii` package.
 | 3    | Crypto-shredding         | Right to erasure (art. 17)                         | `ErasurePort` ← `SubjectCryptoShredder`                                                 | `@kengela/contracts` / `@kengela/adapter-authn-native`                  |
 | 4    | Minimization / redaction | Minimization (art. 5.1.c), no plaintext in logs    | `minimizeProfile` / `redactProfile`                                                     | `@kengela/pii`                                                          |
 | 5    | Retention                | Storage limitation (art. 5.1.e)                    | `retentionExpired` / `DEFAULT_RETENTION`                                                | `@kengela/pii`                                                          |
-| —    | Access log               | Auditability of PII access (art. 30)               | `PiiAccessLogSink` ← `PrismaPiiAccessLogSink`                                           | `@kengela/contracts` / `@kengela/adapter-persistence-prisma`            |
+| -    | Access log               | Auditability of PII access (art. 30)               | `PiiAccessLogSink` ← `PrismaPiiAccessLogSink`                                           | `@kengela/contracts` / `@kengela/adapter-persistence-prisma`            |
 
 Blocks 1, 4 and 5 are **pure functions** (no I/O, trivially unit-testable). Blocks 2,
 2bis, 3 and the access log are **ports**: the core depends only on the interface, the
@@ -55,7 +55,7 @@ Shape reminder (`@kengela/iam-mapping/src/profile.ts`): `email` is a non-nullabl
 
 ---
 
-## 2. Classification — which fields are PII
+## 2. Classification - which fields are PII
 
 The registry is defined in `@kengela/pii/src/classification.ts`. Three sensitivity
 levels:
@@ -66,7 +66,7 @@ export type PiiSensitivity = 'none' | 'pii' | 'sensitive';
 
 - `none`: non-personal (technical identifier, organizational attachment).
 - `pii`: personal data (direct or indirect identifiability).
-- `sensitive`: special category (art. 9 — health, biometrics). Reserved for extension;
+- `sensitive`: special category (art. 9 - health, biometrics). Reserved for extension;
   **no field** of the standard directory is classified `sensitive` today.
 
 Three exported symbols (real signatures):
@@ -112,7 +112,7 @@ Fields classified `none` (attachment / preferences, non-personal): `externalId`,
 `officeLocation`, `employeeType`, `preferredLanguage`, `locale`, `timezone`.
 
 > Point of vigilance: `employeeNumber` and `manager` are **PII** (indirect
-> identifiability), whereas `title` or `department` are not. Never guess "by hand" —
+> identifiability), whereas `title` or `department` are not. Never guess "by hand" -
 > going through `classify` / `isPii` remains the single source of truth.
 
 `classify` is the entry key for the retention (§6) and access log (§7) blocks: the
@@ -147,7 +147,7 @@ with **envelope encryption**: a per-tenant key is derived from the master key vi
 Per-tenant derivation guarantees cross-tenant cryptographic isolation; the context
 guarantees **domain separation per usage**. Ciphertext format: `iv(12) || tag(16) || ciphertext`.
 
-The constructor's second argument is `{ context?: string }` — default **`kengela:mfa`**
+The constructor's second argument is `{ context?: string }` - default **`kengela:mfa`**
 (backward-compatible: it's the historical context of the at-rest MFA secret). For **PII
 field** encryption, derive in a **distinct** context so that a given tenant's "PII field"
 key and "MFA secret" key are **never interchangeable**:
@@ -215,13 +215,13 @@ A **persistent store is provided**: `PrismaSubjectKeyStore`
 table (one row per subject, `key` column). Its constructor takes the Prisma delegate of
 the table plus `{ keyManagement?, keyBytes? }` options:
 
-- **`keyManagement`** — if a `KeyManagementPort` (e.g. `AesGcmKeyManagement`, per-tenant
+- **`keyManagement`** - if a `KeyManagementPort` (e.g. `AesGcmKeyManagement`, per-tenant
   envelope encryption) is injected, the subject key is **wrapped** before persistence: the
   column never holds plaintext key material. A leak of the database alone reveals nothing
   without the master key. **Absent = plaintext base64 storage**: degraded mode, reserve it
   for development (crypto-shredding stays effective either way, since it relies on
   **deleting** the row, not on encryption).
-- **`keyBytes`** — size of the generated key, in bytes. Default **32** (AES-256).
+- **`keyBytes`** - size of the generated key, in bytes. Default **32** (AES-256).
 
 ```ts
 import { PrismaSubjectKeyStore } from '@kengela/adapter-persistence-prisma';
@@ -229,12 +229,12 @@ import { PrismaSubjectKeyStore } from '@kengela/adapter-persistence-prisma';
 // `prisma.subjectKey` est le délégué Prisma de ta table (findFirst/create/deleteMany).
 // keyManagement (recommandé) : la clé de sujet est chiffrée-at-rest par tenant.
 const subjectKeyStore = new PrismaSubjectKeyStore(prisma.subjectKey, {
-  keyManagement: keyMgmt, // AesGcmKeyManagement du §3 — wrappe la clé de sujet at-rest
+  keyManagement: keyMgmt, // AesGcmKeyManagement du §3 - wrappe la clé de sujet at-rest
 });
 ```
 
 `SubjectFieldCipher` (`@kengela/adapter-authn-native`) encrypts a field with the subject
-key (resolved via `getOrCreateKey`) and decrypts via `getKey` — **returning `null` if the
+key (resolved via `getOrCreateKey`) and decrypts via `getKey` - **returning `null` if the
 key has been destroyed**. Base64 format: `iv(12) || tag(16) || ciphertext`.
 
 ```ts
@@ -254,7 +254,7 @@ const email = await subjectCipher.decryptFor(tenantId, subjectId, encEmail);
 
 ---
 
-## 4. Crypto-shredding — right to erasure (art. 17)
+## 4. Crypto-shredding - right to erasure (art. 17)
 
 Erasing a person doesn't mean sweeping every table to overwrite their rows. You
 **destroy their key**: all their PII encrypted with `SubjectFieldCipher` then become
@@ -295,7 +295,7 @@ const email = await subjectCipher.decryptFor(tenantId, subjectId, encEmail);
 ```
 
 Benefits: O(1) erasure (a single key), proof of irreversibility (the AES key is gone),
-and no race with encrypted replicas/backups — a restored backup stays unreadable since it
+and no race with encrypted replicas/backups - a restored backup stays unreadable since it
 never contains the key.
 
 > Constraint: only **per-subject** encrypted fields are covered by shredding. A field
@@ -308,7 +308,7 @@ never contains the key.
 
 Two pure functions from `@kengela/pii`, two distinct purposes.
 
-### `minimizeProfile` — export / restricted use (art. 5.1.c)
+### `minimizeProfile` - export / restricted use (art. 5.1.c)
 
 Keeps ONLY the attributes explicitly allowed for the purpose. Raw `claims` are emptied,
 disallowed identity fields are set to `null`.
@@ -356,10 +356,10 @@ Before → after:
 > Practical warning: `minimizeProfile` is **not** a way to hide the email or the external
 > identifier. `email`, `externalId` and `groups` **always** pass through, even absent from
 > `allowedFields`. If your purpose requires removing them (anonymized export, third party
-> that mustn't know the email), do it **explicitly after** the call — don't rely on
+> that mustn't know the email), do it **explicitly after** the call - don't rely on
 > `allowedFields` for that. For display/logging, `redactProfile` does mask the email.
 
-### `redactProfile` — logs / display (no plaintext exposure)
+### `redactProfile` - logs / display (no plaintext exposure)
 
 Masks identity and any attribute classified `pii`; leaves `none` fields intact.
 
@@ -401,7 +401,7 @@ only to `string`-typed values classified `pii`.
 
 ---
 
-## 6. Retention — deciding a record must be purged (art. 5.1.e)
+## 6. Retention - deciding a record must be purged (art. 5.1.e)
 
 ```ts
 export type RetentionPolicy = Readonly<Record<PiiSensitivity, number | null>>;
@@ -514,9 +514,9 @@ async function readProfileForActor(
 Key points:
 
 - Emit the entry **after** a successful decryption (no access log for a read that failed
-  to `null` after shredding — or else with a distinct purpose).
+  to `null` after shredding - or else with a distinct purpose).
 - `actorId` omitted for a purely system access (batch, sync).
-- Use `redactProfile` if the log also captures a preview — never a plaintext PII value in
+- Use `redactProfile` if the log also captures a preview - never a plaintext PII value in
   the sink.
 
 ---
@@ -606,7 +606,7 @@ interface StoredProfile {
   readonly attributes: Record<string, unknown>;
 }
 
-// ── Lecture TRACÉE : déchiffrer puis journaliser (art. 30) — jamais de valeur en clair ──
+// ── Lecture TRACÉE : déchiffrer puis journaliser (art. 30) - jamais de valeur en clair ──
 export async function readProfileForActor(
   cipher: FieldCipherPort,
   audit: PiiAccessLogSink,
@@ -654,7 +654,7 @@ export async function purgeIfExpired(
 
 // ── Minimisation (export/tiers) et redaction (journaux/affichage) ─────────────
 export function forExport(profile: DirectoryProfile, allowed: readonly string[]): DirectoryProfile {
-  // Rappel : email / externalId / groups passent TOUJOURS (voir §5) — retire-les à part si besoin.
+  // Rappel : email / externalId / groups passent TOUJOURS (voir §5) - retire-les à part si besoin.
   return minimizeProfile(profile, allowed);
 }
 
@@ -669,45 +669,45 @@ export function forLogs(profile: DirectoryProfile): DirectoryProfile {
 
 ### Provided (ready to use, real symbols)
 
-- **Classification** — `classify`, `isPii`, `PII_FIELDS`, `PiiSensitivity`
+- **Classification** - `classify`, `isPii`, `PII_FIELDS`, `PiiSensitivity`
   (`@kengela/pii`). Full identity + contact + org registry.
-- **Per-tenant at-rest encryption** — `AesGcmKeyManagement` (per-tenant HKDF-SHA256,
+- **Per-tenant at-rest encryption** - `AesGcmKeyManagement` (per-tenant HKDF-SHA256,
   `KeyManagementPort`) + `AesGcmFieldCipher` (`FieldCipherPort`, base64)
   (`@kengela/adapter-authn-native`).
-- **Per-subject encryption** — `SubjectFieldCipher` (`encryptFor` / `decryptFor` →
+- **Per-subject encryption** - `SubjectFieldCipher` (`encryptFor` / `decryptFor` →
   `null` if key destroyed).
-- **Persistent `SubjectKeyStore` (Prisma)** — `PrismaSubjectKeyStore`
+- **Persistent `SubjectKeyStore` (Prisma)** - `PrismaSubjectKeyStore`
   (`@kengela/adapter-persistence-prisma`), options `{ keyManagement?, keyBytes? }`: subject
   key **wrapped at-rest** if a `KeyManagementPort` is injected, idempotent `getOrCreateKey`,
   genuinely destructive `deleteKey`.
-- **Persistent `PiiAccessLogSink` (Prisma)** — `PrismaPiiAccessLogSink`
+- **Persistent `PiiAccessLogSink` (Prisma)** - `PrismaPiiAccessLogSink`
   (`@kengela/adapter-persistence-prisma`): one audit row per access.
-- **Crypto-shredding** — `SubjectCryptoShredder` (`ErasurePort.eraseSubject`).
-- **Minimization / redaction** — `minimizeProfile`, `redactProfile` (`@kengela/pii`).
-- **Retention** — `retentionExpired`, `DEFAULT_RETENTION`, `RetentionPolicy`
+- **Crypto-shredding** - `SubjectCryptoShredder` (`ErasurePort.eraseSubject`).
+- **Minimization / redaction** - `minimizeProfile`, `redactProfile` (`@kengela/pii`).
+- **Retention** - `retentionExpired`, `DEFAULT_RETENTION`, `RetentionPolicy`
   (`@kengela/pii`).
-- **Port contracts** — `FieldCipherPort`, `KeyManagementPort`, `SubjectKeyStore`,
+- **Port contracts** - `FieldCipherPort`, `KeyManagementPort`, `SubjectKeyStore`,
   `ErasurePort`, `PiiAccessLogSink` (`@kengela/contracts`).
 
 ### To be written on the application side (not provided)
 
-- **Prisma schema + migration** — `PrismaSubjectKeyStore` and `PrismaPiiAccessLogSink` are
+- **Prisma schema + migration** - `PrismaSubjectKeyStore` and `PrismaPiiAccessLogSink` are
   provided, but **the Prisma table** (model `SubjectKey` with a unique key
   `(tenantId, subjectId)` + `key` column, audit model `PiiAccessLog`) and its migration are
   to be defined in **your** `schema.prisma`. Inject a `KeyManagementPort` into
   `PrismaSubjectKeyStore` (option `keyManagement`) so the key is never stored in plaintext;
   destructive propagation to replicas/backups remains an operations choice (expiration).
-- **Purge triggers** — cron/job that walks the records, computes the age, applies
+- **Purge triggers** - cron/job that walks the records, computes the age, applies
   `retentionExpired(classify(field), ageMs)` then calls `ErasurePort.eraseSubject`. The
   decision is provided (pure function), the scheduling is not.
-- **ORM / persistence wiring** — plug `encryptField` / `decryptField` (or
+- **ORM / persistence wiring** - plug `encryptField` / `decryptField` (or
   `SubjectFieldCipher`) into the read/write hooks (Prisma middleware / repos), decide column
   by column "plaintext vs tenant-encrypted vs subject-encrypted" from `classify`, and invoke
   `PiiAccessLogSink.record` on every PII read path.
-- **Loading the master key / policies** — `AesGcmKeyManagement`'s `masterKey` comes from the
+- **Loading the master key / policies** - `AesGcmKeyManagement`'s `masterKey` comes from the
   vault (`SecretsPort` / Vault); `RetentionPolicy` durations are a per-app business choice.
   Nothing is hardcoded.
 
 > Invariant: the core only knows the **ports** (`@kengela/contracts`) and the **pure
 > functions** (`@kengela/pii`). Everything that touches disk (keys, log, ORM, cron) is an
-> application adapter — that's where the work to be written concentrates.
+> application adapter - that's where the work to be written concentrates.

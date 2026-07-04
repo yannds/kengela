@@ -1,5 +1,5 @@
 /**
- * TranslogSessionStore — implemente SessionStore sur TranslogPrismaLike.
+ * TranslogSessionStore - implemente SessionStore sur TranslogPrismaLike.
  *
  * Token opaque = 32 octets aleatoires (node:crypto) en hex. L'horloge est
  * injectable (Clock) pour des tests deterministes ; defaut = Date.now. Seuls

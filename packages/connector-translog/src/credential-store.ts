@@ -1,5 +1,5 @@
 /**
- * TranslogCredentialStore — implemente CredentialStore sur TranslogPrismaLike.
+ * TranslogCredentialStore - implemente CredentialStore sur TranslogPrismaLike.
  *
  * Une identite par mot de passe vit dans `Account` (providerId='credential',
  * accountId=email), le hash bcrypt dans `Account.password`, l'etat du compte dans

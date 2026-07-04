@@ -1,4 +1,4 @@
-# Combo 16 — better-auth (authn délégué) + PII chiffrées par tenant + effacement RGPD
+# Combo 16 - better-auth (authn délégué) + PII chiffrées par tenant + effacement RGPD
 
 > COMBO : deux recettes assemblées. On délègue le **login / la session** à
 > [better-auth](https://better-auth.com) (recette 11), et on protège les **données
@@ -12,15 +12,15 @@
 
 Trois responsabilités, trois familles de symboles réels :
 
-- **Authn déléguée** — `BetterAuthIdentity` (`@kengela/adapter-authn-better-auth`)
+- **Authn déléguée** - `BetterAuthIdentity` (`@kengela/adapter-authn-better-auth`)
   implémente `IdentityPort.verifySession(SessionCredential) → Principal | null`. Il ne
   fait NI login, NI signup : better-auth possède la session, l'adapter la traduit en
   `Principal`.
-- **Chiffrement de champ PII** — `classify` / `isPii` / `PII_FIELDS` (`@kengela/pii`)
+- **Chiffrement de champ PII** - `classify` / `isPii` / `PII_FIELDS` (`@kengela/pii`)
   disent QUELS champs sont personnels ; `AesGcmFieldCipher` (per-tenant) et
   `SubjectFieldCipher` (per-sujet) les chiffrent at-rest. Les deux dérivent leurs clés
   via `AesGcmKeyManagement`.
-- **Effacement (art. 17)** — `SubjectCryptoShredder.eraseSubject` détruit la clé du
+- **Effacement (art. 17)** - `SubjectCryptoShredder.eraseSubject` détruit la clé du
   sujet via `PrismaSubjectKeyStore` : toutes ses PII per-sujet deviennent illisibles.
   Chaque lecture est tracée par `PrismaPiiAccessLogSink` (art. 30).
 
@@ -56,7 +56,7 @@ BetterAuthIdentity.verifySession ──►  Principal { userId, tenantId, ... }
 | `SubjectKeyStore`           | `PrismaSubjectKeyStore`  | `@kengela/adapter-persistence-prisma` |
 | `ErasurePort`               | `SubjectCryptoShredder`  | `@kengela/adapter-authn-native`       |
 | `PiiAccessLogSink`          | `PrismaPiiAccessLogSink` | `@kengela/adapter-persistence-prisma` |
-| — (fonctions pures)         | `classify` / `isPii`     | `@kengela/pii`                        |
+| - (fonctions pures)         | `classify` / `isPii`     | `@kengela/pii`                        |
 
 `SubjectFieldCipher` n'implémente pas un port de `contracts` (c'est une brique concrète
 au-dessus de `SubjectKeyStore`), mais il est la pièce centrale du crypto-shredding.
@@ -86,7 +86,7 @@ export interface BetterAuthIdentityConfig {
 }
 ```
 
-Fail-closed : si `extractTenantId` renvoie `null`, `verifySession` retourne `null` — une
+Fail-closed : si `extractTenantId` renvoie `null`, `verifySession` retourne `null` - une
 session sans tenant résoluble n'est pas un `Principal` valide.
 
 ```ts
@@ -185,7 +185,7 @@ await subjectCipher.decryptFor(principal.tenantId, subjectId, encEmail); // null
 
 ## 6. Journal d'accès (art. 30)
 
-`PrismaPiiAccessLogSink.record` insère une ligne d'audit par accès — uniquement les NOMS
+`PrismaPiiAccessLogSink.record` insère une ligne d'audit par accès - uniquement les NOMS
 de champs, jamais les valeurs.
 
 ```ts

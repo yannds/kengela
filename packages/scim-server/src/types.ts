@@ -1,5 +1,5 @@
 /**
- * Contrats du cœur SCIM 2.0 (RFC 7643/7644) — port `ScimStore` + formes de requête /
+ * Contrats du cœur SCIM 2.0 (RFC 7643/7644) - port `ScimStore` + formes de requête /
  * réponse. Framework-agnostique : aucune référence HTTP, aucune dépendance vendor.
  *
  * Le port est NARROW et orienté SCIM : il expose exactement ce dont les handlers ont

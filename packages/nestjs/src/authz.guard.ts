@@ -20,7 +20,7 @@ import { KENGELA_PDP } from './tokens.js';
  * Principal (`req.user`) et de la metadata, delegue au PDP, et mappe la decision :
  *  - allow    -> passe
  *  - deny     -> ForbiddenException(raison)
- *  - step_up  -> StepUpRequiredException(obligations) — l'authz exige un facteur d'authn
+ *  - step_up  -> StepUpRequiredException(obligations) - l'authz exige un facteur d'authn
  *
  * PRECEDENCE (fail-closed) : l'annotation du HANDLER prime TOUJOURS sur celle de la CLASSE.
  * Un `@RequirePermission` pose sur un handler ne peut donc PAS etre neutralise par un

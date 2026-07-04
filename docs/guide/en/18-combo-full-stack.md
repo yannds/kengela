@@ -1,7 +1,7 @@
-# Combo 18 — Full-stack: a "fully wired" NestJS app (reference recipe)
+# Combo 18 - Full-stack: a "fully wired" NestJS app (reference recipe)
 
 > MASTER COMBO: a single NestJS app that composes ALL the socle's building blocks in ONE
-> composition root — native authn (timing-safe argon2), Prisma persistence, opaque
+> composition root - native authn (timing-safe argon2), Prisma persistence, opaque
 > sessions, MFA/TOTP, RBAC + ABAC (CEL) authorization with organizational relation, and
 > encrypted PII + erasure. This is the REFERENCE recipe: it aggregates recipes 10, 14 and
 > 15 under a single factory and a single module.
@@ -12,17 +12,17 @@
 
 Five layers, everything injected by port, a single wiring point:
 
-- **Native authn** — `Argon2PasswordHasher` (`PasswordHasher`) + `PrismaCredentialStore`
+- **Native authn** - `Argon2PasswordHasher` (`PasswordHasher`) + `PrismaCredentialStore`
   (`CredentialStore`) feed `NativeCredentialAuthenticator` (`CredentialAuthenticator`,
   timing-safe compare even on an unknown email).
-- **Sessions** — `PrismaSessionStore` (`SessionStore`): 32-byte opaque token, atomic
+- **Sessions** - `PrismaSessionStore` (`SessionStore`): 32-byte opaque token, atomic
   rotation, fail-closed on expiry.
-- **MFA/TOTP** — `TotpMfaService` composes `TotpVerifier` + `AesGcmKeyManagement` (secret
+- **MFA/TOTP** - `TotpMfaService` composes `TotpVerifier` + `AesGcmKeyManagement` (secret
   encrypted at-rest per tenant) + `PrismaMfaSecretStore` + `PrismaMfaChallengeStore`.
-- **Authorization** — `LayeredDecisionPoint` (RBAC via `PrismaAuthorizationRepository` +
+- **Authorization** - `LayeredDecisionPoint` (RBAC via `PrismaAuthorizationRepository` +
   policies via `PrismaPolicyStore` + relation via `PrincipalRelationResolver` + conditions
   via `CelExpressionEngine`), exposed by `KengelaAuthzGuard`.
-- **PII** — `AesGcmFieldCipher` (per-tenant) + `SubjectFieldCipher` / `SubjectCryptoShredder`
+- **PII** - `AesGcmFieldCipher` (per-tenant) + `SubjectFieldCipher` / `SubjectCryptoShredder`
   (per-subject, via `PrismaSubjectKeyStore`) + `PrismaPiiAccessLogSink`.
 
 ### Execution flow

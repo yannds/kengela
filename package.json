@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "version": "0.0.0",
-  "description": "Kengela — Zero Trust identity & access (authn + authz) for multi-tenant apps. Le veilleur.",
+  "description": "Kengela - Zero Trust identity & access (authn + authz) for multi-tenant apps. Le veilleur.",
   "license": "Apache-2.0",
   "author": "yannds",
   "packageManager": "pnpm@10.12.4",

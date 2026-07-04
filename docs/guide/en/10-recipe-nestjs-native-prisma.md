@@ -1,4 +1,4 @@
-# Recipe 10 — NestJS app from scratch: native auth (argon2) + Prisma persistence + authorization
+# Recipe 10 - NestJS app from scratch: native auth (argon2) + Prisma persistence + authorization
 
 > **Default / recommended path.** We start from an empty NestJS app and wire the Kengela
 > foundation to protect a route end to end: login (timing-safe argon2 hash) → session →
@@ -27,14 +27,14 @@ implement and that the **app composes**. This scenario wires the following ports
 | `PolicyDecisionPoint` (PDP)  | `RbacDecisionPoint` **or** `LayeredDecisionPoint` | `@kengela/authz-core`                 | provided       |
 | NestJS guard + decorators    | `KengelaAuthzGuard`, `@RequirePermission`, …      | `@kengela/nestjs`                     | provided       |
 
-> **Two ports now ship a GENERIC default adapter** — used as-is in this recipe, to be replaced
+> **Two ports now ship a GENERIC default adapter** - used as-is in this recipe, to be replaced
 > by your own only if your shape differs:
 >
-> - `CredentialStore` — `PrismaCredentialStore` (`@kengela/adapter-persistence-prisma`) resolves a
+> - `CredentialStore` - `PrismaCredentialStore` (`@kengela/adapter-persistence-prisma`) resolves a
 >   credential against the generic `Account(providerId='credential')` + `User` model (same
 >   conventions as `TranslogCredentialStore`). Constructor: `new PrismaCredentialStore(prisma, { providerId? })`.
 >   If YOUR schema differs, write your own; `@kengela/connector-translog` shows a real example.
-> - `RelationResolver` — `PrincipalRelationResolver` (`@kengela/authz-core`) computes the org
+> - `RelationResolver` - `PrincipalRelationResolver` (`@kengela/authz-core`) computes the org
 >   relation from fields already carried by the `Principal` (`orgUnitId`/`agencyId`/`coverageUnits`)
 >   against the `ResourceRef` (`attributes.ownerId`/`unitId`…), deny-by-default. Pure constructor,
 >   no I/O: `new PrincipalRelationResolver({ ownerAttributeKeys?, unitAttributeKeys? })`. An org
@@ -42,8 +42,8 @@ implement and that the **app composes**. This scenario wires the following ports
 
 **Choosing the PDP:**
 
-- `RbacDecisionPoint` — pure RBAC (grants × org relation). Simplest to start.
-- `LayeredDecisionPoint` — RBAC (floor) **+** declarative ABAC policies (CEL conditions) **+**
+- `RbacDecisionPoint` - pure RBAC (grants × org relation). Simplest to start.
+- `LayeredDecisionPoint` - RBAC (floor) **+** declarative ABAC policies (CEL conditions) **+**
   step-up. Additionally requires a `PolicyStore` and an `ExpressionEnginePort`. This is the one
   that unlocks conditional `deny` and `step_up`. We use it in this recipe.
 
@@ -179,7 +179,7 @@ model User {
 >
 > **Does your schema differ?** If your password identity does not follow the `Account`/`User`
 > convention above (e.g. a single `User` model with `email`/`passwordHash`), keep the other models
-> and write your own `CredentialStore` — see the `AppCredentialStore` variant in §7.
+> and write your own `CredentialStore` - see the `AppCredentialStore` variant in §7.
 
 ---
 
@@ -241,7 +241,7 @@ const prisma = new PrismaClient();
   providers: [
     { provide: PASSWORD_HASHER, useClass: Argon2PasswordHasher },
 
-    // 4.b CredentialStore — default adapter Account(providerId='credential') + User.
+    // 4.b CredentialStore - default adapter Account(providerId='credential') + User.
     //     providerId defaults to 'credential' ; override via { providerId } if needed.
     {
       provide: CREDENTIAL_STORE,
@@ -292,7 +292,7 @@ export class KengelaModule {}
 > **`prisma as unknown as PrismaLike` / `as unknown as CredentialPrismaLike`: INTENTIONAL
 > structural compatibility.** The generated `PrismaClient` satisfies these NARROW surfaces (same
 > delegate signatures + optional `$transaction`); the double cast is there ONLY because the
-> generated client is nominally distinct and much wider than the expected surface — not to hide an
+> generated client is nominally distinct and much wider than the expected surface - not to hide an
 > incompatibility. No runtime surprise as long as the schema respects the NARROW columns (§3). This
 > is the contract documented at the top of `prisma-like.ts`.
 >
@@ -307,7 +307,7 @@ export class KengelaModule {}
 
 ## 5. Global guard + decorators
 
-We register `KengelaAuthzGuard` as `APP_GUARD`: **deny-by-default** — any route without
+We register `KengelaAuthzGuard` as `APP_GUARD`: **deny-by-default** - any route without
 `@RequirePermission` **nor** `@PublicRoute` is refused (`ForbiddenException('route_not_annotated')`).
 
 ```ts
@@ -365,7 +365,7 @@ health() { return { ok: true }; }
 The guard reads the `Principal` from `req.user`. An upstream authn middleware/guard must set it:
 
 ```ts
-// src/session.middleware.ts (excerpt) — resolves the session into a Principal and sets req.user
+// src/session.middleware.ts (excerpt) - resolves the session into a Principal and sets req.user
 const handle = await sessionStore.get(token);          // SessionHandle | null
 if (handle !== null) {
   const record = await credentialStore.findByEmail(/* ... */);
@@ -489,27 +489,27 @@ Example policy (one `Policy` row + one step-up `PolicyRule` row in the database)
 
 > `has(env.riskScore) && …` is the tolerant form: `riskScore` is optional, and accessing an absent
 > field in CEL **throws** (hence deny `condition_error`). The `has()` guard short-circuits absence
-> without an error — see recipe 14 §5.
+> without an error - see recipe 14 §5.
 
 ---
 
-## 7. Callout — "already available" vs "to write"
+## 7. Callout - "already available" vs "to write"
 
 **Code already provided by Kengela (direct import, zero rewrite):**
 
-- `Argon2PasswordHasher`, `NativeCredentialAuthenticator` (+ `.create` factory) — `@kengela/adapter-authn-native`
+- `Argon2PasswordHasher`, `NativeCredentialAuthenticator` (+ `.create` factory) - `@kengela/adapter-authn-native`
 - `PrismaSessionStore`, `PrismaAuthorizationRepository`, `PrismaPolicyStore`, `PrismaCredentialStore`
-  (+ `PrismaMfaSecretStore`, `PrismaMfaChallengeStore` if MFA) — `@kengela/adapter-persistence-prisma`
+  (+ `PrismaMfaSecretStore`, `PrismaMfaChallengeStore` if MFA) - `@kengela/adapter-persistence-prisma`
 - `RbacDecisionPoint`, `LayeredDecisionPoint`, `PrincipalRelationResolver` (+ `activeGrants`,
-  `grantCovers`, `tenantScopedRelation`) — `@kengela/authz-core`
-- `CelExpressionEngine` — `@kengela/adapter-expr-cel`
+  `grantCovers`, `tenantScopedRelation`) - `@kengela/authz-core`
+- `CelExpressionEngine` - `@kengela/adapter-expr-cel`
 - `KengelaAuthzGuard`, `RequirePermission`, `PublicRoute`, `CurrentPrincipal`,
-  `StepUpRequiredException`, `KENGELA_PDP` — `@kengela/nestjs`
+  `StepUpRequiredException`, `KENGELA_PDP` - `@kengela/nestjs`
 
 **What you write yourself:**
 
 - **The Prisma schema** (§3) + generating the `PrismaClient`.
-- **`CredentialStore`** — ONLY if your schema differs from the default: `PrismaCredentialStore`
+- **`CredentialStore`** - ONLY if your schema differs from the default: `PrismaCredentialStore`
   covers the generic `Account(providerId='credential')` + `User` model. Otherwise mirror
   `TranslogCredentialStore` (`@kengela/connector-translog`), fail-closed join. Minimal variant for a
   single-table `User` model (`email`/`passwordHash`):
@@ -548,7 +548,7 @@ Example policy (one `Policy` row + one step-up `PolicyRule` row in the database)
   }
   ```
 
-- **`RelationResolver`** — `PrincipalRelationResolver` (`@kengela/authz-core`) is enough as long as
+- **`RelationResolver`** - `PrincipalRelationResolver` (`@kengela/authz-core`) is enough as long as
   the relation can be derived from the `Principal`; write your own to wire an org chart computed in
   the database (`self`/`unit`/`subtree`/`tenant`/`none`). Minimal variant:
 
@@ -571,7 +571,7 @@ Example policy (one `Policy` row + one step-up `PolicyRule` row in the database)
 
 ### Modeling decisions settled (no residual uncertainty)
 
-- **`Grant` dual attachment — MANDATED, not optional.** The `grant` delegate serves two reads in
+- **`Grant` dual attachment - MANDATED, not optional.** The `grant` delegate serves two reads in
   `prisma-like.ts`: `GrantDelegate.findMany({ where: { userId, tenantId } })` (used by
   `PrismaAuthorizationRepository.loadGrantsForUser`) **requires** the `userId` column; and the
   `Role.grants` relation, loaded by `RoleDelegate.findFirst({ where: { key, tenantId }, include: { grants: true } })`,
@@ -580,7 +580,7 @@ Example policy (one `Policy` row + one step-up `PolicyRule` row in the database)
   `GrantRow`/`RoleRow` types only expose `permission`/`scope`/`source`/`expiresAt` (the attachment
   columns are read only by the `where`/`include` clauses), yet both columns remain required by
   those signatures.
-- **Cast `PrismaClient → PrismaLike` / `CredentialPrismaLike` — intentional structural
+- **Cast `PrismaClient → PrismaLike` / `CredentialPrismaLike` - intentional structural
   compatibility.** The double cast `as unknown as …` is the documented usage (top of
   `prisma-like.ts`): the generated client is a superset of the NARROW surfaces, nominally distinct,
   hence the cast. No runtime risk as long as the §3 schema is respected.

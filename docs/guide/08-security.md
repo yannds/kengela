@@ -51,10 +51,10 @@ contrôles et cartographié la conformité.
 
 ### Les 2 dettes documentées
 
-- **MEDIUM-1** — anti-rejeu du **code** TOTP (NIST 800-63B §5.1.4.2) : le défi est one-shot, mais un
+- **MEDIUM-1** - anti-rejeu du **code** TOTP (NIST 800-63B §5.1.4.2) : le défi est one-shot, mais un
   code déjà consommé pourrait être rejoué via un nouveau `challengeId` dans la fenêtre (~30 s). Cible :
   cache anti-rejeu (`adapter-authn-native/DEBT.md` #3).
-- **LOW-1** — helper `escapeLdapFilterValue()` absent : l'adapter n'introduit aucune injection (filtre
+- **LOW-1** - helper `escapeLdapFilterValue()` absent : l'adapter n'introduit aucune injection (filtre
   verbatim), mais n'outille pas l'appelant qui composerait un filtre depuis une entrée utilisateur
   (`adapter-directory-ldap/DEBT.md` #5).
 

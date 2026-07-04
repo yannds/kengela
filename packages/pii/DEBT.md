@@ -1,4 +1,4 @@
-# DEBT.md — @kengela/pii
+# DEBT.md - @kengela/pii
 
 > Le port est un sas, pas une planque. Dettes tracées, retirées quand résolues.
 

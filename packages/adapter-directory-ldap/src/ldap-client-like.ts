@@ -1,8 +1,8 @@
 /**
- * `LdapClientLike` — surface **NARROW** du client LDAP dont dépend cet adapter.
+ * `LdapClientLike` - surface **NARROW** du client LDAP dont dépend cet adapter.
  *
  * DOCTRINE (le port est un sas, pas une planque) : on n'importe RIEN de `ldapts` dans le contrat.
- * On décrit exactement les trois méthodes utilisées — `bind`, `search` (paginée), `unbind` — avec
+ * On décrit exactement les trois méthodes utilisées - `bind`, `search` (paginée), `unbind` - avec
  * des types de retour explicites. Le vrai `Client` de `ldapts` est **structurellement compatible**
  * (voir la fabrique par défaut dans `ldap-directory-source.ts`), et un fake en mémoire l'est tout
  * autant côté test. Lecture seule : aucune méthode de modification d'annuaire n'est exposée.
@@ -40,7 +40,7 @@ export interface LdapSearchEntry {
   readonly [attribute: string]: unknown;
 }
 
-/** Résultat d'une recherche LDAP — sous-ensemble de `SearchResult` de `ldapts`. */
+/** Résultat d'une recherche LDAP - sous-ensemble de `SearchResult` de `ldapts`. */
 export interface LdapSearchResult {
   readonly searchEntries: readonly LdapSearchEntry[];
   readonly searchReferences?: readonly string[];

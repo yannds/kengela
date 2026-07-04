@@ -9,7 +9,7 @@ import type {
 } from '@kengela/contracts';
 import type { TotpVerifier } from './totp-verifier.js';
 
-/** TTL par défaut d'un défi MFA (2 minutes) si l'appelant ne le surcharge pas. */
+/** Default TTL of an MFA challenge (2 minutes) if the caller does not override it. */
 const DEFAULT_CHALLENGE_TTL_MS = 120_000;
 
 export interface TotpMfaServiceOptions {
@@ -17,12 +17,12 @@ export interface TotpMfaServiceOptions {
 }
 
 /**
- * Cycle MFA TOTP complet (enroll/challenge/verify) en composant les briques du socle :
- * `TotpVerifier` (RFC 6238), `KeyManagementPort` (secret chiffré at-rest par tenant),
- * `MfaSecretStore` (persistance du secret) et `MfaChallengeStore` (défis one-shot).
+ * Full TOTP MFA cycle (enroll/challenge/verify) by composing the platform building blocks:
+ * `TotpVerifier` (RFC 6238), `KeyManagementPort` (secret encrypted at-rest per tenant),
+ * `MfaSecretStore` (secret persistence) and `MfaChallengeStore` (one-shot challenges).
  *
- * Le secret TOTP n'est JAMAIS stocké en clair : il est chiffré via le KMS enveloppe par
- * tenant avant d'atteindre le store, et déchiffré à la volée uniquement pour vérifier un code.
+ * The TOTP secret is NEVER stored in cleartext: it is encrypted through the per-tenant
+ * envelope KMS before reaching the store, and decrypted on the fly only to verify a code.
  */
 export class TotpMfaService implements MfaService {
   readonly #totp: TotpVerifier;

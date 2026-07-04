@@ -11,7 +11,7 @@
 
 /**
  * Attributs d'annuaire « standards entreprise » (extension SCIM enterprise + claims
- * usuels Entra/AD). Tous facultatifs : un compte AD peut être incomplet — c'est
+ * usuels Entra/AD). Tous facultatifs : un compte AD peut être incomplet - c'est
  * précisément le cas que la classification doit rattraper via les groupes.
  */
 export interface DirectoryAttributes {
@@ -317,7 +317,7 @@ export function profileFromScim(
   };
 }
 
-/** Utilisateur d'annuaire lu via Microsoft Graph (`/users`) — forme structurelle (sans dépendre de l'infra). */
+/** Utilisateur d'annuaire lu via Microsoft Graph (`/users`) - forme structurelle (sans dépendre de l'infra). */
 export interface GraphUserParts {
   readonly id?: string | null;
   readonly userPrincipalName?: string | null;
@@ -491,7 +491,7 @@ export interface GoogleOrganization {
   readonly primary?: boolean | null;
 }
 
-/** Relation Google Workspace (`users.relations[]`) — porte notamment le responsable hiérarchique. */
+/** Relation Google Workspace (`users.relations[]`) - porte notamment le responsable hiérarchique. */
 export interface GoogleRelation {
   readonly type?: string | null;
   readonly value?: string | null;

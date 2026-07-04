@@ -5,26 +5,26 @@ const IV_LEN = 12;
 const TAG_LEN = 16;
 const KEY_LEN = 32;
 
-/** Contexte HKDF par défaut : conserve le comportement historique (secret MFA at-rest). */
+/** Default HKDF context: preserves the historical behavior (MFA secret at-rest). */
 const DEFAULT_CONTEXT = 'kengela:mfa';
 
-/** Options du chiffrement enveloppe. */
+/** Envelope encryption options. */
 export interface AesGcmKeyManagementOptions {
   /**
-   * Étiquette de CONTEXTE HKDF (`info`), préfixée au `tenantId` lors de la dérivation :
-   * `<context>:<tenantId>`. Sert la SÉPARATION DE DOMAINE cryptographique : deux usages
-   * distincts d'une même clé maître (secret MFA vs chiffrement de champ PII) doivent dériver
-   * avec des contextes DIFFÉRENTS pour que leurs clés ne soient jamais interchangeables.
-   * Défaut : `kengela:mfa` (rétro-compatible avec l'existant).
+   * HKDF CONTEXT label (`info`), prefixed to the `tenantId` during derivation:
+   * `<context>:<tenantId>`. Serves cryptographic DOMAIN SEPARATION: two distinct
+   * uses of the same master key (MFA secret vs PII field encryption) must derive
+   * with DIFFERENT contexts so their keys are never interchangeable.
+   * Default: `kengela:mfa` (backward-compatible with the existing data).
    */
   readonly context?: string;
 }
 
 /**
- * KeyManagementPort en chiffrement enveloppe AES-256-GCM. Une clé par tenant est
- * dérivée de la clé maître via HKDF-SHA256 (isolation cryptographique inter-tenant),
- * dans un CONTEXTE (`info`) configurable (séparation de domaine par usage).
- * Format du chiffré : iv(12) || tag(16) || ciphertext.
+ * KeyManagementPort using AES-256-GCM envelope encryption. One key per tenant is
+ * derived from the master key via HKDF-SHA256 (cross-tenant cryptographic isolation),
+ * within a configurable CONTEXT (`info`) (domain separation per use).
+ * Ciphertext format: iv(12) || tag(16) || ciphertext.
  */
 export class AesGcmKeyManagement implements KeyManagementPort {
   readonly #masterKey: Uint8Array;
@@ -32,14 +32,14 @@ export class AesGcmKeyManagement implements KeyManagementPort {
 
   public constructor(masterKey: Uint8Array, options: AesGcmKeyManagementOptions = {}) {
     if (masterKey.length < KEY_LEN) {
-      throw new Error(`Clé maître trop courte (>= ${String(KEY_LEN)} octets requis).`);
+      throw new Error(`Master key too short (>= ${String(KEY_LEN)} bytes required).`);
     }
     this.#masterKey = masterKey;
     this.#context = options.context ?? DEFAULT_CONTEXT;
   }
 
   public encrypt(tenantId: TenantId, plaintext: Uint8Array): Promise<Uint8Array> {
-    // Executor : toute exception synchrone (crypto Node) rejette proprement la promesse.
+    // Executor: any synchronous exception (Node crypto) cleanly rejects the promise.
     return new Promise<Uint8Array>((resolve) => {
       const key = this.#deriveKey(tenantId);
       const iv = randomBytes(IV_LEN);
@@ -53,7 +53,7 @@ export class AesGcmKeyManagement implements KeyManagementPort {
   public decrypt(tenantId: TenantId, ciphertext: Uint8Array): Promise<Uint8Array> {
     return new Promise<Uint8Array>((resolve) => {
       if (ciphertext.length < IV_LEN + TAG_LEN) {
-        throw new Error('Chiffré AES-GCM invalide (trop court).');
+        throw new Error('Invalid AES-GCM ciphertext (too short).');
       }
       const buffer = Buffer.from(ciphertext);
       const iv = buffer.subarray(0, IV_LEN);

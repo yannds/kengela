@@ -1,7 +1,7 @@
-# Combo 18 — Full-stack : app NestJS « tout branché » (recette de référence)
+# Combo 18 - Full-stack : app NestJS « tout branché » (recette de référence)
 
 > COMBO MAÎTRE : une seule app NestJS qui compose TOUTES les briques du socle en UN seul
-> composition root — authn native (argon2 timing-safe), persistance Prisma, sessions
+> composition root - authn native (argon2 timing-safe), persistance Prisma, sessions
 > opaques, MFA/TOTP, autorisation RBAC + ABAC (CEL) avec relation organisationnelle, et
 > PII chiffrées + effacement. C'est la recette de RÉFÉRENCE : elle agrège les recettes 10,
 > 14 et 15 sous une seule fabrique et un seul module.
@@ -12,17 +12,17 @@
 
 Cinq couches, tout injecté par port, un seul point de câblage :
 
-- **Authn native** — `Argon2PasswordHasher` (`PasswordHasher`) + `PrismaCredentialStore`
+- **Authn native** - `Argon2PasswordHasher` (`PasswordHasher`) + `PrismaCredentialStore`
   (`CredentialStore`) alimentent `NativeCredentialAuthenticator` (`CredentialAuthenticator`,
   compare timing-safe même sur e-mail inconnu).
-- **Sessions** — `PrismaSessionStore` (`SessionStore`) : token opaque 32 octets, rotation
+- **Sessions** - `PrismaSessionStore` (`SessionStore`) : token opaque 32 octets, rotation
   atomique, fail-closed sur expiration.
-- **MFA/TOTP** — `TotpMfaService` compose `TotpVerifier` + `AesGcmKeyManagement` (secret
+- **MFA/TOTP** - `TotpMfaService` compose `TotpVerifier` + `AesGcmKeyManagement` (secret
   chiffré at-rest par tenant) + `PrismaMfaSecretStore` + `PrismaMfaChallengeStore`.
-- **Autorisation** — `LayeredDecisionPoint` (RBAC via `PrismaAuthorizationRepository` +
+- **Autorisation** - `LayeredDecisionPoint` (RBAC via `PrismaAuthorizationRepository` +
   policies via `PrismaPolicyStore` + relation via `PrincipalRelationResolver` + conditions
   via `CelExpressionEngine`), exposé par `KengelaAuthzGuard`.
-- **PII** — `AesGcmFieldCipher` (per-tenant) + `SubjectFieldCipher` / `SubjectCryptoShredder`
+- **PII** - `AesGcmFieldCipher` (per-tenant) + `SubjectFieldCipher` / `SubjectCryptoShredder`
   (per-sujet, via `PrismaSubjectKeyStore`) + `PrismaPiiAccessLogSink`.
 
 ### Flux d'exécution

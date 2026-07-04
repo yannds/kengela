@@ -136,7 +136,7 @@ Copiez `DEBT.template.md` (racine) dans votre paquet et remplissez le registre. 
 enveloppé sans être migré y figure avec état, problème et cible :
 
 ```md
-# DEBT.md — @kengela/adapter-xxx
+# DEBT.md - @kengela/adapter-xxx
 
 | #   | Ce qui est enveloppé | Etat                    | Problème                       | Cible de migration           | Prio |
 | --- | -------------------- | ----------------------- | ------------------------------ | ---------------------------- | ---- |

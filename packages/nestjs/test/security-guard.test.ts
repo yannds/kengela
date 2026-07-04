@@ -1,5 +1,5 @@
 /**
- * RED TEAM — guard NestJS (@kengela/nestjs).
+ * RED TEAM - guard NestJS (@kengela/nestjs).
  *
  * On tente le fail-open classique : neutraliser un `@RequirePermission` de HANDLER via un
  * `@PublicRoute` pose sur la CLASSE. Le handler DOIT primer (fail-closed). On verifie aussi
@@ -64,7 +64,7 @@ const pdpReturning = (decision: Decision): PolicyDecisionPoint & { calls: number
 
 const PERM = { resourceType: 'data.cashier.register', action: 'read' };
 
-describe('RED — @PublicRoute de CLASSE ne neutralise PAS @RequirePermission de HANDLER', () => {
+describe('RED - @PublicRoute de CLASSE ne neutralise PAS @RequirePermission de HANDLER', () => {
   it('handler protege + classe publique => la decision PDP est bien evaluee (pas de bypass)', async () => {
     const pdp = pdpReturning({ effect: 'deny', reason: 'no_grant' });
     const guard = new KengelaAuthzGuard(
@@ -86,7 +86,7 @@ describe('RED — @PublicRoute de CLASSE ne neutralise PAS @RequirePermission de
   });
 });
 
-describe('RED — precedence & deny-by-default', () => {
+describe('RED - precedence & deny-by-default', () => {
   it('handler explicitement @PublicRoute prime sur une exigence de CLASSE (opt-out volontaire)', async () => {
     const pdp = pdpReturning({ effect: 'deny', reason: 'no_grant' });
     const guard = new KengelaAuthzGuard(

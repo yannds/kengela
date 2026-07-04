@@ -51,10 +51,10 @@ controls and mapped compliance.
 
 ### The 2 documented debts
 
-- **MEDIUM-1** — anti-replay of the TOTP **code** (NIST 800-63B §5.1.4.2): the challenge is one-shot,
+- **MEDIUM-1** - anti-replay of the TOTP **code** (NIST 800-63B §5.1.4.2): the challenge is one-shot,
   but an already-consumed code could be replayed via a new `challengeId` within the window (~30 s).
   Target: anti-replay cache (`adapter-authn-native/DEBT.md` #3).
-- **LOW-1** — `escapeLdapFilterValue()` helper missing: the adapter introduces no injection (verbatim
+- **LOW-1** - `escapeLdapFilterValue()` helper missing: the adapter introduces no injection (verbatim
   filter), but does not tool the caller who would compose a filter from user input
   (`adapter-directory-ldap/DEBT.md` #5).
 

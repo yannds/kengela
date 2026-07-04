@@ -1,5 +1,5 @@
 /**
- * RED TEAM — SCIM 2.0 (@kengela/scim-server).
+ * RED TEAM - SCIM 2.0 (@kengela/scim-server).
  *
  * Injection de filtre, ReDoS, PATCH malveillant, contournement d'unicite, isolation tenant,
  * validation de schema. Handlers PURS + FakeScimStore en memoire (aucun HTTP/DB).
@@ -21,7 +21,7 @@ import { FakeScimStore } from './fake-store.js';
 
 const req = (over: Partial<ScimRequest> & { tenantId: string }): ScimRequest => ({ ...over });
 
-describe('RED — SCIM : filtres (injection & ReDoS)', () => {
+describe('RED - SCIM : filtres (injection & ReDoS)', () => {
   it('un filtre borne rejette une entree gigantesque sans exploser (pas de ReDoS)', () => {
     const huge = `userName eq "${'a'.repeat(200_000)}`; // pas de guillemet fermant : ne matche pas
     const started = Date.now();
@@ -56,7 +56,7 @@ describe('RED — SCIM : filtres (injection & ReDoS)', () => {
   });
 });
 
-describe('RED — SCIM : PATCH malveillant', () => {
+describe('RED - SCIM : PATCH malveillant', () => {
   it('une operation inconnue est ignoree (fail-closed, pas de mutation)', () => {
     const patch = parseUserPatch({
       schemas: ['urn:ietf:params:scim:api:messages:2.0:PatchOp'],
@@ -82,7 +82,7 @@ describe('RED — SCIM : PATCH malveillant', () => {
   });
 });
 
-describe('RED — SCIM : unicite & deprovisionnement', () => {
+describe('RED - SCIM : unicite & deprovisionnement', () => {
   it('POST strict : un userName deja present => 409 uniqueness (pas de doublon)', async () => {
     const store = new FakeScimStore();
     const body = { schemas: ['urn:ietf:params:scim:schemas:core:2.0:User'], userName: 'dup@x.io' };
@@ -116,7 +116,7 @@ describe('RED — SCIM : unicite & deprovisionnement', () => {
   });
 });
 
-describe('RED — SCIM : isolation multi-tenant', () => {
+describe('RED - SCIM : isolation multi-tenant', () => {
   it('un utilisateur du tenant A est introuvable via le tenant B (404)', async () => {
     const store = new FakeScimStore();
     const created = await store.createUser('tenant-A', {
@@ -134,7 +134,7 @@ describe('RED — SCIM : isolation multi-tenant', () => {
   });
 });
 
-describe('RED — SCIM : validation de schema (bypass)', () => {
+describe('RED - SCIM : validation de schema (bypass)', () => {
   it('rejette un corps sans `schemas`', () => {
     expect(validateScimUser({ userName: 'a@x.io' }).valid).toBe(false);
   });

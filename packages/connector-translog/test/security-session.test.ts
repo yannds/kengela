@@ -1,5 +1,5 @@
 /**
- * RED TEAM — sessions TransLog (@kengela/connector-translog).
+ * RED TEAM - sessions TransLog (@kengela/connector-translog).
  *
  * Meme surface durcie que l'adapter Prisma : une session EXPIREE n'est jamais restituee,
  * la rotation invalide l'ancien token, et le token opaque est a haute entropie. Fake
@@ -22,7 +22,7 @@ function mutableClock(start: number): { clock: Clock; set: (t: number) => void }
   };
 }
 
-describe('RED — session TransLog expiree jamais restituee (fail-closed)', () => {
+describe('RED - session TransLog expiree jamais restituee (fail-closed)', () => {
   it('get(token) renvoie null apres expiration, meme si la ligne subsiste', async () => {
     const prisma = new FakeTranslogPrisma();
     const { clock, set } = mutableClock(1000);

@@ -1,7 +1,7 @@
 {
   "name": "@kengela/nestjs",
   "version": "0.1.0",
-  "description": "Kengela — integration NestJS : guard d'autorisation (PDP) + decorateurs.",
+  "description": "Kengela NestJS integration: authorization guard (PDP) + decorators.",
   "license": "Apache-2.0",
   "type": "module",
   "exports": {

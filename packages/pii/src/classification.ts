@@ -2,7 +2,7 @@
  * Classification des attributs par sensibilité (RGPD).
  *  - `none`      : non personnel (identifiant technique, rattachement org).
  *  - `pii`       : donnée personnelle (identifiabilité directe/indirecte).
- *  - `sensitive` : catégorie particulière (RGPD art. 9 : santé, biométrie...) —
+ *  - `sensitive` : catégorie particulière (RGPD art. 9 : santé, biométrie...) -
  *                  aucune dans un annuaire standard, prévu pour extension.
  *
  * Clés = champs du `DirectoryProfile` / `DirectoryAttributes` normalisés.

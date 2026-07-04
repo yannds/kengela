@@ -192,7 +192,7 @@ import type { SessionCredential } from '@kengela/contracts';
 const identity = new BetterAuthIdentity({
   auth, // instance better-auth (BetterAuthLike)
   extractTenantId: (user) => (typeof user.tenantId === 'string' ? user.tenantId : null),
-  // extractRoles : par défaut aucun rôle n'est hérité du payload — l'authz RECHARGE les grants.
+  // extractRoles : par défaut aucun rôle n'est hérité du payload - l'authz RECHARGE les grants.
 });
 
 const credential: SessionCredential = { strategy: 'cookie', token: cookieHeader };

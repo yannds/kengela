@@ -1,5 +1,5 @@
 /**
- * PrismaAuthorizationRepository — implemente AuthorizationRepository sur PrismaLike.
+ * PrismaAuthorizationRepository - implemente AuthorizationRepository sur PrismaLike.
  *
  * Charge les grants d'un utilisateur et les roles depuis Postgres. Le filtrage
  * des grants expires est fait par la couche engine (activeGrants) ; ici on

@@ -1,16 +1,16 @@
 /**
- * Moteur de mapping IdP → rôles applicatifs + rattachement organisationnel.
+ * Mapping engine IdP → application roles + organizational attachment.
  *
- * Règles **configurables par tenant** (jamais en dur, cohérent avec le RBAC `Role`
- * du catalogue tenant). Chaque règle teste le `DirectoryProfile` (groupes de sécurité,
- * claims OIDC, attributs SCIM) et, si elle correspond, accorde des clés de rôle et/ou
- * une directive de rattachement à une unité d'organigramme.
+ * Rules are **configurable per tenant** (never hardcoded, consistent with the `Role` RBAC
+ * of the tenant catalog). Each rule tests the `DirectoryProfile` (security groups, OIDC
+ * claims, SCIM attributes) and, on a match, grants role keys and/or an attachment directive
+ * to an org-chart unit.
  *
- * Déterministe : évaluation par priorité croissante, départage par `id`. Les rôles
- * s'accumulent (union) ; la première directive d'unité gagne (priorité la plus haute).
- * `stopOnMatch` permet des règles « court-circuit ».
+ * Deterministic: evaluation by ascending priority, tie-broken by `id`. Roles accumulate
+ * (union); the first unit directive wins (highest priority). `stopOnMatch` enables
+ * "short-circuit" rules.
  *
- * PUR : aucune dépendance infra.
+ * PURE: no infra dependency.
  */
 import type { DirectoryProfile } from './profile.js';
 import { safeRegexTest } from './safe-regex.js';
@@ -18,26 +18,26 @@ import { safeRegexTest } from './safe-regex.js';
 export type MappingSource = 'GROUP' | 'CLAIM' | 'ATTRIBUTE';
 
 /**
- * Opérateurs de comparaison (insensibles aux espaces). `matches` = expression
- * régulière (ancrée implicitement par l'auteur), `in` = appartenance à une liste,
- * `present` = champ non vide (valeur ignorée).
+ * Comparison operators (whitespace-insensitive). `matches` = regular expression (implicitly
+ * anchored by the author), `in` = membership in a list, `present` = non-empty field (value
+ * ignored).
  */
 export type MatchOp = 'equals' | 'iequals' | 'contains' | 'matches' | 'in' | 'present';
 
 export interface MappingCondition {
   readonly source: MappingSource;
-  /** Nom du claim/attribut visé. Ignoré pour `GROUP` (teste la liste des groupes). */
+  /** Name of the target claim/attribute. Ignored for `GROUP` (tests the group list). */
   readonly key?: string;
   readonly op: MatchOp;
-  /** Valeur de comparaison (chaîne) ou liste (pour `in`) ; regex source pour `matches`. */
+  /** Comparison value (string) or list (for `in`); regex source for `matches`. */
   readonly value?: string | readonly string[];
 }
 
-/** Cible de rattachement à une unité d'organigramme produite par une règle. */
+/** Target attachment to an org-chart unit produced by a rule. */
 export interface OrgUnitDirective {
-  /** Résolution par code (`OrgUnit.code`) ou par nom (`OrgUnit.name`). */
+  /** Resolution by code (`OrgUnit.code`) or by name (`OrgUnit.name`). */
   readonly by: 'code' | 'name';
-  /** Valeur littérale, OU si absente, lue dans l'attribut `fromAttribute` du profil. */
+  /** Literal value, OR if absent, read from the profile's `fromAttribute` attribute. */
   readonly value?: string;
   readonly fromAttribute?: keyof DirectoryProfile['attributes'];
 }
@@ -45,26 +45,26 @@ export interface OrgUnitDirective {
 export interface IdpMappingRule {
   readonly id: string;
   readonly description?: string;
-  /** Croissant : 0 évalué en premier. Départage stable par `id`. */
+  /** Ascending: 0 evaluated first. Stable tie-break by `id`. */
   readonly priority: number;
-  /** Si la règle correspond, arrête l'évaluation des règles suivantes. */
+  /** If the rule matches, stops evaluating the remaining rules. */
   readonly stopOnMatch?: boolean;
-  /** Toutes les conditions doivent être vraies (ET logique). */
+  /** All conditions must be true (logical AND). */
   readonly all?: readonly MappingCondition[];
-  /** Au moins une condition doit être vraie (OU logique). */
+  /** At least one condition must be true (logical OR). */
   readonly any?: readonly MappingCondition[];
-  /** Clés de rôle du catalogue tenant à accorder (ex. `"VAL"`, `"ADM"`). */
+  /** Role keys from the tenant catalog to grant (e.g. `"VAL"`, `"ADM"`). */
   readonly assignRoleKeys?: readonly string[];
-  /** Directive de rattachement organisationnel. */
+  /** Organizational attachment directive. */
   readonly orgUnit?: OrgUnitDirective;
 }
 
 export interface MappingResult {
-  /** Union des clés de rôle accordées par les règles correspondantes. */
+  /** Union of the role keys granted by the matching rules. */
   readonly roleKeys: readonly string[];
-  /** Directives d'unité, par priorité (la première = la plus prioritaire). */
+  /** Unit directives, by priority (the first = the highest priority). */
   readonly orgUnitDirectives: readonly OrgUnitDirective[];
-  /** Ids des règles qui ont correspondu (audit / dry-run). */
+  /** Ids of the rules that matched (audit / dry-run). */
   readonly matchedRuleIds: readonly string[];
 }
 
@@ -111,7 +111,7 @@ function condMatches(profile: DirectoryProfile, cond: MappingCondition): boolean
     }
     case 'matches': {
       if (typeof cond.value !== 'string') return false;
-      // Regex bornée (anti-ReDoS) : motif invalide/trop complexe → fail-closed (cf. safe-regex.ts).
+      // Bounded regex (anti-ReDoS): invalid/too-complex pattern → fail-closed (see safe-regex.ts).
       return actual.some((a) => safeRegexTest(cond.value as string, a));
     }
     default:
@@ -122,16 +122,16 @@ function condMatches(profile: DirectoryProfile, cond: MappingCondition): boolean
 function ruleMatches(profile: DirectoryProfile, rule: IdpMappingRule): boolean {
   const all = rule.all ?? [];
   const any = rule.any ?? [];
-  if (all.length === 0 && any.length === 0) return false; // règle vide ⇒ jamais (fail-closed)
+  if (all.length === 0 && any.length === 0) return false; // empty rule ⇒ never (fail-closed)
   const allOk = all.every((c) => condMatches(profile, c));
   const anyOk = any.length === 0 || any.some((c) => condMatches(profile, c));
   return allOk && anyOk;
 }
 
 /**
- * Évalue l'ensemble des règles d'un tenant contre un profil. Déterministe :
- * tri par (priorité, id). Accumule les rôles (union), collecte les directives
- * d'unité dans l'ordre de priorité, respecte `stopOnMatch`.
+ * Evaluates a tenant's full rule set against a profile. Deterministic: sorted by
+ * (priority, id). Accumulates roles (union), collects unit directives in priority
+ * order, honors `stopOnMatch`.
  */
 export function evaluateMappings(
   profile: DirectoryProfile,

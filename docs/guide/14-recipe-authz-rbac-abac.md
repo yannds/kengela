@@ -1,4 +1,4 @@
-# Recette 14 — Modéliser l'autorisation : RBAC + ABAC (CEL), obligations, step-up et journalisation
+# Recette 14 - Modéliser l'autorisation : RBAC + ABAC (CEL), obligations, step-up et journalisation
 
 > Socle : `@kengela/contracts` (les ports), `@kengela/authz-core` (le cœur pur : RBAC + PDP en
 > couches), `@kengela/adapter-expr-cel` (l'adapter CEL). TypeScript ESM.
@@ -44,7 +44,7 @@ Un droit accordé à une portée couvre toutes les portées plus étroites. L'or
 `scope.ts` :
 
 ```ts
-// scope.ts — SCOPE_RANK : de la plus étroite (0) à la plus large (4)
+// scope.ts - SCOPE_RANK : de la plus étroite (0) à la plus large (4)
 export const SCOPE_RANK: Readonly<Record<Scope, number>> = {
   own: 0, // ⊂
   unit: 1, // ⊂
@@ -104,7 +104,7 @@ const cashierRole: Role = { key: 'cashier', tenantId: 'tnt_acme', grants };
 
 ### 2.2 Le cœur pur (sans PDP)
 
-Trois fonctions pures composables (`engine.ts`) — utiles en test unitaire et pour comprendre la
+Trois fonctions pures composables (`engine.ts`) - utiles en test unitaire et pour comprendre la
 mécanique :
 
 ```ts
@@ -125,7 +125,7 @@ isAuthorized(grants, 'data.cashier.register.read', 'self', Date.now()); // true
 
 `RbacDecisionPoint` implémente `PolicyDecisionPoint`. Il ne fait **pas** confiance à
 `Principal.roles` mis en cache : il **recharge les grants à chaque check** via
-l'`AuthorizationRepository` (anti-staleness — un droit révoqué cesse d'agir immédiatement).
+l'`AuthorizationRepository` (anti-staleness - un droit révoqué cesse d'agir immédiatement).
 
 ```ts
 import { RbacDecisionPoint } from '@kengela/authz-core';
@@ -144,7 +144,7 @@ const pdp = new RbacDecisionPoint({
   grants: grantsRepo,
   relations,
   log: myDecisionLog, // optionnel (§5)
-  clock: { now: () => Date.now() }, // optionnel — défaut = horloge système
+  clock: { now: () => Date.now() }, // optionnel - défaut = horloge système
 });
 
 const request: AccessRequest = {
@@ -171,7 +171,7 @@ const decision: Decision = await pdp.check(request);
 //      signals: { relation: 'self' } }
 ```
 
-`checkMany(requests)` évalue un lot en parallèle (`Promise.all`) — c'est ce qu'on utilise pour
+`checkMany(requests)` évalue un lot en parallèle (`Promise.all`) - c'est ce qu'on utilise pour
 filtrer une collection sans N+1 :
 
 ```ts
@@ -184,7 +184,7 @@ Un refus RBAC renvoie `{ effect: 'deny', reason: 'no_grant', signals: { relation
 ### 2.4 Isolation multi-tenant : `tenantScopedRelation`
 
 Défense en profondeur, appelée par **les deux** PDP avant toute couverture. Si la ressource
-n'appartient pas au tenant du principal, la relation résolue est **ramenée à `none`** — donc seul
+n'appartient pas au tenant du principal, la relation résolue est **ramenée à `none`** - donc seul
 un grant `global` (plan plateforme) peut couvrir, même si le `RelationResolver` s'est trompé et a
 renvoyé une relation trop large.
 
@@ -267,7 +267,7 @@ now() - int(env.authTime) > 900000
 > **Fuseau tenant.** `env.now` et `now()` sont en **UTC** (epoch ms). Pour un fuseau, ajoute
 > l'offset côté int : `(int(env.now) + int(tenant.tzOffsetMs)) …`, ou pré-calcule côté app et
 > expose un attribut. `businessDaysBetween(now(), now())` vaut `1` si aujourd'hui (UTC) est un jour
-> ouvré (lun-ven), `0` le week-end — c'est le check « jour ouvré » du dessus.
+> ouvré (lun-ven), `0` le week-end - c'est le check « jour ouvré » du dessus.
 
 ### 3.2 Brancher l'adapter CEL
 
@@ -279,7 +279,7 @@ déterministes (via `Clock`).
 ```ts
 import { CelExpressionEngine } from '@kengela/adapter-expr-cel';
 
-// L'init interne (pour info) — vous n'appelez QUE le constructeur :
+// L'init interne (pour info) - vous n'appelez QUE le constructeur :
 //   new Environment()
 //     .registerVariable('principal', 'dyn')
 //     .registerVariable('resource', 'dyn')
@@ -297,28 +297,28 @@ calendaires jusqu'à `x`), `businessDaysBetween(a, b)` (jours ouvrés, bornes in
 `b` acceptent bigint/number/Date/string ISO (`toEpochMs`). `evaluateBoolean` **exige** un booléen
 en sortie, sinon lève `CelEvaluationError`.
 
-### 3.3 `matches` est INTERDIT (ReDoS) — pourquoi
+### 3.3 `matches` est INTERDIT (ReDoS) - pourquoi
 
 `assertNoUnboundedRegex` refuse toute expression contenant `matches(` (après avoir neutralisé le
 contenu des chaînes littérales, pour ne pas confondre du code avec une chaîne). Raison :
 `cel-js` compile `matches` en `new RegExp(pattern).test(input)` **non borné** ; une regex
-catastrophique type `(a+)+` provoque un backtracking exponentiel sur une entrée adverse — un
+catastrophique type `(a+)+` provoque un backtracking exponentiel sur une entrée adverse - un
 **DoS du PDP**. La doctrine Kengela borne TOUTE regex ; une condition d'accès s'écrit donc avec
 `==`, `in`, `startsWith`, `contains`, jamais un regex non borné. La violation lève
-`CelEvaluationError` — donc deny fail-closed en aval.
+`CelEvaluationError` - donc deny fail-closed en aval.
 
 ### 3.4 Le PDP en couches (`LayeredDecisionPoint`)
 
 Il empile tout dans l'ordre exact suivant (`policy-pdp.ts`) :
 
 ```txt
-1. Plancher RBAC          — sans grant actif couvrant (perm × relation) => deny 'no_grant'
-2. Policies applicables   — filtrées sur (resource.type, action), on aplatit leurs règles
+1. Plancher RBAC          - sans grant actif couvrant (perm × relation) => deny 'no_grant'
+2. Policies applicables   - filtrées sur (resource.type, action), on aplatit leurs règles
                             (0 règle applicable => allow 'rbac_grant', le RBAC suffit)
-3. Deny explicite gagne   — une règle 'deny' matchée => deny (deny-wins)
-4. Gate ABAC positif      — s'il existe des règles 'allow' mais AUCUNE matchée => deny 'no_matching_allow'
-5. Step-up                — les règles 'step_up' matchées imposent leurs obligations
-6. Sinon                  — allow 'rbac_grant'
+3. Deny explicite gagne   - une règle 'deny' matchée => deny (deny-wins)
+4. Gate ABAC positif      - s'il existe des règles 'allow' mais AUCUNE matchée => deny 'no_matching_allow'
+5. Step-up                - les règles 'step_up' matchées imposent leurs obligations
+6. Sinon                  - allow 'rbac_grant'
 ```
 
 ```ts
@@ -369,7 +369,7 @@ const decision = await layered.check({ ...refundRequest, principal: riskyPrincip
 Types d'obligation possibles (`Obligation`, contracts) :
 `'require_mfa' | 'require_passkey' | 'reauthenticate' | 'notify'`, avec `params?` libre.
 
-Comment l'app réagit — le PDP décide, l'app **exécute** l'obligation puis rejoue le check :
+Comment l'app réagit - le PDP décide, l'app **exécute** l'obligation puis rejoue le check :
 
 ```ts
 async function enforce(request: AccessRequest): Promise<'ok' | 'blocked'> {
@@ -398,7 +398,7 @@ code impératif de « niveau MFA » n'est câblé dans le PDP.
 
 ## 5. Journalisation des décisions (`DecisionLogSink`)
 
-Les **deux** PDP émettent chaque décision vers le `DecisionLogSink` optionnel — RBAC via
+Les **deux** PDP émettent chaque décision vers le `DecisionLogSink` optionnel - RBAC via
 `this.#deps.log?.record(...)`, en couches via `#emit(...)`. L'entrée journalisée est
 `{ request, decision, at }` (`at` = `now` de l'horloge).
 
@@ -426,12 +426,12 @@ const myDecisionLog: DecisionLogSink = {
 
 Ce qui remonte comme `reason` selon le chemin :
 
-- `no_grant` — plancher RBAC non franchi ;
-- `rbac_grant` — autorisé (RBAC seul, ou après gate ABAC/step-up franchi) ;
-- règle `deny` matchée — `rule.reason ?? 'policy_deny'` ;
-- `no_matching_allow` — il existe des règles `allow` mais aucune n'a matché (gate positif) ;
-- `step_up_required` — obligations à satisfaire ;
-- **`condition_error` — FAIL-CLOSED**.
+- `no_grant` - plancher RBAC non franchi ;
+- `rbac_grant` - autorisé (RBAC seul, ou après gate ABAC/step-up franchi) ;
+- règle `deny` matchée - `rule.reason ?? 'policy_deny'` ;
+- `no_matching_allow` - il existe des règles `allow` mais aucune n'a matché (gate positif) ;
+- `step_up_required` - obligations à satisfaire ;
+- **`condition_error` - FAIL-CLOSED**.
 
 ### Fail-closed sur erreur d'évaluation
 
@@ -452,10 +452,10 @@ try {
 }
 ```
 
-Une policy cassée **ferme** l'accès (Zero Trust) au lieu de l'ouvrir — et la décision `deny`
+Une policy cassée **ferme** l'accès (Zero Trust) au lieu de l'ouvrir - et la décision `deny`
 `condition_error` est journalisée, ce qui rend la panne observable.
 
-**Champ absent — comportement vérifié (`cel-js` 7.6.1).** Accéder à une clé absente **lève**
+**Champ absent - comportement vérifié (`cel-js` 7.6.1).** Accéder à une clé absente **lève**
 `No such key: <clé>`, à n'importe quel niveau : `env.riskScore` quand `env` n'a pas de `riskScore`,
 comme `principal.ctx.riskScore` quand `ctx` (ou `riskScore`) manque. `riskScore` étant **optionnel**
 (`AuthContext.riskScore?`), une condition nue `env.riskScore >= 50` sur un principal sans score
@@ -471,7 +471,7 @@ vendor (erreur de parse `Expected IDENTIFIER, got QUESTION`) : utilise `has()`, 
 
 ---
 
-## 6. Encadré — ce que calcule Kengela vs ce que fournit l'app
+## 6. Encadré - ce que calcule Kengela vs ce que fournit l'app
 
 > **Kengela (authz-core + adapter CEL) CALCULE :**
 >
@@ -483,10 +483,10 @@ vendor (erreur de parse `Expected IDENTIFIER, got QUESTION`) : utilise `has()`, 
 >
 > **L'application FOURNIT (via les ports contracts) :**
 >
-> - `AuthorizationRepository.loadGrantsForUser` — les **grants depuis SA base** (rechargés à chaque check) ;
-> - `RelationResolver.resolveRelation` — la **relation org** acteur↔ressource (organigramme) ;
-> - `PolicyStore.loadPolicies` — les **policies déclaratives** (fichiers versionnés en CI et/ou overrides tenant en base) ;
-> - le **contexte de requête** : `Principal` (dont `ctx: AuthContext` — geo/device/risque/authTime, produit par l'authn) et `ResourceRef.attributes` (matière de l'ABAC) ;
+> - `AuthorizationRepository.loadGrantsForUser` - les **grants depuis SA base** (rechargés à chaque check) ;
+> - `RelationResolver.resolveRelation` - la **relation org** acteur↔ressource (organigramme) ;
+> - `PolicyStore.loadPolicies` - les **policies déclaratives** (fichiers versionnés en CI et/ou overrides tenant en base) ;
+> - le **contexte de requête** : `Principal` (dont `ctx: AuthContext` - geo/device/risque/authTime, produit par l'authn) et `ResourceRef.attributes` (matière de l'ABAC) ;
 > - les implémentations de `Clock`, `DecisionLogSink`, et l'exécution des obligations (challenge MFA/passkey, ré-auth).
 >
 > Le cœur est **pur** (zéro dépendance vendor/infra) ; le vendor CEL est confiné dans l'adapter.

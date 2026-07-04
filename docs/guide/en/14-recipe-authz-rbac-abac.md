@@ -1,4 +1,4 @@
-# Recipe 14 — Modeling authorization: RBAC + ABAC (CEL), obligations, step-up and logging
+# Recipe 14 - Modeling authorization: RBAC + ABAC (CEL), obligations, step-up and logging
 
 > Foundation: `@kengela/contracts` (the ports), `@kengela/authz-core` (the pure core: RBAC +
 > layered PDP), `@kengela/adapter-expr-cel` (the CEL adapter). TypeScript ESM.
@@ -42,7 +42,7 @@ and **throws** `PermissionSyntaxError` otherwise (fail-closed at grant ingestion
 A right granted at a scope covers all narrower scopes. The real order is read in `scope.ts`:
 
 ```ts
-// scope.ts — SCOPE_RANK : de la plus étroite (0) à la plus large (4)
+// scope.ts - SCOPE_RANK : de la plus étroite (0) à la plus large (4)
 export const SCOPE_RANK: Readonly<Record<Scope, number>> = {
   own: 0, // ⊂
   unit: 1, // ⊂
@@ -102,7 +102,7 @@ const cashierRole: Role = { key: 'cashier', tenantId: 'tnt_acme', grants };
 
 ### 2.2 The pure core (no PDP)
 
-Three composable pure functions (`engine.ts`) — useful in unit tests and to understand the
+Three composable pure functions (`engine.ts`) - useful in unit tests and to understand the
 mechanics:
 
 ```ts
@@ -123,7 +123,7 @@ isAuthorized(grants, 'data.cashier.register.read', 'self', Date.now()); // true
 
 `RbacDecisionPoint` implements `PolicyDecisionPoint`. It does **not** trust the cached
 `Principal.roles`: it **reloads the grants on every check** via the `AuthorizationRepository`
-(anti-staleness — a revoked right stops working immediately).
+(anti-staleness - a revoked right stops working immediately).
 
 ```ts
 import { RbacDecisionPoint } from '@kengela/authz-core';
@@ -142,7 +142,7 @@ const pdp = new RbacDecisionPoint({
   grants: grantsRepo,
   relations,
   log: myDecisionLog, // optionnel (§5)
-  clock: { now: () => Date.now() }, // optionnel — défaut = horloge système
+  clock: { now: () => Date.now() }, // optionnel - défaut = horloge système
 });
 
 const request: AccessRequest = {
@@ -169,7 +169,7 @@ const decision: Decision = await pdp.check(request);
 //      signals: { relation: 'self' } }
 ```
 
-`checkMany(requests)` evaluates a batch in parallel (`Promise.all`) — this is what we use to filter
+`checkMany(requests)` evaluates a batch in parallel (`Promise.all`) - this is what we use to filter
 a collection without N+1:
 
 ```ts
@@ -182,7 +182,7 @@ An RBAC refusal returns `{ effect: 'deny', reason: 'no_grant', signals: { relati
 ### 2.4 Multi-tenant isolation: `tenantScopedRelation`
 
 Defense in depth, called by **both** PDPs before any coverage. If the resource does not belong to
-the principal's tenant, the resolved relation is **brought back to `none`** — so only a `global`
+the principal's tenant, the resolved relation is **brought back to `none`** - so only a `global`
 grant (platform plan) can cover, even if the `RelationResolver` made a mistake and returned a
 too-broad relation.
 
@@ -265,7 +265,7 @@ now() - int(env.authTime) > 900000
 > **Tenant time zone.** `env.now` and `now()` are in **UTC** (epoch ms). For a time zone, add the
 > offset on the int side: `(int(env.now) + int(tenant.tzOffsetMs)) …`, or precompute it in the app
 > and expose an attribute. `businessDaysBetween(now(), now())` equals `1` if today (UTC) is a
-> business day (Mon-Fri), `0` on weekends — that is the "business day" check above.
+> business day (Mon-Fri), `0` on weekends - that is the "business day" check above.
 
 ### 3.2 Wiring the CEL adapter
 
@@ -277,7 +277,7 @@ it registers the context variables in dynamic access and the deterministic date 
 ```ts
 import { CelExpressionEngine } from '@kengela/adapter-expr-cel';
 
-// L'init interne (pour info) — vous n'appelez QUE le constructeur :
+// L'init interne (pour info) - vous n'appelez QUE le constructeur :
 //   new Environment()
 //     .registerVariable('principal', 'dyn')
 //     .registerVariable('resource', 'dyn')
@@ -295,14 +295,14 @@ The functions available in an expression: `now()` (epoch ms), `daysUntil(x)` (ca
 bigint/number/Date/ISO string (`toEpochMs`). `evaluateBoolean` **requires** a boolean output,
 otherwise it throws `CelEvaluationError`.
 
-### 3.3 `matches` is FORBIDDEN (ReDoS) — why
+### 3.3 `matches` is FORBIDDEN (ReDoS) - why
 
 `assertNoUnboundedRegex` rejects any expression containing `matches(` (after neutralizing the
 content of string literals, so as not to confuse code with a string). Reason: `cel-js` compiles
 `matches` into an **unbounded** `new RegExp(pattern).test(input)`; a catastrophic regex like
-`(a+)+` triggers exponential backtracking on an adversarial input — a **DoS of the PDP**. The
+`(a+)+` triggers exponential backtracking on an adversarial input - a **DoS of the PDP**. The
 Kengela doctrine bounds EVERY regex; an access condition is therefore written with `==`, `in`,
-`startsWith`, `contains`, never an unbounded regex. The violation throws `CelEvaluationError` —
+`startsWith`, `contains`, never an unbounded regex. The violation throws `CelEvaluationError` -
 hence a fail-closed deny downstream.
 
 ### 3.4 The layered PDP (`LayeredDecisionPoint`)
@@ -310,13 +310,13 @@ hence a fail-closed deny downstream.
 It stacks everything in the exact following order (`policy-pdp.ts`):
 
 ```txt
-1. Plancher RBAC          — sans grant actif couvrant (perm × relation) => deny 'no_grant'
-2. Policies applicables   — filtrées sur (resource.type, action), on aplatit leurs règles
+1. Plancher RBAC          - sans grant actif couvrant (perm × relation) => deny 'no_grant'
+2. Policies applicables   - filtrées sur (resource.type, action), on aplatit leurs règles
                             (0 règle applicable => allow 'rbac_grant', le RBAC suffit)
-3. Deny explicite gagne   — une règle 'deny' matchée => deny (deny-wins)
-4. Gate ABAC positif      — s'il existe des règles 'allow' mais AUCUNE matchée => deny 'no_matching_allow'
-5. Step-up                — les règles 'step_up' matchées imposent leurs obligations
-6. Sinon                  — allow 'rbac_grant'
+3. Deny explicite gagne   - une règle 'deny' matchée => deny (deny-wins)
+4. Gate ABAC positif      - s'il existe des règles 'allow' mais AUCUNE matchée => deny 'no_matching_allow'
+5. Step-up                - les règles 'step_up' matchées imposent leurs obligations
+6. Sinon                  - allow 'rbac_grant'
 ```
 
 ```ts
@@ -367,7 +367,7 @@ const decision = await layered.check({ ...refundRequest, principal: riskyPrincip
 Possible obligation types (`Obligation`, contracts):
 `'require_mfa' | 'require_passkey' | 'reauthenticate' | 'notify'`, with a free `params?`.
 
-How the app reacts — the PDP decides, the app **executes** the obligation then replays the check:
+How the app reacts - the PDP decides, the app **executes** the obligation then replays the check:
 
 ```ts
 async function enforce(request: AccessRequest): Promise<'ok' | 'blocked'> {
@@ -396,7 +396,7 @@ Step-up is therefore **data-driven**: raising `Principal.mfaLevel` to `passkey` 
 
 ## 5. Decision logging (`DecisionLogSink`)
 
-**Both** PDPs emit every decision to the optional `DecisionLogSink` — RBAC via
+**Both** PDPs emit every decision to the optional `DecisionLogSink` - RBAC via
 `this.#deps.log?.record(...)`, layered via `#emit(...)`. The logged entry is
 `{ request, decision, at }` (`at` = the clock's `now`).
 
@@ -424,12 +424,12 @@ const myDecisionLog: DecisionLogSink = {
 
 What surfaces as `reason` depending on the path:
 
-- `no_grant` — RBAC floor not crossed;
-- `rbac_grant` — authorized (RBAC alone, or after the ABAC/step-up gate is crossed);
-- matched `deny` rule — `rule.reason ?? 'policy_deny'`;
-- `no_matching_allow` — there are `allow` rules but none matched (positive gate);
-- `step_up_required` — obligations to satisfy;
-- **`condition_error` — FAIL-CLOSED**.
+- `no_grant` - RBAC floor not crossed;
+- `rbac_grant` - authorized (RBAC alone, or after the ABAC/step-up gate is crossed);
+- matched `deny` rule - `rule.reason ?? 'policy_deny'`;
+- `no_matching_allow` - there are `allow` rules but none matched (positive gate);
+- `step_up_required` - obligations to satisfy;
+- **`condition_error` - FAIL-CLOSED**.
 
 ### Fail-closed on evaluation error
 
@@ -450,10 +450,10 @@ try {
 }
 ```
 
-A broken policy **closes** access (Zero Trust) instead of opening it — and the `deny`
+A broken policy **closes** access (Zero Trust) instead of opening it - and the `deny`
 `condition_error` decision is logged, which makes the failure observable.
 
-**Missing field — verified behavior (`cel-js` 7.6.1).** Accessing an absent key **throws**
+**Missing field - verified behavior (`cel-js` 7.6.1).** Accessing an absent key **throws**
 `No such key: <key>`, at any level: `env.riskScore` when `env` has no `riskScore`, just like
 `principal.ctx.riskScore` when `ctx` (or `riskScore`) is missing. Since `riskScore` is **optional**
 (`AuthContext.riskScore?`), a bare `env.riskScore >= 50` condition on a principal without a score
@@ -469,7 +469,7 @@ vendor (parse error `Expected IDENTIFIER, got QUESTION`): use `has()`, never `.?
 
 ---
 
-## 6. Callout — what Kengela computes vs what the app provides
+## 6. Callout - what Kengela computes vs what the app provides
 
 > **Kengela (authz-core + CEL adapter) COMPUTES:**
 >
@@ -481,10 +481,10 @@ vendor (parse error `Expected IDENTIFIER, got QUESTION`): use `has()`, never `.?
 >
 > **The application PROVIDES (via the contracts ports):**
 >
-> - `AuthorizationRepository.loadGrantsForUser` — the **grants from ITS database** (reloaded on every check);
-> - `RelationResolver.resolveRelation` — the **org relation** actor↔resource (org chart);
-> - `PolicyStore.loadPolicies` — the **declarative policies** (files versioned in CI and/or tenant overrides in the database);
-> - the **request context**: `Principal` (including `ctx: AuthContext` — geo/device/risk/authTime, produced by authn) and `ResourceRef.attributes` (the ABAC material);
+> - `AuthorizationRepository.loadGrantsForUser` - the **grants from ITS database** (reloaded on every check);
+> - `RelationResolver.resolveRelation` - the **org relation** actor↔resource (org chart);
+> - `PolicyStore.loadPolicies` - the **declarative policies** (files versioned in CI and/or tenant overrides in the database);
+> - the **request context**: `Principal` (including `ctx: AuthContext` - geo/device/risk/authTime, produced by authn) and `ResourceRef.attributes` (the ABAC material);
 > - the implementations of `Clock`, `DecisionLogSink`, and the execution of obligations (MFA/passkey challenge, re-auth).
 >
 > The core is **pure** (zero vendor/infra dependency); the CEL vendor is confined to the adapter.

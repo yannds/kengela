@@ -1,5 +1,5 @@
 /**
- * `@kengela/adapter-directory-ldap` — connecteur d'annuaire **AD / LDAP** (chantier IdP « pull »).
+ * `@kengela/adapter-directory-ldap` - connecteur d'annuaire **AD / LDAP** (chantier IdP « pull »).
  *
  * - `LdapDirectorySource` : bind LDAP(S) + recherche paginée → `LdapEntryParts` normalisés, health-check.
  * - `LdapClientLike`      : surface NARROW du client (le vrai `Client` de `ldapts` la satisfait).

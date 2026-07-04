@@ -1,4 +1,4 @@
-# Rapport d'audit sécurité & conformité — Kengela
+# Rapport d'audit sécurité & conformité - Kengela
 
 > Audit adverse **RED team / BLUE team** du socle identité & accès Zero Trust Kengela
 > (monorepo pnpm, TypeScript 6 strict, ESLint `strictTypeChecked`, Vitest).
@@ -29,20 +29,20 @@
 - **Preuve** : `packages/authz-core/test/security-authz.test.ts` → « un grant `tenant` du tenant A ne franchit PAS vers une ressource du tenant B, même si le résolveur ment ».
 - **Analyse** : le PDP déléguait TOUTE l'isolation multi-tenant au `RelationResolver` injecté (adapté par l'app) et ne comparait jamais `resource.tenantId` à `principal.tenantId`. Un résolveur bogué ou compromis renvoyant `tenant` (relation la plus large) pour une ressource d'un AUTRE tenant faisait accorder un `allow` cross-tenant à un grant de portée `tenant` (non-plateforme). Fail-open silencieux sur l'invariant central de la lib.
 - **Impact** : franchissement de frontière tenant (OWASP A01 Broken Access Control), fuite de données cross-tenant.
-- **Remédiation (appliquée)** : nouvel helper `tenantScopedRelation()` (`engine.ts:25`), fail-closed : si `resource.tenantId !== principal.tenantId`, la relation est ramenée à `none` — seul un grant de portée `global` (plan plateforme) peut alors couvrir. Câblé dans `pdp.ts:45` et `policy-pdp.ts:65`. Un signal `crossTenant` est émis au decision log (`pdp.ts:57`). Les flux même-tenant légitimes sont inchangés (prouvé).
+- **Remédiation (appliquée)** : nouvel helper `tenantScopedRelation()` (`engine.ts:25`), fail-closed : si `resource.tenantId !== principal.tenantId`, la relation est ramenée à `none` - seul un grant de portée `global` (plan plateforme) peut alors couvrir. Câblé dans `pdp.ts:45` et `policy-pdp.ts:65`. Un signal `crossTenant` est émis au decision log (`pdp.ts:57`). Les flux même-tenant légitimes sont inchangés (prouvé).
 
 ### [HIGH-2] Guard NestJS fail-open : `@PublicRoute` de classe neutralisait `@RequirePermission` de handler
 
 - **Scénario** : intégration guard NestJS (deny-by-default).
 - **Fichier** : `packages/nestjs/src/authz.guard.ts` (avant : `getAllAndOverride(KENGELA_PUBLIC, [handler, controller])` évalué en premier).
 - **Preuve** : `packages/nestjs/test/security-guard.test.ts` → « handler protégé + classe publique => la décision PDP est bien évaluée (pas de bypass) ».
-- **Analyse** : `getAllAndOverride` renvoyait `true` dès que le PUBLIC était posé au niveau HANDLER **ou** CLASSE. Un contrôleur annoté `@PublicRoute` rendait donc publiques TOUTES ses routes — y compris un handler portant un `@RequirePermission`, qui n'était jamais évalué. Fail-open classique (A01).
+- **Analyse** : `getAllAndOverride` renvoyait `true` dès que le PUBLIC était posé au niveau HANDLER **ou** CLASSE. Un contrôleur annoté `@PublicRoute` rendait donc publiques TOUTES ses routes - y compris un handler portant un `@RequirePermission`, qui n'était jamais évalué. Fail-open classique (A01).
 - **Impact** : exposition non authentifiée/non autorisée d'endpoints sensibles.
 - **Remédiation (appliquée)** : précédence explicite HANDLER > CLASSE via `reflector.get` par cible (`authz.guard.ts:52-77`). Un `@RequirePermission` de handler est TOUJOURS évalué ; un `@PublicRoute` de handler reste un opt-out volontaire ; sinon deny-by-default.
 
 ### [HIGH-3] ReDoS via la fonction CEL `matches` (DoS du PDP)
 
-- **Scénario** : sandbox CEL — consommation de ressources (ReDoS).
+- **Scénario** : sandbox CEL - consommation de ressources (ReDoS).
 - **Fichier** : `packages/adapter-expr-cel/src/cel-expression-engine.ts` ; racine chez le vendor `@marcbachmann/cel-js/lib/functions.js:358` (`new RegExp(b).test(a)`, non borné).
 - **Preuve** : `packages/adapter-expr-cel/test/security-cel-sandbox.test.ts` → « rejette IMMÉDIATEMENT une regex catastrophique ». Confirmé empiriquement : `"aaaa…(60)!".matches("(a+)+$")` ne rendait jamais la main (backtracking exponentiel).
 - **Analyse** : cel-js compile `x.matches(p)` en une `RegExp` JS non bornée. Une condition de policy `champ.matches("(a+)+")` évaluée contre une valeur de contexte adverse (attribut de ressource, nom…) bloque le thread du PDP → déni de service tenant. Incohérent avec la doctrine « toute regex bornée » déjà appliquée dans `@kengela/iam-mapping` (safe-regex.ts).
@@ -51,7 +51,7 @@
 
 ### [HIGH-4] Sessions EXPIRÉES servies comme valides (fail-open en lecture)
 
-- **Scénario** : sessions — expiration respectée.
+- **Scénario** : sessions - expiration respectée.
 - **Fichiers** : `packages/adapter-persistence-prisma/src/session-store.ts:60` et `packages/connector-translog/src/session-store.ts:63` (`get`).
 - **Preuve** : `packages/adapter-persistence-prisma/test/security-session.test.ts` et `packages/connector-translog/test/security-session.test.ts` → « get(token) renvoie null une fois l'expiration passée, même si la ligne subsiste ».
 - **Analyse** : `get` renvoyait la ligne quelle que soit `expiresAt`, déléguant le contrôle d'expiration au consommateur et au balayage différé (cleanup). Un store « durci » Zero Trust ne doit jamais restituer une session expirée comme valide.
@@ -63,17 +63,17 @@
 - **Fichier** : `packages/adapter-authn-native/src/totp-mfa-service.ts`.
 - **Analyse** : le défi MFA (`MfaChallengeStore`) est bien one-shot (prouvé), mais le CODE TOTP lui-même n'est pas mémorisé. Dans la fenêtre de pas (~30 s), un code valide déjà consommé pourrait être rejoué via un NOUVEAU `challengeId`. NIST 800-63B exige que le vérificateur refuse un OTP déjà utilisé.
 - **Impact** : fenêtre de rejeu OTP réduite (~30 s), sous condition d'interception du code.
-- **Statut** : **documenté** — `packages/adapter-authn-native/DEBT.md` #3 (cible : cache anti-rejeu TTL = fenêtre TOTP dans `verify`). Non corrigé ici car nécessite un nouveau port de stockage ; risque résiduel faible (one-shot déjà en place).
+- **Statut** : **documenté** - `packages/adapter-authn-native/DEBT.md` #3 (cible : cache anti-rejeu TTL = fenêtre TOTP dans `verify`). Non corrigé ici car nécessite un nouveau port de stockage ; risque résiduel faible (one-shot déjà en place).
 
 ### [LOW-1] Pas de helper d'échappement de filtre LDAP (RFC 4515)
 
 - **Fichier** : `packages/adapter-directory-ldap/src/ldap-directory-source.ts`.
-- **Analyse** : l'adapter transmet le `filter` VERBATIM au client — il n'introduit AUCUNE injection (prouvé : `security-ldap.test.ts`, le filtre est inchangé). Mais aucun helper d'échappement n'est exposé : une app qui composerait un filtre à partir d'entrée utilisateur non échappée resterait exposée à l'injection de filtre LDAP côté appelant.
-- **Statut** : **documenté** — `packages/adapter-directory-ldap/DEBT.md` #5 (cible : `escapeLdapFilterValue()`).
+- **Analyse** : l'adapter transmet le `filter` VERBATIM au client - il n'introduit AUCUNE injection (prouvé : `security-ldap.test.ts`, le filtre est inchangé). Mais aucun helper d'échappement n'est exposé : une app qui composerait un filtre à partir d'entrée utilisateur non échappée resterait exposée à l'injection de filtre LDAP côté appelant.
+- **Statut** : **documenté** - `packages/adapter-directory-ldap/DEBT.md` #5 (cible : `escapeLdapFilterValue()`).
 
 ---
 
-## 2. Contrôles prouvés (BLUE team — aucune faille)
+## 2. Contrôles prouvés (BLUE team - aucune faille)
 
 | #   | Scénario RED                   | Contrôle prouvé                                                                                                                                                                                           | Preuve (fichier)                                                                               |
 | --- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
@@ -100,28 +100,28 @@
 
 | Contrôle                                                           | Statut     | Preuve                                                                                                                                          |
 | ------------------------------------------------------------------ | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| V2 Authentication — hashing fort, anti-énumération                 | ✅         | argon2id (`argon2-password-hasher.ts`), compare systématique (`native-credential-authenticator.ts:47-54`) ; `security-authn.test.ts`            |
-| V3 Session Management — expiration, rotation, révocation, entropie | ✅ (durci) | expiration fail-closed (`session-store.ts:67`), rotation atomique, token 256 bits ; `security-session.test.ts`                                  |
-| V4 Access Control — deny-by-default, isolation, deny-wins          | ✅ (durci) | PDP deny-by-default + `tenantScopedRelation` (`pdp.ts:45`), guard (`authz.guard.ts:52-77`) ; `security-authz.test.ts`, `security-guard.test.ts` |
-| V6 Cryptography — AES-256-GCM, clés par tenant/sujet, intégrité    | ✅         | `aes-gcm-key-management.ts` (HKDF par tenant), `subject-field-cipher.ts` ; `security-authn.test.ts`                                             |
-| V7 Errors & Logging — decision log auditable                       | ✅         | `DecisionLogSink` + `signals`/`reason` ; `security-authz.test.ts`                                                                               |
-| V9 Data Protection — chiffrement at-rest, minimisation, redaction  | ✅         | `pii/` (classify/minimize/redact/retention), `FieldCipherPort` ; tests `pii`                                                                    |
+| V2 Authentication - hashing fort, anti-énumération                 | ✅         | argon2id (`argon2-password-hasher.ts`), compare systématique (`native-credential-authenticator.ts:47-54`) ; `security-authn.test.ts`            |
+| V3 Session Management - expiration, rotation, révocation, entropie | ✅ (durci) | expiration fail-closed (`session-store.ts:67`), rotation atomique, token 256 bits ; `security-session.test.ts`                                  |
+| V4 Access Control - deny-by-default, isolation, deny-wins          | ✅ (durci) | PDP deny-by-default + `tenantScopedRelation` (`pdp.ts:45`), guard (`authz.guard.ts:52-77`) ; `security-authz.test.ts`, `security-guard.test.ts` |
+| V6 Cryptography - AES-256-GCM, clés par tenant/sujet, intégrité    | ✅         | `aes-gcm-key-management.ts` (HKDF par tenant), `subject-field-cipher.ts` ; `security-authn.test.ts`                                             |
+| V7 Errors & Logging - decision log auditable                       | ✅         | `DecisionLogSink` + `signals`/`reason` ; `security-authz.test.ts`                                                                               |
+| V9 Data Protection - chiffrement at-rest, minimisation, redaction  | ✅         | `pii/` (classify/minimize/redact/retention), `FieldCipherPort` ; tests `pii`                                                                    |
 
 ### NIST SP 800-63B
 
 | Exigence                                                   | Statut     | Preuve                                                                             |
 | ---------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------- |
 | Password hashing (argon2id, memory-hard)                   | ✅         | `argon2-password-hasher.ts` (argon2id), `needsRehash` pour migration bcrypt→argon2 |
-| Verifier — compare à temps constant, anti-énumération      | ✅         | `native-credential-authenticator.ts` ; `security-authn.test.ts`                    |
+| Verifier - compare à temps constant, anti-énumération      | ✅         | `native-credential-authenticator.ts` ; `security-authn.test.ts`                    |
 | MFA TOTP (RFC 6238), secret chiffré at-rest, défi one-shot | ✅         | `totp-mfa-service.ts` (secret chiffré par tenant, `MfaChallengeStore` one-shot)    |
-| MFA — refus de réutilisation d'un OTP (§5.1.4.2)           | ⚠️ partiel | one-shot par défi OK ; anti-rejeu du code TOTP → **DEBT native #3** (MEDIUM-1)     |
+| MFA - refus de réutilisation d'un OTP (§5.1.4.2)           | ⚠️ partiel | one-shot par défi OK ; anti-rejeu du code TOTP → **DEBT native #3** (MEDIUM-1)     |
 
 ### RGPD
 
 | Exigence                                                  | Statut | Preuve                                                                          |
 | --------------------------------------------------------- | ------ | ------------------------------------------------------------------------------- |
 | Minimisation (art. 5.1.c)                                 | ✅     | `pii/minimize.ts` (n'expose que les champs autorisés)                           |
-| Effacement / droit à l'oubli (art. 17) — crypto-shredding | ✅     | `subject-crypto-shredder.ts` ; `security-authn.test.ts` (illisible après erase) |
+| Effacement / droit à l'oubli (art. 17) - crypto-shredding | ✅     | `subject-crypto-shredder.ts` ; `security-authn.test.ts` (illisible après erase) |
 | Journal d'accès PII (art. 30)                             | ✅     | port `PiiAccessLogSink` (contracts)                                             |
 | Rétention (art. 5.1.e)                                    | ✅     | `pii/retention.ts` (`retentionExpired`, défauts prudents)                       |
 | Chiffrement at-rest                                       | ✅     | `AesGcmFieldCipher` / `SubjectFieldCipher` (AES-256-GCM par tenant/sujet)       |
@@ -133,7 +133,7 @@
 | ----------------------------------------------------------- | ------ | ----------------------------------------------------------------------------- |
 | Schéma User/Group + validation (7643 §4, §7)                | ✅     | `validate.ts`, `discovery.ts` ; `security-scim.test.ts` (schéma forgé rejeté) |
 | Filtre `eq` borné (7644 §3.4.2.2) anti-ReDoS                | ✅     | `serialize.ts:363-395` ; `security-scim.test.ts` (entrée géante rejetée)      |
-| PATCH (7644 §3.5.2) — op inconnue ignorée, path forgé borné | ✅     | `serialize.ts:236-360` ; `security-scim.test.ts`                              |
+| PATCH (7644 §3.5.2) - op inconnue ignorée, path forgé borné | ✅     | `serialize.ts:236-360` ; `security-scim.test.ts`                              |
 | Unicité `userName` (409, 7644 §3.3)                         | ✅     | `handleUsersPostStrict` ; `security-scim.test.ts`                             |
 | Déprovisionnement = désactivation (jamais suppression)      | ✅     | `handleUsersDelete` ; `security-scim.test.ts`                                 |
 | Isolation multi-tenant                                      | ✅     | handlers bornés au `tenantId` ; `security-scim.test.ts` (404 cross-tenant)    |
@@ -142,17 +142,17 @@
 
 ## 4. Correctifs appliqués vs recommandés
 
-**Appliqués (High, sécurité — feu vert implicite) :**
+**Appliqués (High, sécurité - feu vert implicite) :**
 
-1. `tenantScopedRelation` défense-en-profondeur multi-tenant — `authz-core` (`engine.ts:25`, `pdp.ts:45`, `policy-pdp.ts:65`).
-2. Précédence handler > classe dans le guard — `nestjs` (`authz.guard.ts:52-77`).
-3. Interdiction de `matches` (ReDoS) dans CEL — `adapter-expr-cel` (`cel-expression-engine.ts:100`).
-4. `get` de session fail-closed sur l'expiration — `adapter-persistence-prisma` (`session-store.ts:67`) + `connector-translog` (`session-store.ts:70`).
+1. `tenantScopedRelation` défense-en-profondeur multi-tenant - `authz-core` (`engine.ts:25`, `pdp.ts:45`, `policy-pdp.ts:65`).
+2. Précédence handler > classe dans le guard - `nestjs` (`authz.guard.ts:52-77`).
+3. Interdiction de `matches` (ReDoS) dans CEL - `adapter-expr-cel` (`cel-expression-engine.ts:100`).
+4. `get` de session fail-closed sur l'expiration - `adapter-persistence-prisma` (`session-store.ts:67`) + `connector-translog` (`session-store.ts:70`).
 
 **Recommandés (documentés en dette) :**
 
-- MEDIUM-1 : cache anti-rejeu OTP TOTP — `adapter-authn-native/DEBT.md` #3.
-- LOW-1 : helper `escapeLdapFilterValue()` — `adapter-directory-ldap/DEBT.md` #5.
+- MEDIUM-1 : cache anti-rejeu OTP TOTP - `adapter-authn-native/DEBT.md` #3.
+- LOW-1 : helper `escapeLdapFilterValue()` - `adapter-directory-ldap/DEBT.md` #5.
 
 ## 5. Vérification finale
 

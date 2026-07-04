@@ -1,5 +1,5 @@
 /**
- * TranslogAuthorizationRepository — implemente AuthorizationRepository sur
+ * TranslogAuthorizationRepository - implemente AuthorizationRepository sur
  * TranslogPrismaLike.
  *
  * TransLog est MONO-ROLE : `User.roleId` designe l'unique role, dont les droits

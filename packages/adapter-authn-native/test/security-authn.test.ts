@@ -1,5 +1,5 @@
 /**
- * RED TEAM — authentification & crypto (@kengela/adapter-authn-native).
+ * RED TEAM - authentification & crypto (@kengela/adapter-authn-native).
  *
  * Enumeration par timing, altfrom AES-GCM, non-reutilisation de nonce, crypto-shredding
  * irreversible, rejeu MFA. Hermetique (fakes en memoire), aucun reseau.
@@ -67,7 +67,7 @@ function storeOf(
   };
 }
 
-describe('RED — enumeration de comptes par timing (NativeCredentialAuthenticator)', () => {
+describe('RED - enumeration de comptes par timing (NativeCredentialAuthenticator)', () => {
   it('email INCONNU : un compare bcrypt leurre est TOUJOURS effectue', async () => {
     const hasher = new CountingHasher(new BcryptPasswordHasher(4));
     const auth = await NativeCredentialAuthenticator.create(storeOf(null), hasher);
@@ -131,7 +131,7 @@ describe('RED — enumeration de comptes par timing (NativeCredentialAuthenticat
   });
 });
 
-describe('RED — AES-256-GCM : integrite, isolation, nonce (AesGcmKeyManagement)', () => {
+describe('RED - AES-256-GCM : integrite, isolation, nonce (AesGcmKeyManagement)', () => {
   const km = new AesGcmKeyManagement(new Uint8Array(randomBytes(32)));
 
   it('nonce unique : deux chiffres du meme clair different (IV aleatoire, pas de reutilisation)', async () => {
@@ -166,7 +166,7 @@ describe('RED — AES-256-GCM : integrite, isolation, nonce (AesGcmKeyManagement
   });
 });
 
-describe('RED — crypto-shredding irreversible (RGPD art.17)', () => {
+describe('RED - crypto-shredding irreversible (RGPD art.17)', () => {
   function fakeKeyStore(): SubjectKeyStore {
     const keys = new Map<string, Uint8Array>();
     const id = (t: string, s: string): string => `${t}:${s}`;
@@ -208,7 +208,7 @@ describe('RED — crypto-shredding irreversible (RGPD art.17)', () => {
   });
 });
 
-describe('RED — MFA TOTP : rejeu & bypass (TotpMfaService)', () => {
+describe('RED - MFA TOTP : rejeu & bypass (TotpMfaService)', () => {
   class MemSecret implements MfaSecretStore {
     readonly map = new Map<string, string>();
     public save(t: TenantId, u: UserId, s: string): Promise<void> {

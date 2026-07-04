@@ -39,7 +39,7 @@ export interface PrismaMfaChallengeStoreOptions {
 /**
  * MfaChallengeStore Prisma : défi opaque expirant, consommé une seule fois
  * (one-shot). `consume` supprime toujours le défi (même expiré) puis vérifie
- * l'expiration — anti-rejeu.
+ * l'expiration - anti-rejeu.
  */
 export class PrismaMfaChallengeStore implements MfaChallengeStore {
   readonly #challenges: MfaChallengeDelegate;

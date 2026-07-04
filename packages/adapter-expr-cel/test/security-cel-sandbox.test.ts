@@ -1,5 +1,5 @@
 /**
- * RED TEAM — evasion du bac a sable CEL (@kengela/adapter-expr-cel).
+ * RED TEAM - evasion du bac a sable CEL (@kengela/adapter-expr-cel).
  *
  * On tente d'acceder aux globals, au prototype, de provoquer un ReDoS, ou de faire passer
  * une expression non booleenne. Chaque test ECHOUE si l'isolement fuit. On prouve aussi le
@@ -37,7 +37,7 @@ const ctx: ExpressionContext = {
   tenant: {},
 };
 
-describe('RED — CEL sandbox : pas d’acces aux globals ni au prototype', () => {
+describe('RED - CEL sandbox : pas d’acces aux globals ni au prototype', () => {
   const engine = new CelExpressionEngine({ clock: CLOCK });
 
   it.each([
@@ -52,7 +52,7 @@ describe('RED — CEL sandbox : pas d’acces aux globals ni au prototype', () =
   });
 });
 
-describe('RED — CEL : typage et variables', () => {
+describe('RED - CEL : typage et variables', () => {
   const engine = new CelExpressionEngine({ clock: CLOCK });
 
   it('une expression non booleenne est rejetee (pas de coercition silencieuse)', () => {
@@ -75,7 +75,7 @@ describe('RED — CEL : typage et variables', () => {
   });
 });
 
-describe('RED — CEL : ReDoS via matches (DoS)', () => {
+describe('RED - CEL : ReDoS via matches (DoS)', () => {
   const engine = new CelExpressionEngine({ clock: CLOCK });
 
   it('rejette IMMEDIATEMENT une regex catastrophique (pas de backtracking exponentiel)', () => {
@@ -95,7 +95,7 @@ describe('RED — CEL : ReDoS via matches (DoS)', () => {
   });
 });
 
-describe('BLUE — fail-closed de bout en bout : PDP + CEL reel', () => {
+describe('BLUE - fail-closed de bout en bout : PDP + CEL reel', () => {
   const grant: Grant = { permission: 'r.read', scope: 'tenant', source: 'MANUAL' };
   const grants: AuthorizationRepository = {
     loadGrantsForUser: () => Promise.resolve([grant]),

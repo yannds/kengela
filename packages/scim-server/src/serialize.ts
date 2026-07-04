@@ -1,5 +1,5 @@
 /**
- * Sérialisation et parsing SCIM 2.0 — fonctions PURES (RFC 7643/7644).
+ * Sérialisation et parsing SCIM 2.0 - fonctions PURES (RFC 7643/7644).
  *
  * Sérialise les lignes du store en ressources SCIM (`schemas`/`id`/`meta`), construit les
  * `ListResponse` et `Error`, et interprète les corps entrants : e-mail (userName ∪ emails),

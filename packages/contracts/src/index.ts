@@ -1,39 +1,39 @@
 /**
- * @kengela/contracts — Les contrats de ports du socle Kengela.
+ * @kengela/contracts - The port contracts of the Kengela foundation.
  *
- * INVARIANT du projet : la forme stable dont core, adapters et apps dependent.
+ * Project INVARIANT: the stable shape that core, adapters and apps depend on.
  *
  * DOCTRINE
- *  - Ce paquet ne contient QUE des types et interfaces. Zero implementation, zero import vendor.
- *  - Le CORE depend de ces ports ; les ADAPTERS les implementent ; les APPS composent.
- *  - Zero Trust : le PDP est deny-by-default, evalue PAR REQUETE, avec contexte continu.
+ *  - This package contains ONLY types and interfaces. Zero implementation, zero vendor import.
+ *  - The CORE depends on these ports; the ADAPTERS implement them; the APPS compose.
+ *  - Zero Trust: the PDP is deny-by-default, evaluated PER REQUEST, with continuous context.
  *
- * PROVENANCE (tag sur chaque port)
- *  - [ATRIUM]   : existe deja dans Atrium, on l'extrait.
- *  - [TRANSLOG] : le muscle durci de TransLog a porter dans un adapter.
- *  - [NOUVEAU]  : a creer (le differenciant Entra-like / ZTNA).
+ * PROVENANCE (tag on each port)
+ *  - [ATRIUM]   : already exists in Atrium, we extract it.
+ *  - [TRANSLOG] : the hardened muscle of TransLog to port into an adapter.
+ *  - [NEW]      : to create (the Entra-like / ZTNA differentiator).
  */
 
 /* ============================================================================
- * 1. TYPES CENTRAUX (le vocabulaire partage)
+ * 1. CORE TYPES (the shared vocabulary)
  * ========================================================================== */
 
-/** Identifiant opaque tenant. La lib n'impose aucun format. */
+/** Opaque tenant identifier. The lib imposes no format. */
 export type TenantId = string;
 export type UserId = string;
 
-/** Grammaire de permission commune Atrium + TransLog : plane.resource.action.scope */
+/** Permission grammar common to Atrium + TransLog: plane.resource.action.scope */
 export type PermissionString = string;
 
 export type Plane = 'platform' | 'control' | 'data' | 'public';
 
-/** Portee ordonnee : own subset unit subset subtree subset tenant subset global. [ATRIUM] */
+/** Ordered scope: own subset unit subset subtree subset tenant subset global. [ATRIUM] */
 export type Scope = 'own' | 'unit' | 'subtree' | 'tenant' | 'global';
 
-/** Relation organisationnelle acteur-ressource, resolue sur l'organigramme. [ATRIUM] */
+/** Organizational actor-resource relation, resolved on the org chart. [ATRIUM] */
 export type OrgRelation = 'self' | 'unit' | 'subtree' | 'tenant' | 'none';
 
-/** Signaux contextuels ZTNA, promus d'audit-only a entrees de decision. [NOUVEAU] */
+/** ZTNA contextual signals, promoted from audit-only to decision inputs. [NEW] */
 export interface AuthContext {
   readonly ip?: string;
   readonly geo?: { readonly country?: string; readonly lat?: number; readonly lng?: number };
@@ -42,48 +42,48 @@ export interface AuthContext {
     readonly trusted?: boolean;
     readonly userAgent?: string;
   };
-  /** Score de risque calcule (voyage impossible, IP reputee, device inconnu...). */
+  /** Computed risk score (impossible travel, flagged IP, unknown device...). */
   readonly riskScore?: number;
-  /** Horodatage de l'authentification (fraicheur de session). */
+  /** Authentication timestamp (session freshness). */
   readonly authTime: number;
 }
 
 /**
- * Le PONT authn-authz. L'authn le PRODUIT, l'authz le CONSOMME.
- * Contient tout ce qu'une decision Zero Trust peut exiger.
+ * The authn-authz BRIDGE. The authn PRODUCES it, the authz CONSUMES it.
+ * Holds everything a Zero Trust decision may require.
  */
 export interface Principal {
   readonly userId: UserId;
   readonly tenantId: TenantId;
-  /** Multi-role (union des grants). [NOUVEAU vs TransLog mono-role] */
+  /** Multi-role (union of grants). [NEW vs TransLog mono-role] */
   readonly roles: readonly string[];
   readonly orgUnitId?: string;
   readonly agencyId?: string;
   readonly coverageUnits?: readonly string[];
   readonly activeStationId?: string;
-  /** Force d'authentification atteinte (pour le step-up). */
+  /** Authentication strength reached (for step-up). */
   readonly mfaLevel: 'none' | 'totp' | 'passkey';
   readonly authMethod:
     'credential' | 'passwordless' | 'oidc' | 'saml' | 'passkey' | 'impersonation';
-  /** Contexte de connexion = entrees du conditional access ZTNA. [NOUVEAU] */
+  /** Connection context = inputs of the ZTNA conditional access. [NEW] */
   readonly ctx: AuthContext;
 }
 
-/** Reference a la ressource visee. Attributs libres = matiere de l'ABAC. */
+/** Reference to the target resource. Free attributes = the raw material of ABAC. */
 export interface ResourceRef {
   readonly type: string;
   readonly id?: string;
   readonly tenantId: TenantId;
-  /** Attributs evalues par les conditions CEL (agencyId, ownerId, amount...). */
+  /** Attributes evaluated by CEL conditions (agencyId, ownerId, amount...). */
   readonly attributes?: Readonly<Record<string, unknown>>;
 }
 
-/** Une demande d'acces soumise au PDP. */
+/** An access request submitted to the PDP. */
 export interface AccessRequest {
   readonly principal: Principal;
   readonly action: string;
   readonly resource: ResourceRef;
-  /** Contexte environnemental au moment du check. */
+  /** Environmental context at the moment of the check. */
   readonly env?: Partial<AuthContext> & { readonly now?: number };
 }
 
@@ -94,20 +94,20 @@ export interface Obligation {
   readonly params?: Readonly<Record<string, unknown>>;
 }
 
-/** Le resultat d'un check. Jamais un simple booleen (ZTNA + obligations). [NOUVEAU] */
+/** The result of a check. Never a plain boolean (ZTNA + obligations). [NEW] */
 export interface Decision {
   readonly effect: Effect;
-  /** Obligations a satisfaire si effect = step_up. */
+  /** Obligations to satisfy if effect = step_up. */
   readonly obligations?: readonly Obligation[];
-  /** Policy/regle qui a decide (tracabilite). */
+  /** Policy/rule that decided (traceability). */
   readonly matchedPolicy?: string;
-  /** Raison lisible : "no_grant", "condition_failed", "outside_business_hours"... */
+  /** Readable reason: "no_grant", "condition_failed", "outside_business_hours"... */
   readonly reason: string;
-  /** Signaux ayant influence la decision (pour le decision log). */
+  /** Signals that influenced the decision (for the decision log). */
   readonly signals?: Readonly<Record<string, unknown>>;
 }
 
-/** Un grant (droit), avec provenance et expiration. [ATRIUM] */
+/** A grant (right), with provenance and expiration. [ATRIUM] */
 export interface Grant {
   readonly permission: PermissionString;
   readonly scope: Scope;
@@ -122,7 +122,7 @@ export interface Role {
 }
 
 /* ============================================================================
- * 2. PORTS AUTHN
+ * 2. AUTHN PORTS
  * ========================================================================== */
 
 export type SessionStrategy = 'cookie' | 'bearer';
@@ -132,7 +132,7 @@ export interface SessionCredential {
   readonly token: string;
 }
 
-/** Frontiere d'authentification. Resout une preuve de session en Principal. [ATRIUM] */
+/** Authentication boundary. Resolves a session proof into a Principal. [ATRIUM] */
 export interface IdentityPort {
   verifySession(credential: SessionCredential): Promise<Principal | null>;
 }
@@ -147,8 +147,8 @@ export interface SessionHandle {
 }
 
 /**
- * Stockage de session opaque durci. [TRANSLOG]
- * L'adapter native porte : rotation a mi-TTL, plafond FIFO, IP-binding, cleanup.
+ * Hardened opaque session storage. [TRANSLOG]
+ * The native adapter carries: rotation at mid-TTL, FIFO cap, IP-binding, cleanup.
  */
 export interface SessionStore {
   create(input: {
@@ -158,7 +158,7 @@ export interface SessionStore {
     readonly ttlMs: number;
   }): Promise<SessionHandle>;
   get(token: string): Promise<SessionHandle | null>;
-  /** Rotation : emet un nouveau token, invalide l'ancien. */
+  /** Rotation: issues a new token, invalidates the old one. */
   rotate(token: string): Promise<SessionHandle>;
   revoke(token: string): Promise<void>;
   listForUser(userId: UserId): Promise<readonly SessionHandle[]>;
@@ -173,8 +173,8 @@ export type AuthOutcome =
   | { readonly kind: 'captcha_required' };
 
 /**
- * Authentification par identifiants. [TRANSLOG]
- * L'implementation DOIT etre timing-safe (compare systematique, dummy hash).
+ * Credential-based authentication. [TRANSLOG]
+ * The implementation MUST be timing-safe (systematic compare, dummy hash).
  */
 export interface CredentialAuthenticator {
   authenticate(input: {
@@ -183,7 +183,7 @@ export interface CredentialAuthenticator {
     readonly tenantId: TenantId;
     readonly ctx: AuthContext;
   }): Promise<AuthOutcome>;
-  /** Login mobile multi-tenant : peut retourner un choix de tenant. [TRANSLOG] */
+  /** Multi-tenant mobile login: may return a tenant choice. [TRANSLOG] */
   authenticateCrossTenant(input: {
     readonly email: string;
     readonly password: string;
@@ -191,30 +191,30 @@ export interface CredentialAuthenticator {
   }): Promise<AuthOutcome>;
 }
 
-/** Hash de mot de passe (argon2id recommande, bcrypt en compat). [TRANSLOG] */
+/** Password hashing (argon2id recommended, bcrypt for compat). [TRANSLOG] */
 export interface PasswordHasher {
   hash(plain: string): Promise<string>;
-  /** Verification. L'implementation DOIT etre a temps constant. */
+  /** Verification. The implementation MUST be constant-time. */
   verify(plain: string, hash: string): Promise<boolean>;
   /**
-   * true si le hash devrait etre re-calcule (algo/parametres obsoletes) : permet la
-   * migration transparente (ex. bcrypt -> argon2) au prochain login reussi.
+   * true if the hash should be re-computed (obsolete algo/parameters): enables
+   * transparent migration (e.g. bcrypt -> argon2) at the next successful login.
    */
   needsRehash(hash: string): boolean;
 }
 
-/** Enregistrement credential resolu depuis le stockage. [TRANSLOG] */
+/** Credential record resolved from storage. [TRANSLOG] */
 export interface CredentialRecord {
   readonly userId: UserId;
   readonly tenantId: TenantId;
-  /** Hash du mot de passe, ou null si le compte n'a pas de credential. */
+  /** Password hash, or null if the account has no credential. */
   readonly passwordHash: string | null;
   readonly isActive: boolean;
   readonly mfaEnabled: boolean;
   readonly roles: readonly string[];
 }
 
-/** Recherche de credentials (implementee par la persistance de l'app). */
+/** Credential lookup (implemented by the app's persistence). */
 export interface CredentialStore {
   findByEmail(email: string, tenantId: TenantId): Promise<CredentialRecord | null>;
   findByEmailAcrossTenants(email: string): Promise<readonly CredentialRecord[]>;
@@ -236,8 +236,8 @@ export interface MfaService {
 }
 
 /**
- * Persistance du secret TOTP chiffré at-rest, isolée par tenant. [TRANSLOG]
- * L'implémentation (app) stocke le secret déjà chiffré ; le port n'en connaît que l'opacité.
+ * Persistence of the at-rest encrypted TOTP secret, isolated per tenant. [TRANSLOG]
+ * The implementation (app) stores the already-encrypted secret; the port only knows its opacity.
  */
 export interface MfaSecretStore {
   save(tenantId: TenantId, userId: UserId, encryptedSecret: string): Promise<void>;
@@ -245,37 +245,37 @@ export interface MfaSecretStore {
 }
 
 /**
- * Émission/consommation de défis MFA one-shot (step-up). [TRANSLOG]
- * `issue` renvoie un challengeId opaque ; `consume` est à usage unique (one-shot) et expirant.
+ * Issuance/consumption of one-shot MFA challenges (step-up). [TRANSLOG]
+ * `issue` returns an opaque challengeId; `consume` is single-use (one-shot) and expiring.
  */
 export interface MfaChallengeStore {
-  /** Renvoie un challengeId opaque, valable `ttlMs`. */
+  /** Returns an opaque challengeId, valid for `ttlMs`. */
   issue(tenantId: TenantId, userId: UserId, ttlMs: number): Promise<string>;
-  /** Résout et invalide le défi (one-shot). null si inconnu, consommé ou expiré. */
+  /** Resolves and invalidates the challenge (one-shot). null if unknown, consumed or expired. */
   consume(
     challengeId: string,
   ): Promise<{ readonly tenantId: TenantId; readonly userId: UserId } | null>;
 }
 
 /**
- * Coffre de secrets. [ATRIUM] — implemente par Vault chez TransLog.
- * Retourne `unknown` : le consommateur DOIT valider (aucune confiance aveugle).
+ * Secrets vault. [ATRIUM] - implemented by Vault at TransLog.
+ * Returns `unknown`: the consumer MUST validate (no blind trust).
  */
 export interface SecretsPort {
   getSecretObject(path: string): Promise<unknown>;
 }
 
-/** Chiffrement enveloppe par tenant (secret MFA at-rest, etc.). [ATRIUM] + [TRANSLOG] */
+/** Per-tenant envelope encryption (at-rest MFA secret, etc.). [ATRIUM] + [TRANSLOG] */
 export interface KeyManagementPort {
   encrypt(tenantId: TenantId, plaintext: Uint8Array): Promise<Uint8Array>;
   decrypt(tenantId: TenantId, ciphertext: Uint8Array): Promise<Uint8Array>;
 }
 
 /**
- * Chiffrement au niveau CHAMP pour les données personnelles (PII : email, téléphone,
- * adresse...) stockées. [compliance-by-design] Entrée/sortie = chaîne (colonne texte),
- * isolation cryptographique par tenant. Sert le RGPD (protection at-rest, crypto-shredding
- * possible via révocation de clé tenant).
+ * FIELD-level encryption for stored personal data (PII: email, phone,
+ * address...). [compliance-by-design] Input/output = string (text column),
+ * cryptographic isolation per tenant. Serves the GDPR (at-rest protection, crypto-shredding
+ * possible via tenant key revocation).
  */
 export interface FieldCipherPort {
   encryptField(tenantId: TenantId, plaintext: string): Promise<string>;
@@ -283,27 +283,27 @@ export interface FieldCipherPort {
 }
 
 /**
- * Journal d'accès aux données personnelles (RGPD art. 30, auditabilité). [compliance-by-design]
- * Chaque lecture/export de PII doit être traçable : qui, quel sujet, quels champs, quelle finalité.
+ * Personal-data access log (GDPR art. 30, auditability). [compliance-by-design]
+ * Every PII read/export must be traceable: who, which subject, which fields, which purpose.
  */
 export interface PiiAccessLogSink {
   record(entry: {
     readonly tenantId: TenantId;
-    /** Personne concernée (data subject). */
+    /** Data subject concerned. */
     readonly subjectId: string;
-    /** Acteur qui accède (absent = système). */
+    /** Actor accessing (absent = system). */
     readonly actorId?: UserId;
     readonly fields: readonly string[];
-    /** Finalité du traitement (RGPD). */
+    /** Processing purpose (GDPR). */
     readonly purpose: string;
     readonly at: number;
   }): Promise<void> | void;
 }
 
 /**
- * Stockage d'une clé de chiffrement PAR SUJET (personne concernée). [compliance-by-design]
- * Base du crypto-shredding : détruire la clé d'un sujet rend ses PII chiffrées
- * définitivement illisibles — effacement RGPD (art. 17) sans balayer chaque table.
+ * Storage of an encryption key PER SUBJECT (data subject). [compliance-by-design]
+ * Basis of crypto-shredding: destroying a subject's key makes their encrypted PII
+ * permanently unreadable - GDPR erasure (art. 17) without scanning every table.
  */
 export interface SubjectKeyStore {
   getOrCreateKey(tenantId: TenantId, subjectId: string): Promise<Uint8Array>;
@@ -311,32 +311,32 @@ export interface SubjectKeyStore {
   deleteKey(tenantId: TenantId, subjectId: string): Promise<void>;
 }
 
-/** Droit à l'effacement (RGPD art. 17). Implémentation recommandée : crypto-shredding. */
+/** Right to erasure (GDPR art. 17). Recommended implementation: crypto-shredding. */
 export interface ErasurePort {
   eraseSubject(tenantId: TenantId, subjectId: string): Promise<void>;
 }
 
 /* ============================================================================
- * 3. PORTS AUTHZ (le coeur Zero Trust)
+ * 3. AUTHZ PORTS (the Zero Trust core)
  * ========================================================================== */
 
 /**
- * Point de decision central (PDP). Deny-by-default, evalue PAR REQUETE. [NOUVEAU]
- * Compose : RBAC (grants) x relation org x conditions ABAC (CEL) x conditional access.
+ * Central decision point (PDP). Deny-by-default, evaluated PER REQUEST. [NEW]
+ * Composes: RBAC (grants) x org relation x ABAC conditions (CEL) x conditional access.
  */
 export interface PolicyDecisionPoint {
   check(request: AccessRequest): Promise<Decision>;
-  /** Batch (listes) — evite le N+1 sur le filtrage de collections. */
+  /** Batch (lists) - avoids the N+1 on collection filtering. */
   checkMany(requests: readonly AccessRequest[]): Promise<readonly Decision[]>;
 }
 
-/** Charge les grants d'un utilisateur (exclut expires, distingue provenance). [ATRIUM] */
+/** Loads a user's grants (excludes expired, distinguishes provenance). [ATRIUM] */
 export interface AuthorizationRepository {
   loadGrantsForUser(userId: UserId, tenantId: TenantId): Promise<readonly Grant[]>;
   loadRole(roleKey: string, tenantId: TenantId): Promise<Role | null>;
 }
 
-/** Resout la relation organisationnelle acteur-ressource. [ATRIUM] */
+/** Resolves the organizational actor-resource relation. [ATRIUM] */
 export interface RelationResolver {
   resolveRelation(principal: Principal, resource: ResourceRef): Promise<OrgRelation>;
 }
@@ -348,7 +348,7 @@ export interface ExpressionContext {
   readonly tenant?: Readonly<Record<string, unknown>>;
 }
 
-/** Evaluateur de conditions declaratives (CEL). [ATRIUM expr-cel] — etendu a l'authz. */
+/** Evaluator of declarative conditions (CEL). [ATRIUM expr-cel] - extended to authz. */
 export interface ExpressionEnginePort {
   evaluateBoolean(expression: string, ctx: ExpressionContext): boolean;
 }
@@ -356,7 +356,7 @@ export interface ExpressionEnginePort {
 export interface PolicyRule {
   readonly effect: Effect;
   readonly scope?: Scope;
-  /** Condition CEL optionnelle. Absence = toujours vrai. */
+  /** Optional CEL condition. Absence = always true. */
   readonly when?: string;
   readonly obligations?: readonly Obligation[];
   readonly reason?: string;
@@ -369,15 +369,15 @@ export interface Policy {
 }
 
 /**
- * Source des policies declaratives. [NOUVEAU]
- * Hybride possible : policies structurelles en fichiers versionnes (CI),
- * overrides tenant en base (hot-reload).
+ * Source of declarative policies. [NEW]
+ * Hybrid possible: structural policies in versioned files (CI),
+ * tenant overrides in the database (hot-reload).
  */
 export interface PolicyStore {
   loadPolicies(tenantId: TenantId): Promise<readonly Policy[]>;
 }
 
-/** Journal des decisions (observabilite ZTNA). [NOUVEAU] */
+/** Decision log (ZTNA observability). [NEW] */
 export interface DecisionLogSink {
   record(entry: {
     readonly request: AccessRequest;
@@ -387,12 +387,12 @@ export interface DecisionLogSink {
 }
 
 /* ============================================================================
- * 4. PORT CONTEXTE / ZTNA
+ * 4. CONTEXT / ZTNA PORT
  * ========================================================================== */
 
 /**
- * Fournit le contexte de connexion (geo/device/risque). [NOUVEAU]
- * Chaque app branche sa source (GeoIP, device fingerprint, risk engine).
+ * Provides the connection context (geo/device/risk). [NEW]
+ * Each app wires its source (GeoIP, device fingerprint, risk engine).
  */
 export interface ContextProvider {
   enrich(input: {
@@ -403,26 +403,26 @@ export interface ContextProvider {
 }
 
 /* ============================================================================
- * 5. PORTS TENANCY (isolation multi-tenant)
+ * 5. TENANCY PORTS (multi-tenant isolation)
  * ========================================================================== */
 
-/** Contexte tenant courant (ALS). [ATRIUM tenancy] */
+/** Current tenant context (ALS). [ATRIUM tenancy] */
 export interface TenantContextPort {
   run<T>(tenantId: TenantId, fn: () => Promise<T>): Promise<T>;
   require(): TenantId;
   current(): TenantId | null;
 }
 
-/** Unite de travail liant la connexion au tenant (RLS). [ATRIUM] + [TRANSLOG RLS] */
+/** Unit of work binding the connection to the tenant (RLS). [ATRIUM] + [TRANSLOG RLS] */
 export interface UnitOfWork {
   withTenant<T>(tenantId: TenantId, fn: (repos: unknown) => Promise<T>): Promise<T>;
 }
 
 /* ============================================================================
- * 6. PORTS FEDERATION / ANNUAIRE (opt-in)
+ * 6. FEDERATION / DIRECTORY PORTS (opt-in)
  * ========================================================================== */
 
-/** Profil normalise, point de convergence des 6 sources IdP. [ATRIUM iam-mapping] */
+/** Normalized profile, convergence point of the 6 IdP sources. [ATRIUM iam-mapping] */
 export interface DirectoryProfile {
   readonly externalId: string;
   readonly email?: string;
@@ -433,12 +433,12 @@ export interface DirectoryProfile {
   readonly source: 'oidc' | 'scim' | 'saml' | 'ldap' | 'graph' | 'google';
 }
 
-/** Une source d'annuaire (OIDC/SCIM/SAML/LDAP/Graph/Google). [ATRIUM] */
+/** A directory source (OIDC/SCIM/SAML/LDAP/Graph/Google). [ATRIUM] */
 export interface DirectorySourcePort {
   fetchProfile(raw: unknown, tenantId: TenantId): Promise<DirectoryProfile>;
 }
 
-/** Persistance SCIM (Users + Groups). [ATRIUM scim] */
+/** SCIM persistence (Users + Groups). [ATRIUM scim] */
 export interface ScimRepository {
   upsertUserByEmail(
     tenantId: TenantId,
@@ -448,7 +448,7 @@ export interface ScimRepository {
 }
 
 /* ============================================================================
- * 7. PORTS TRANSVERSES
+ * 7. CROSS-CUTTING PORTS
  * ========================================================================== */
 
 /** Cache (grants, rate-limit). [TRANSLOG Redis] */
@@ -458,7 +458,7 @@ export interface CachePort {
   del(key: string): Promise<void>;
 }
 
-/** Audit metier/securite (distinct du DecisionLogSink). */
+/** Business/security audit (distinct from the DecisionLogSink). */
 export interface AuditSink {
   emit(event: {
     readonly type: string;
@@ -468,7 +468,7 @@ export interface AuditSink {
   }): Promise<void> | void;
 }
 
-/** Horloge injectable (determinisme des tests + CEL). [ATRIUM] */
+/** Injectable clock (test determinism + CEL). [ATRIUM] */
 export interface Clock {
   now(): number;
 }

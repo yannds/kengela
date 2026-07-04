@@ -100,7 +100,7 @@ interface FieldCipherPort {
 Implementation: `AesGcmFieldCipher` (AES-256-GCM, per-tenant derived key). See
 [03-authentication.md](./03-authentication.md#chiffrement-de-champ--crypto-shredding).
 
-## Erasure / right to be forgotten (art. 17) — crypto-shredding
+## Erasure / right to be forgotten (art. 17) - crypto-shredding
 
 The recommended erasure is **crypto-shredding**: each data subject (`subjectId`) has its own key
 (`SubjectKeyStore`); destroying the key makes all of its encrypted PII **permanently unreadable**,
@@ -134,7 +134,7 @@ await cipher.decryptFor('t1', 'subject-42', enc); // null: data "shredded"
 Proven controls: after erasure, the PII is unreadable; another subject's key does not decrypt it. It
 is an _effective_ GDPR erasure that does not depend on an exhaustive table scan.
 
-## PII access log (art. 30) — `PiiAccessLogSink`
+## PII access log (art. 30) - `PiiAccessLogSink`
 
 Every **read/export** of personal data must be traceable: who, which subject, which fields, which
 purpose. The port:

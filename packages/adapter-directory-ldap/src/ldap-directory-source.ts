@@ -1,8 +1,8 @@
 /**
- * `LdapDirectorySource` — adapter d'annuaire **AD / LDAP** (jumeau « pull » des connecteurs Graph /
+ * `LdapDirectorySource` - adapter d'annuaire **AD / LDAP** (jumeau « pull » des connecteurs Graph /
  * Google / SCIM). Se lie en LDAP(S) (`bind`), parcourt l'annuaire par recherche paginée sous une
  * `baseDN`, et renvoie des `LdapEntryParts` **normalisés** (DN + attributs en chaînes, binaires en
- * base64) — directement consommables par `profileFromLdap` de `@kengela/iam-mapping`. Aucune logique
+ * base64) - directement consommables par `profileFromLdap` de `@kengela/iam-mapping`. Aucune logique
  * de mapping de rôles ici : cet adapter ne fait QUE parler LDAP, la projection reste dans la lib pure.
  *
  * TLS vérifié par défaut (LDAPS). Le mot de passe de bind n'est JAMAIS journalisé (ce module ne
@@ -24,7 +24,7 @@ import type {
 } from './ldap-client-like.js';
 
 /**
- * Bornes et défauts LDAP (Active Directory), source unique de vérité — aucun nombre/chaîne magique
+ * Bornes et défauts LDAP (Active Directory), source unique de vérité - aucun nombre/chaîne magique
  * dans le code. Surchargeables par `LdapConnectionConfig` (config connecteur, jamais en dur).
  */
 export const LDAP_SOURCE_DEFAULTS = {

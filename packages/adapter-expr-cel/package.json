@@ -1,7 +1,7 @@
 {
   "name": "@kengela/adapter-expr-cel",
   "version": "0.1.0",
-  "description": "Kengela — adapter ExpressionEnginePort base sur CEL (@marcbachmann/cel-js).",
+  "description": "Kengela ExpressionEnginePort adapter based on CEL (@marcbachmann/cel-js).",
   "license": "Apache-2.0",
   "type": "module",
   "exports": {

@@ -1,7 +1,7 @@
 {
   "name": "@kengela/adapter-directory-ldap",
   "version": "0.1.0",
-  "description": "Kengela — adapter d'annuaire AD/LDAP : bind LDAP(S), recherche paginée, normalisation vers LdapEntryParts + DirectoryProfile (via @kengela/iam-mapping).",
+  "description": "Kengela AD/LDAP directory adapter: LDAP(S) bind, paginated search, normalization to LdapEntryParts and DirectoryProfile.",
   "license": "Apache-2.0",
   "type": "module",
   "exports": {

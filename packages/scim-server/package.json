@@ -1,7 +1,7 @@
 {
   "name": "@kengela/scim-server",
   "version": "0.1.0",
-  "description": "Kengela — cœur SCIM 2.0 (Users + Groups) framework-agnostique : port ScimStore + handlers purs (req parsée → réponse).",
+  "description": "Kengela framework-agnostic SCIM 2.0 core (Users + Groups): ScimStore port + pure handlers.",
   "license": "Apache-2.0",
   "type": "module",
   "exports": {

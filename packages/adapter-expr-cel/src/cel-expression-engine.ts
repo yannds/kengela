@@ -1,12 +1,12 @@
 /**
- * Adapter CEL — implémente ExpressionEnginePort à l'aide de @marcbachmann/cel-js.
+ * Adapter CEL - implémente ExpressionEnginePort à l'aide de @marcbachmann/cel-js.
  *
  * Le vendor vit ICI (paquet adapter). Sandboxé, lecture seule, compilations mises
  * en cache. Le contexte {principal, resource, env, tenant} est exposé tel quel aux
  * expressions ; une expression doit retourner un booléen (sinon erreur explicite).
  *
  * Fonctions de dates injectées (déterministes via Clock) : `now()`, `daysUntil(x)`,
- * `businessDaysBetween(a, b)` — pour des conditions temporelles (échéance, business-hours).
+ * `businessDaysBetween(a, b)` - pour des conditions temporelles (échéance, business-hours).
  *
  * Dette connue (voir DEBT.md) : une erreur d'évaluation (variable absente, non-booléen)
  * est LEVÉE ; le PDP (LayeredDecisionPoint) la rattrape en fail-closed (deny).

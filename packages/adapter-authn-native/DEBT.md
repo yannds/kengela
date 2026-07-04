@@ -1,4 +1,4 @@
-# DEBT.md — @kengela/adapter-authn-native
+# DEBT.md - @kengela/adapter-authn-native
 
 > Le port est un sas, pas une planque. Dettes tracées, retirées quand résolues.
 

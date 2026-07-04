@@ -4,10 +4,10 @@
 
 # Kengela
 
-**kokéngela** _(lingala)_ — veiller, garder, être vigilant.
+**kokéngela** _(lingala)_ - veiller, garder, être vigilant.
 Le veilleur : ne fait **jamais** confiance par défaut, vérifie **en continu**.
 
-Socle **identité &amp; accès Zero Trust** multi-tenant pour TypeScript —
+Socle **identité &amp; accès Zero Trust** multi-tenant pour TypeScript -
 **authentification + autorisation + fédération d'identité + conformité**.
 
 ![License](https://img.shields.io/badge/license-Apache--2.0-2B44D0)
@@ -26,7 +26,7 @@ Une seule brique pour l'identité et l'accès de tes applications, plutôt que d
 la roue à chaque projet. Née de la consolidation de deux bases réelles (deux applications multi-tenant reelles).
 
 - **Autorisation « Entra-like »** : RBAC scopé + relation organisationnelle + **ABAC** (conditions
-  CEL) + **conditional access** (géo/heure/device/risque) + **step-up** — deny-by-default, fail-closed.
+  CEL) + **conditional access** (géo/heure/device/risque) + **step-up** - deny-by-default, fail-closed.
 - **Authentification durcie** : credential **timing-safe** (argon2id/bcrypt), sessions opaques,
   **MFA/TOTP** complet, chiffrement **AES-256-GCM**, **crypto-shredding** (RGPD).
 - **Fédération** : normalisation de **6 sources IdP** (OIDC/SCIM/SAML/LDAP/Graph/Google), serveur
@@ -54,12 +54,12 @@ Une condition inévaluable ⇒ **refus** (fail-closed).
 
 | Paquet                                | Rôle                                                                                                                  |
 | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `@kengela/contracts`                  | Ports &amp; types — l'invariant, zéro vendor                                                                          |
+| `@kengela/contracts`                  | Ports &amp; types - l'invariant, zéro vendor                                                                          |
 | `@kengela/authz-core`                 | RBAC scopé + relation + ABAC (CEL) + conditional access + step-up ; deny-by-default, fail-closed, decision logs       |
 | `@kengela/iam-mapping`                | Normalisation **6 sources IdP** + schéma **SCIM canonique** (superset Okta/Entra) + moteur de règles                  |
 | `@kengela/adapter-expr-cel`           | Moteur **CEL** (conditions ABAC + fonctions de dates)                                                                 |
 | `@kengela/adapter-authn-native`       | Credential **timing-safe** (argon2/bcrypt + `needsRehash`), sessions, **MFA/TOTP**, **AES-256-GCM**, crypto-shredding |
-| `@kengela/adapter-authn-better-auth`  | `IdentityPort` au-dessus de **better-auth** (OIDC/OAuth/SSO) — better-auth en `peerDependency`                        |
+| `@kengela/adapter-authn-better-auth`  | `IdentityPort` au-dessus de **better-auth** (OIDC/OAuth/SSO) - better-auth en `peerDependency`                        |
 | `@kengela/adapter-persistence-prisma` | Stockage (`AuthorizationRepository`/`SessionStore`/`PolicyStore`) via interface Prisma narrow                         |
 | `@kengela/adapter-directory-ldap`     | Connecteur **AD/LDAP** (ldapts) → `DirectoryProfile`                                                                  |
 | `@kengela/scim-server`                | Serveur **SCIM 2.0** Users+Groups + découverte + **conformité Entra** + validation de schéma                          |
@@ -88,6 +88,6 @@ Publication &amp; consommation : **[`PUBLISHING.md`](PUBLISHING.md)**. Conceptio
 
 ## Licence
 
-**Apache-2.0** © 2026 yannds — voir [`LICENSE`](LICENSE) et [`NOTICE`](NOTICE).
+**Apache-2.0** © 2026 yannds - voir [`LICENSE`](LICENSE) et [`NOTICE`](NOTICE).
 Licence permissive avec clause de brevet ; le détenteur du copyright conserve la possibilité
 d'un double-licensing commercial ultérieur.

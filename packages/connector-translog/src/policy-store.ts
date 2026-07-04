@@ -1,5 +1,5 @@
 /**
- * TranslogPolicyStore — implemente PolicyStore sur TranslogPrismaLike.
+ * TranslogPolicyStore - implemente PolicyStore sur TranslogPrismaLike.
  *
  * TransLog n'a PAS de table de policies declaratives pour l'instant : l'autorisation
  * repose sur le RBAC seul (grants issus de RolePermission). On retourne donc `[]`

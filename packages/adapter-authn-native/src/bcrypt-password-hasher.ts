@@ -1,10 +1,10 @@
 import { compare as bcryptCompare, hash as bcryptHash } from 'bcryptjs';
 import type { PasswordHasher } from '@kengela/contracts';
 
-/** Coût bcrypt par défaut (aligné sur la pratique TransLog). */
+/** Default bcrypt cost (aligned with TransLog practice). */
 const DEFAULT_COST = 12;
 
-/** PasswordHasher bcrypt. `compare` est à temps constant (anti-timing). */
+/** bcrypt PasswordHasher. `compare` is constant-time (anti-timing). */
 export class BcryptPasswordHasher implements PasswordHasher {
   readonly #cost: number;
 
@@ -23,7 +23,7 @@ export class BcryptPasswordHasher implements PasswordHasher {
   public needsRehash(hash: string): boolean {
     const match = /^\$2[aby]\$(\d{2})\$/.exec(hash);
     if (match === null) {
-      return true; // format inconnu (ex. argon2) -> re-hasher
+      return true; // unknown format (e.g. argon2) -> re-hash
     }
     return Number.parseInt(match[1] ?? '0', 10) < this.#cost;
   }

@@ -1,5 +1,5 @@
 /**
- * PrismaSessionStore — implemente SessionStore sur PrismaLike.
+ * PrismaSessionStore - implemente SessionStore sur PrismaLike.
  *
  * Token opaque = 32 octets aleatoires (node:crypto) en hex. L'horloge est
  * injectable (Clock) pour des tests deterministes ; defaut = Date.now. La

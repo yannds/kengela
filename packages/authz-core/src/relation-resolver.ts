@@ -10,7 +10,7 @@
  *
  * DOCTRINE deny-by-default : on ne CLASSE une relation plus etroite (self > unit >
  * subtree) que si elle est PROUVABLE par les donnees fournies. A defaut de preuve,
- * on retombe sur la relation la plus faible defendable — `tenant` si la ressource
+ * on retombe sur la relation la plus faible defendable - `tenant` si la ressource
  * appartient au meme tenant, sinon `none`. Une relation plus etroite exige un grant
  * de portee plus NARROW (self=own) : ne la rendre que sur preuve evite d'ouvrir un
  * acces qu'un simple grant `own` couvrirait a tort.
@@ -18,7 +18,7 @@
  * LIMITE (par conception) : la couverture organisationnelle se limite aux unites
  * DEJA presentes dans le `Principal` (`coverageUnits`). Un vrai sous-arbre calcule
  * hors du jeton (traversee de l'organigramme en base) reste du ressort d'un
- * `RelationResolver` cote app, adosse a la persistance — ce resolver-ci ne fait
+ * `RelationResolver` cote app, adosse a la persistance - ce resolver-ci ne fait
  * AUCUN acces I/O et reste donc composable/testable sans infra.
  */
 import type { OrgRelation, Principal, RelationResolver, ResourceRef } from '@kengela/contracts';

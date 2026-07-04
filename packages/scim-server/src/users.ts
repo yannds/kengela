@@ -1,5 +1,5 @@
 /**
- * Handlers SCIM 2.0 `/Users` — PURS (`(store, requête) → réponse`), sans HTTP.
+ * Handlers SCIM 2.0 `/Users` - PURS (`(store, requête) → réponse`), sans HTTP.
  *
  * Doctrine (RFC 7644) : provisioning RÉCONCILIÉ PAR E-MAIL (insensible à la casse, jamais
  * de doublon), déprovisionnement = DÉSACTIVATION (jamais de suppression), erreurs SCIM

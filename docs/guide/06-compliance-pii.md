@@ -101,7 +101,7 @@ interface FieldCipherPort {
 Implémentation : `AesGcmFieldCipher` (AES-256-GCM, clé dérivée par tenant). Voir
 [03-authentication.md](./03-authentication.md#chiffrement-de-champ--crypto-shredding).
 
-## Effacement / droit à l'oubli (art. 17) — crypto-shredding
+## Effacement / droit à l'oubli (art. 17) - crypto-shredding
 
 L'effacement recommandé est le **crypto-shredding** : chaque personne concernée (`subjectId`) a sa
 propre clé (`SubjectKeyStore`) ; détruire la clé rend toutes ses PII chiffrées **définitivement
@@ -135,7 +135,7 @@ await cipher.decryptFor('t1', 'subject-42', enc); // null : donnée « shreddée
 Contrôles prouvés : après effacement, la PII est illisible ; la clé d'un autre sujet ne déchiffre
 pas. C'est un effacement RGPD _effectif_ qui ne dépend pas d'un balayage exhaustif des tables.
 
-## Journal d'accès aux PII (art. 30) — `PiiAccessLogSink`
+## Journal d'accès aux PII (art. 30) - `PiiAccessLogSink`
 
 Chaque **lecture/export** de données personnelles doit être traçable : qui, quel sujet, quels champs,
 quelle finalité. Le port :

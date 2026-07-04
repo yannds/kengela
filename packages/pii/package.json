@@ -1,7 +1,7 @@
 {
   "name": "@kengela/pii",
   "version": "0.1.0",
-  "description": "Kengela — classification, minimisation et redaction des donnees personnelles (RGPD).",
+  "description": "Kengela GDPR classification, minimization and redaction of personal data.",
   "license": "Apache-2.0",
   "type": "module",
   "exports": {

@@ -1,4 +1,4 @@
-# Recipe 11 — better-auth as the authentication backend (delegated authn)
+# Recipe 11 - better-auth as the authentication backend (delegated authn)
 
 > Goal: keep better-auth's **login / session** management ([better-auth](https://better-auth.com):
 > OIDC, OAuth, SSO, cookies, session DB) but have the verified session consumed by the
@@ -21,7 +21,7 @@ Kengela doesn't try to replace better-auth. The adapter does **one single thing*
 
 The real class it exposes is **`BetterAuthIdentity`** (`implements IdentityPort`). It
 **only implements `verifySession`**: it does **no login, no signup, no MFA, no session
-creation** — all of that stays handled by better-auth on the app side. It is a deliberately
+creation** - all of that stays handled by better-auth on the app side. It is a deliberately
 **minimal** adapter; it doesn't "own" anything, it translates.
 
 ### better-auth = peerDependency (installed by YOUR app)
@@ -39,7 +39,7 @@ Consequences:
 
 - The peer constraint declared in the adapter's `package.json` is **exactly
   `"better-auth": ">=1"`** (no upper bound): any better-auth version `>= 1.0.0` is supported,
-  and the app pins the exact version it installs. This isn't a doc approximation — it is the
+  and the app pins the exact version it installs. This isn't a doc approximation - it is the
   literal value of the `peerDependencies` field.
 - The peer is `optional: true`: installing the adapter does not force you to pull in
   better-auth (useful if you don't compose it), **but as soon as you instantiate
@@ -53,19 +53,19 @@ Consequences:
 ```sh
 # the Kengela adapter + the vendor (peer) that YOU install yourself
 npm add @kengela/adapter-authn-better-auth
-npm add better-auth        # peerDependency — mandatory for this backend
+npm add better-auth        # peerDependency - mandatory for this backend
 ```
 
 > Reminder from `PUBLISHING.md`: each app installs ONLY the packages it needs.
 > Vendors that are "frameworks to configure" (better-auth, SAML, LDAP…) are
-> `peerDependency` — never pulled in implicitly.
+> `peerDependency` - never pulled in implicitly.
 
 ---
 
 ## 3. The NARROW `BetterAuthLike` surface
 
 Kengela **does not depend on all of better-auth**. It depends only on a narrow interface
-declared in the adapter (`better-auth-like.ts`) — the single capability it consumes: verify
+declared in the adapter (`better-auth-like.ts`) - the single capability it consumes: verify
 a session.
 
 ```ts
@@ -90,7 +90,7 @@ export interface BetterAuthLike {
 Key points:
 
 - The adapter only knows **`auth.api.getSession({ headers })`**. It ignores OIDC, routes,
-  the DB, plugins — better-auth handles all of that on the app side.
+  the DB, plugins - better-auth handles all of that on the app side.
 - A **real better-auth instance is structurally compatible** with `BetterAuthLike`:
   `betterAuth({...}).api.getSession` has the right shape. You **NARROW** it explicitly to
   `BetterAuthLike` at wiring time via a single `as unknown as BetterAuthLike` cast (see §4).
@@ -105,7 +105,7 @@ Key points:
 > TypeScript therefore refuses a direct cast between two types it deems insufficiently
 > related; the `as unknown` bridge is the **standard, documented** way to assert a narrow
 > surface. The cast is **sound** because at runtime a real better-auth instance does provide
-> `api.getSession({ headers })` returning `{ user, session } | null` — the only capability
+> `api.getSession({ headers })` returning `{ user, session } | null` - the only capability
 > the adapter calls. You take on that cast once, at the composition root, and nowhere else.
 
 ---
@@ -115,7 +115,7 @@ Key points:
 ### 4.1 Your better-auth instance (yours)
 
 ```ts
-// app/auth/better-auth.ts  — 100 % côté application
+// app/auth/better-auth.ts  - 100 % côté application
 import { betterAuth } from 'better-auth';
 
 export const auth = betterAuth({
@@ -164,7 +164,7 @@ export const identityProvider = {
     new BetterAuthIdentity({
       // Une vraie instance better-auth expose bien `api.getSession`. On la NARROW
       // explicitement à BetterAuthLike (la seule capacité consommée) via un cast
-      // volontaire `as unknown as BetterAuthLike` — voir §3 : contrat, pas contournement.
+      // volontaire `as unknown as BetterAuthLike` - voir §3 : contrat, pas contournement.
       auth: auth as unknown as BetterAuthLike,
 
       // ton mapping métier -> tenant (défaut = user.tenantId)
@@ -179,7 +179,7 @@ export const identityProvider = {
 ```
 
 Everything else in the core (the `PolicyDecisionPoint` PDP, the guards, audit) depends on
-`IDENTITY_PORT` / `IdentityPort` — **never** on better-auth directly.
+`IDENTITY_PORT` / `IdentityPort` - **never** on better-auth directly.
 
 ---
 
@@ -243,7 +243,7 @@ What `BetterAuthIdentity.verifySession` does internally:
 > via a `ContextProvider` (`@kengela/contracts` port) if you do conditional access. Here
 > only `authTime` (freshness) is filled from `session.createdAt`.
 
-### 5.3 `AuthOutcome` — for reference (native path, NOT this backend)
+### 5.3 `AuthOutcome` - for reference (native path, NOT this backend)
 
 `AuthOutcome` is the result of a login **by credentials**, produced by the
 `CredentialAuthenticator` port (implemented by the **native** adapter, §6). The better-auth
@@ -277,7 +277,7 @@ handle it with better-auth's mechanisms; Kengela only steps in afterwards, at th
 Kengela stores no session, emits no cookie, knows no provider. It **consumes** the session
 better-auth has already verified.
 
-### Switching to native auth — without touching the rest
+### Switching to native auth - without touching the rest
 
 The stable coupling point is the `Principal`: the `PolicyDecisionPoint` PDP, the guards,
 tenancy and audit depend **only** on it, never on the authn backend. To switch to
@@ -294,7 +294,7 @@ Honest nuance: the two adapters are **not** a simple 1-for-1 swap on the same po
   `SessionStore` and your own session reading.
 
 Put differently: better-auth gives you turnkey authn behind `IdentityPort`; native gives
-you the pieces to build it yourself. In both cases, **what authz sees does not change** —
+you the pieces to build it yourself. In both cases, **what authz sees does not change** -
 it's always a `Principal`.
 
 ---
@@ -303,10 +303,10 @@ it's always a `Principal`.
 
 A single file assembling all the functional code of the recipe: your better-auth instance,
 the NestJS provider exposing `IdentityPort`, and session verification on every protected
-request. Nothing else is required on the Kengela side — authz only sees the `Principal`.
+request. Nothing else is required on the Kengela side - authz only sees the `Principal`.
 
 ```ts
-// app/auth/identity.ts — composition root de l'authn déléguée à better-auth
+// app/auth/identity.ts - composition root de l'authn déléguée à better-auth
 import { betterAuth } from 'better-auth';
 import {
   BetterAuthIdentity,
@@ -323,7 +323,7 @@ export const auth = betterAuth({
 });
 
 // 2. Provider NestJS exposant IdentityPort. Le reste du socle (PDP, guards, audit) ne
-//    dépend que de ce token — jamais de better-auth directement.
+//    dépend que de ce token - jamais de better-auth directement.
 export const IDENTITY_PORT = Symbol('IdentityPort');
 
 export const identityProvider = {
@@ -361,7 +361,7 @@ export async function authenticateRequest(
 
 ## Recap of the real symbols
 
-- Package: `@kengela/adapter-authn-better-auth` — peer `better-auth >= 1` (optional).
+- Package: `@kengela/adapter-authn-better-auth` - peer `better-auth >= 1` (optional).
 - Exports: `BetterAuthIdentity`, `BetterAuthIdentityConfig`, `BetterAuthLike`,
   `BetterAuthUser`, `BetterAuthSession`.
 - Implemented port: `IdentityPort.verifySession(SessionCredential) → Promise<Principal | null>`.

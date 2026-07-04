@@ -1,4 +1,4 @@
-# DEBT.md — registre de dette (gabarit)
+# DEBT.md - registre de dette (gabarit)
 
 > A copier dans chaque ADAPTER. Le port est un sas, pas une planque :
 > ce qu'on enveloppe et qui est faible DOIT figurer ici avec sa cible.

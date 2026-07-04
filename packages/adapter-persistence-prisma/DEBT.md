@@ -1,4 +1,4 @@
-# DEBT.md — @kengela/adapter-persistence-prisma
+# DEBT.md - @kengela/adapter-persistence-prisma
 
 > Le port est un sas, pas une planque. Ce qui est enveloppe et faible figure ici.
 

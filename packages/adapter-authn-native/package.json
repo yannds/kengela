@@ -1,7 +1,7 @@
 {
   "name": "@kengela/adapter-authn-native",
   "version": "0.1.0",
-  "description": "Kengela — authn maison durcie : credential timing-safe, chiffrement AES-256-GCM, TOTP.",
+  "description": "Kengela hardened native authn: timing-safe credentials, AES-256-GCM encryption, TOTP.",
   "license": "Apache-2.0",
   "type": "module",
   "exports": {

@@ -1,5 +1,5 @@
 /**
- * Validation de schéma SCIM 2.0 — « vérifier NOTRE propre schéma » (RFC 7643).
+ * Validation de schéma SCIM 2.0 - « vérifier NOTRE propre schéma » (RFC 7643).
  *
  * `validateScimUser` / `validateScimGroup` contrôlent la conformité d'une ressource au
  * schéma Kengela, À L'ENTRÉE (corps poussé par l'IdP) comme À LA SORTIE (round-trip : la

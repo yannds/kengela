@@ -1,45 +1,53 @@
 # @kengela/connector-translog
 
-Connecteur **TransLog Pro** pour le socle Kengela. Il implemente les ports
-`@kengela/contracts` (`CredentialStore`, `AuthorizationRepository`, `SessionStore`,
-`PolicyStore`) contre le schema Prisma **reel** de TransLog Pro.
+> A reference connector implementing the Kengela ports against the real TransLog Pro Prisma schema.
 
-Paquet **prive** (`"private": true`, non publie). Il vit en **reference** dans le
-monorepo Kengela : il prouve que les ports s'implementent sur le schema TransLog
-existant. Une fois `@kengela/*` publie sur le registre, ce connecteur est destine a
-etre **depose dans TransLog** (ou il remplacera l'authn/authz maison), en pointant
-`@kengela/contracts` vers la version publiee.
+This package implements the `@kengela/contracts` ports (`CredentialStore`, `AuthorizationRepository`, `SessionStore`, `PolicyStore`) against the actual TransLog Pro Prisma schema. It is the connector ring: a private reference package that proves the ports fit an existing production schema, intended to move into TransLog once `@kengela/*` is published.
 
-## Surface NARROW
+Part of [Kengela](https://github.com/yannds/kengela), a Zero Trust identity and access foundation for multi-tenant TypeScript apps (authentication + authorization + identity federation + compliance).
 
-Le connecteur ne depend PAS de `@prisma/client`. Il decrit une surface NARROW,
-`TranslogPrismaLike`, avec des types de lignes explicites (`UserRow`, `AccountRow`,
-`SessionRow`, `RolePermissionRow`). Un vrai `PrismaClient` genere depuis le schema
-TransLog est structurellement compatible : il se passe la ou `TranslogPrismaLike`
-est attendu.
+## Install
 
-## Mapping (resume)
+```sh
+npm install @kengela/connector-translog
+```
 
-| Port Kengela                                | Source TransLog                                                    | Regle                                                                                                                                                                                                                                                         |
-| ------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CredentialStore.findByEmail`               | `Account` (providerId='credential', accountId=email) ⋈ `User`      | `passwordHash <- Account.password`, `isActive <- User.isActive && deletedAt==null`, `mfaEnabled <- User.mfaEnabled`, `roles <- User.roleId ? [roleId] : []`. `null` si absent.                                                                                |
-| `CredentialStore.findByEmailAcrossTenants`  | tous les `Account` credential (tous tenants), Users charges en lot | idem, un enregistrement par compte.                                                                                                                                                                                                                           |
-| `AuthorizationRepository.loadGrantsForUser` | `User.roleId` -> `RolePermission[]`                                | chaque `permission` `plane.module.action.SCOPE` : dernier segment = portee, reste = permission Kengela. `own->own`, `agency->unit`, `tenant->tenant`, `global->global`, jeton inconnu -> **fail-closed** (grant ignore). `source: 'MANUAL'`, sans expiration. |
-| `AuthorizationRepository.loadRole`          | `RolePermission` (roleId=roleKey)                                  | meme split ; `null` si aucune permission.                                                                                                                                                                                                                     |
-| `SessionStore`                              | `Session` (`token`, `ipAddress`, `userAgent`, ...)                 | token opaque `randomBytes(32).hex` ; `expiresAt = now + ttlMs` (Clock injectable) ; `ipAddress <- ctx.ip`, `userAgent <- ctx.device.userAgent`. Reconstitution du `ctx` **LOSSY** (voir DEBT.md).                                                             |
-| `PolicyStore.loadPolicies`                  | —                                                                  | `[]` (TransLog n'a pas de table policy ; RBAC seul).                                                                                                                                                                                                          |
+## Narrow surface
+
+The connector does not depend on `@prisma/client`. It describes a narrow surface, `TranslogPrismaLike`, with explicit row types (`UserRow`, `AccountRow`, `SessionRow`, `RolePermissionRow`). A real `PrismaClient` generated from the TransLog schema is structurally compatible and passes where `TranslogPrismaLike` is expected.
+
+## Usage
+
+```ts
+import {
+  TranslogCredentialStore,
+  TranslogAuthorizationRepository,
+} from '@kengela/connector-translog';
+
+const credentials = new TranslogCredentialStore({ prisma });
+const authz = new TranslogAuthorizationRepository({ prisma });
+
+const record = await credentials.findByEmail(email, tenantId);
+const grants = await authz.loadGrantsForUser(userId, tenantId);
+```
 
 ## Fail-closed
 
-Toute portee inconnue ou permission malformee fait TOMBER le grant concerne :
-jamais d'elargissement fantome. Un compte credential orphelin (User introuvable)
-est ecarte.
+Any unknown scope or malformed permission drops the affected grant, so there is no phantom widening. A credential account with no matching user is discarded.
 
-## Dette
+## Key exports
 
-Voir [`DEBT.md`](./DEBT.md) : contexte de session lossy, mono-role, policies vides,
-absence de tests d'integration DB live.
+- `TranslogCredentialStore` - `CredentialStore` over `Account` (credential) joined with `User`.
+- `TranslogAuthorizationRepository` - `AuthorizationRepository` mapping `RolePermission` to grants.
+- `TranslogSessionStore` - `SessionStore` over the `Session` table.
+- `TranslogPolicyStore` - `PolicyStore` returning an empty policy set (RBAC only).
+- `permissionToGrant`, `permissionsToGrants`, `toSessionHandle` - mapping helpers.
+- `TranslogPrismaLike` and the row/delegate types - the narrow Prisma surface used by the connector.
 
-## Licence
+## Documentation
 
-Apache-2.0.
+Guides and recipes: https://github.com/yannds/kengela/wiki
+
+## License
+
+Apache-2.0

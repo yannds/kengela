@@ -1,4 +1,4 @@
-# DEBT.md — @kengela/adapter-directory-ldap
+# DEBT.md - @kengela/adapter-directory-ldap
 
 > Le port est un sas, pas une planque. Ce qui est enveloppe et faible figure ici, avec sa cible.
 

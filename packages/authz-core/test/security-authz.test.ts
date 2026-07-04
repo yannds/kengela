@@ -1,5 +1,5 @@
 /**
- * RED TEAM — attaques d'autorisation contre le PDP (isolation, escalade, fail-open, deny-wins).
+ * RED TEAM - attaques d'autorisation contre le PDP (isolation, escalade, fail-open, deny-wins).
  *
  * Chaque test materialise une hypothese d'attaque : il ECHOUE si la lib est vulnerable.
  * Hermetique (fakes en memoire), aucune dependance vendor ni reseau.
@@ -56,7 +56,7 @@ const resource = (tenantId: string): ResourceRef => ({
 
 const NEVER_EXPR: ExpressionEnginePort = { evaluateBoolean: () => false };
 
-describe('RED — isolation cross-tenant (smuggling de tenantId)', () => {
+describe('RED - isolation cross-tenant (smuggling de tenantId)', () => {
   it('un grant `tenant` du tenant A ne franchit PAS vers une ressource du tenant B, meme si le resolveur ment', async () => {
     const pdp = new RbacDecisionPoint({
       grants: repoWith([grant('data.cashier.register.read', 'tenant')]),
@@ -105,7 +105,7 @@ describe('RED — isolation cross-tenant (smuggling de tenantId)', () => {
   });
 });
 
-describe('RED — escalade de privilege / plan plateforme', () => {
+describe('RED - escalade de privilege / plan plateforme', () => {
   it('seul un grant de portee `global` (plan plateforme) franchit un tenant', async () => {
     const pdp = new RbacDecisionPoint({
       grants: repoWith([grant('platform.tenants.read', 'global')]),
@@ -155,7 +155,7 @@ describe('RED — escalade de privilege / plan plateforme', () => {
   });
 });
 
-describe('RED — fail-open & deny-wins', () => {
+describe('RED - fail-open & deny-wins', () => {
   it('relation `none` sans grant global => deny (aucun lien organisationnel)', async () => {
     const pdp = new RbacDecisionPoint({
       grants: repoWith([grant('data.cashier.register.read', 'tenant')]),

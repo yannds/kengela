@@ -119,7 +119,7 @@ describe('KengelaAuthzGuard', () => {
   });
 });
 
-describe('KengelaAuthzGuard — integration PDP + CEL reel', () => {
+describe('KengelaAuthzGuard - integration PDP + CEL reel', () => {
   const GRANT: Grant = {
     permission: 'data.cashier.register.read',
     scope: 'tenant',

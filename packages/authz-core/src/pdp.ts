@@ -1,5 +1,5 @@
 /**
- * Point de decision (PDP) — couche RBAC.
+ * Point de decision (PDP) - couche RBAC.
  *
  * Deny-by-default, evalue PAR REQUETE (Zero Trust). Les grants sont recharges a
  * chaque check via l'AuthorizationRepository (anti-staleness : un droit revoque

@@ -1,23 +1,23 @@
 /**
- * Schéma SCIM 2.0 canonique de Kengela — un SUPERSET qui va au-delà d'un seul IdP.
+ * Kengela canonical SCIM 2.0 schema - a SUPERSET that reaches beyond any single IdP.
  *
- * Couvre le coeur SCIM (RFC 7643), l'extension enterprise, et la richesse des IdP
- * connus (Okta, Microsoft Entra / Azure AD, Google Workspace). Chaque application
- * pioche le sous-ensemble qui la concerne : TransLog n'en utilise qu'une fraction,
- * une autre app davantage. La lib ne FIGE jamais la liste (bag `extensions`).
+ * Covers the SCIM core (RFC 7643), the enterprise extension, and the richness of the
+ * well-known IdPs (Okta, Microsoft Entra / Azure AD, Google Workspace). Each application
+ * picks the subset it cares about: TransLog uses only a fraction, another app uses more.
+ * The library never FREEZES the list (the `extensions` bag).
  *
- * PUR : types + projection vers `DirectoryProfile`. Aucune dépendance.
+ * PURE: types + projection to `DirectoryProfile`. No dependencies.
  */
 import type { DirectoryAttributes, DirectoryProfile } from './profile.js';
 
-// ── URNs de schémas ──────────────────────────────────────────────────────────
+// ── Schema URNs ──────────────────────────────────────────────────────────────
 export const SCIM_SCHEMA_CORE_USER = 'urn:ietf:params:scim:schemas:core:2.0:User';
 export const SCIM_SCHEMA_ENTERPRISE_USER =
   'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User';
 export const SCIM_SCHEMA_GROUP = 'urn:ietf:params:scim:schemas:core:2.0:Group';
 
-// ── Sous-structures SCIM ─────────────────────────────────────────────────────
-/** Attribut multi-valué SCIM (emails, phoneNumbers, ims, photos, roles, entitlements). */
+// ── SCIM sub-structures ──────────────────────────────────────────────────────
+/** SCIM multi-valued attribute (emails, phoneNumbers, ims, photos, roles, entitlements). */
 export interface ScimMultiValued {
   readonly value?: string;
   readonly type?: string;
@@ -59,7 +59,7 @@ export interface ScimManagerRef {
   readonly ref?: string;
 }
 
-/** Extension enterprise SCIM — Okta/Entra la peuplent abondamment. */
+/** SCIM enterprise extension - Okta/Entra populate it heavily. */
 export interface ScimEnterpriseExtension {
   readonly employeeNumber?: string;
   readonly costCenter?: string;
@@ -78,7 +78,7 @@ export interface ScimMeta {
 }
 
 /**
- * Utilisateur SCIM 2.0 canonique Kengela. Toute app consomme le sous-ensemble utile.
+ * Kengela canonical SCIM 2.0 user. Every app consumes the subset it needs.
  */
 export interface KengelaScimUser {
   readonly schemas?: readonly string[];
@@ -105,15 +105,15 @@ export interface KengelaScimUser {
   readonly roles?: readonly ScimMultiValued[];
   readonly x509Certificates?: readonly ScimMultiValued[];
   readonly meta?: ScimMeta;
-  /** Extension enterprise (URN dédiée). */
+  /** Enterprise extension (dedicated URN). */
   readonly enterprise?: ScimEnterpriseExtension;
-  /** Attributs de schémas custom (Okta app schema, extensions Entra) préservés bruts. */
+  /** Custom schema attributes (Okta app schema, Entra extensions) preserved raw. */
   readonly extensions?: Readonly<Record<string, unknown>>;
 }
 
 /**
- * Registre des chemins d'attributs canoniques que Kengela sait porter. Source unique :
- * une app pioche ce qu'elle mappe (jamais figé en dur côté UI).
+ * Registry of the canonical attribute paths Kengela can carry. Single source of truth:
+ * an app picks what it maps (never hardcoded on the UI side).
  */
 export const KENGELA_SCIM_ATTRIBUTE_PATHS: readonly string[] = [
   'userName',
@@ -144,7 +144,7 @@ export const KENGELA_SCIM_ATTRIBUTE_PATHS: readonly string[] = [
   `${SCIM_SCHEMA_ENTERPRISE_USER}:manager`,
 ];
 
-// ── Projection vers le profil interne ────────────────────────────────────────
+// ── Projection to the internal profile ───────────────────────────────────────
 function clean(value: string | undefined): string | undefined {
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }
@@ -181,9 +181,9 @@ function buildAttributes(
 }
 
 /**
- * Projette un utilisateur SCIM canonique vers le `DirectoryProfile` interne, en
- * conservant les attributs riches (enterprise, adresse, téléphone, locale...) et en
- * préservant les extensions custom dans `attributes.extensions` + `claims`.
+ * Projects a canonical SCIM user to the internal `DirectoryProfile`, keeping the rich
+ * attributes (enterprise, address, phone, locale...) and preserving custom extensions
+ * in `attributes.extensions` + `claims`.
  */
 export function projectScimUser(user: KengelaScimUser): DirectoryProfile {
   const enterprise = user.enterprise;

@@ -14,7 +14,7 @@ const profile: DirectoryProfile = {
   claims: { roles: ['approver', 'auditor'], level: 3, active: true },
 };
 
-describe('evaluateMappings — sources de condition', () => {
+describe('evaluateMappings - sources de condition', () => {
   it('GROUP avec operateur iequals (insensible a la casse)', () => {
     const rules: IdpMappingRule[] = [
       {
@@ -90,7 +90,7 @@ describe('evaluateMappings — sources de condition', () => {
   });
 });
 
-describe('evaluateMappings — logique all/any', () => {
+describe('evaluateMappings - logique all/any', () => {
   it('all = ET logique (toutes les conditions)', () => {
     const rules: IdpMappingRule[] = [
       {
@@ -127,7 +127,7 @@ describe('evaluateMappings — logique all/any', () => {
   });
 });
 
-describe('evaluateMappings — priorite, union, stopOnMatch, orgUnit', () => {
+describe('evaluateMappings - priorite, union, stopOnMatch, orgUnit', () => {
   const match = (
     id: string,
     priority: number,

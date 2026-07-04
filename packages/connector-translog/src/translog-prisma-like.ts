@@ -1,5 +1,5 @@
 /**
- * TranslogPrismaLike — la surface NARROW dont ce connecteur depend.
+ * TranslogPrismaLike - la surface NARROW dont ce connecteur depend.
  *
  * DOCTRINE : le port est un sas, pas une planque. On n'importe RIEN de
  * `@prisma/client`. On decrit exactement les delegues et methodes utilises,
@@ -18,7 +18,7 @@
  */
 import type { TenantId, UserId } from '@kengela/contracts';
 
-/** Ligne `User` — sous-ensemble NARROW des colonnes lues par le connecteur. */
+/** Ligne `User` - sous-ensemble NARROW des colonnes lues par le connecteur. */
 export interface UserRow {
   readonly id: UserId;
   readonly tenantId: TenantId;
@@ -28,14 +28,14 @@ export interface UserRow {
   readonly deletedAt: Date | null;
 }
 
-/** Ligne `Account` — sous-ensemble NARROW (le hash `password` est optionnel). */
+/** Ligne `Account` - sous-ensemble NARROW (le hash `password` est optionnel). */
 export interface AccountRow {
   readonly userId: UserId;
   readonly tenantId: TenantId;
   readonly password: string | null;
 }
 
-/** Ligne `RolePermission` — la permission brute `plane.module.action.SCOPE`. */
+/** Ligne `RolePermission` - la permission brute `plane.module.action.SCOPE`. */
 export interface RolePermissionRow {
   readonly permission: string;
 }

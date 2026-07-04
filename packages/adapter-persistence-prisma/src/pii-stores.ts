@@ -8,7 +8,7 @@
  *
  * CHIFFREMENT AT-REST de la clé de sujet : si un `KeyManagementPort` (chiffrement enveloppe
  * par tenant) est injecté, la clé est WRAPPÉE avant persistance et la colonne ne contient
- * jamais de matériel clair — une fuite de la base seule ne révèle rien sans la clé maître.
+ * jamais de matériel clair - une fuite de la base seule ne révèle rien sans la clé maître.
  * Sans KMS injecté, la clé est stockée en base64 EN CLAIR : mode dégradé, à réserver au
  * développement (documenté ; le crypto-shredding reste effectif dans les deux cas puisqu'il
  * repose sur la SUPPRESSION de la ligne, pas sur le chiffrement).

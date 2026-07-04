@@ -1,17 +1,17 @@
 /**
- * PDP en couches — RBAC (plancher) + ABAC (conditions) + conditional access.
+ * Layered PDP - RBAC (floor) + ABAC (conditions) + conditional access.
  *
- * Zero Trust, deny-by-default, evalue PAR REQUETE. Ordre de decision :
- *  1. Plancher RBAC : sans grant actif couvrant la permission a la relation, DENY.
- *  2. Policies applicables a (resource, action) : evaluees contre {principal, resource, env}
- *     via l'ExpressionEnginePort (CEL fourni par un adapter ; ici on ne fait que deleguer).
- *  3. Un DENY explicite l'emporte (deny-wins).
- *  4. Gate ABAC positif : si des regles `allow` existent, au moins une doit matcher
- *     (sinon DENY `no_matching_allow`) — c'est le scoping declaratif (ex. meme agence).
- *  5. STEP_UP : les regles `step_up` matchees imposent des obligations (ex. passkey).
- *  6. Sinon ALLOW.
+ * Zero Trust, deny-by-default, evaluated PER REQUEST. Decision order:
+ *  1. RBAC floor: without an active grant covering the permission at the relation, DENY.
+ *  2. Policies applicable to (resource, action): evaluated against {principal, resource, env}
+ *     via the ExpressionEnginePort (CEL provided by an adapter; here we only delegate).
+ *  3. An explicit DENY wins (deny-wins).
+ *  4. Positive ABAC gate: if `allow` rules exist, at least one must match
+ *     (otherwise DENY `no_matching_allow`) - this is declarative scoping (e.g. same agency).
+ *  5. STEP_UP: matched `step_up` rules impose obligations (e.g. passkey).
+ *  6. Otherwise ALLOW.
  *
- * PUR : aucune dependance vendor. Le moteur CEL concret est injecte (adapter).
+ * PURE: no vendor dependency. The concrete CEL engine is injected (adapter).
  */
 import type {
   AccessRequest,
@@ -60,12 +60,12 @@ export class LayeredDecisionPoint implements PolicyDecisionPoint {
     const now = (this.#deps.clock ?? SYSTEM_CLOCK).now();
     const { principal, resource, action } = request;
     const resolved = await this.#deps.relations.resolveRelation(principal, resource);
-    // Isolation multi-tenant, defense-en-profondeur : cross-tenant => relation `none`
-    // (seul un grant `global` du plan plateforme peut couvrir).
+    // Multi-tenant isolation, defense-in-depth: cross-tenant => relation `none`
+    // (only a `global` grant from the platform plane can cover).
     const relation = tenantScopedRelation(principal.tenantId, resource.tenantId, resolved);
     const required = `${resource.type}.${action}`;
 
-    // 1. Plancher RBAC.
+    // 1. RBAC floor.
     const held = await this.#deps.grants.loadGrantsForUser(principal.userId, principal.tenantId);
     const rbacOk = activeGrants(held, now).some((g) => grantCovers(g, required, relation));
     if (!rbacOk) {
@@ -76,7 +76,7 @@ export class LayeredDecisionPoint implements PolicyDecisionPoint {
       );
     }
 
-    // 2. Policies applicables.
+    // 2. Applicable policies.
     const all = await this.#deps.policies.loadPolicies(principal.tenantId);
     const rules = all
       .filter((p) => policyMatchesRequest(p, resource.type, action))
@@ -95,8 +95,8 @@ export class LayeredDecisionPoint implements PolicyDecisionPoint {
       resource,
       env: { ...principal.ctx, ...request.env, now },
     };
-    // FAIL-CLOSED (Zero Trust) : si une condition ne peut pas etre evaluee
-    // (variable absente, expression invalide...), on REFUSE la requete.
+    // FAIL-CLOSED (Zero Trust): if a condition cannot be evaluated
+    // (missing variable, invalid expression...), we REFUSE the request.
     let matched: PolicyRule[];
     try {
       matched = rules.filter((r) => this.#ruleApplies(r, relation, ctx));
@@ -108,7 +108,7 @@ export class LayeredDecisionPoint implements PolicyDecisionPoint {
       );
     }
 
-    // 3. Deny explicite prioritaire.
+    // 3. Explicit deny takes precedence.
     const deny = matched.find((r) => r.effect === 'deny');
     if (deny) {
       return this.#emit(
@@ -118,7 +118,7 @@ export class LayeredDecisionPoint implements PolicyDecisionPoint {
       );
     }
 
-    // 4. Gate ABAC positif.
+    // 4. Positive ABAC gate.
     const hasAllowRules = rules.some((r) => r.effect === 'allow');
     const hasMatchedAllow = matched.some((r) => r.effect === 'allow');
     if (hasAllowRules && !hasMatchedAllow) {
@@ -141,7 +141,7 @@ export class LayeredDecisionPoint implements PolicyDecisionPoint {
       );
     }
 
-    // 6. Autorise.
+    // 6. Authorized.
     return this.#emit(
       request,
       { effect: 'allow', reason: 'rbac_grant', matchedPolicy: required, signals: { relation } },

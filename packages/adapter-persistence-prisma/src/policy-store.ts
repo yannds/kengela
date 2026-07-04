@@ -1,5 +1,5 @@
 /**
- * PrismaPolicyStore — implemente PolicyStore sur PrismaLike.
+ * PrismaPolicyStore - implemente PolicyStore sur PrismaLike.
  *
  * Charge les policies d'un tenant avec leurs regles jointes. Le narrowing des
  * effets/scopes est fail-closed (voir mapping.ts) : une regle illisible est

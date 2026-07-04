@@ -1,4 +1,4 @@
-# DEBT.md — @kengela/adapter-expr-cel
+# DEBT.md - @kengela/adapter-expr-cel
 
 > Le port est un sas, pas une planque. Ce qui est enveloppe et faible figure ici.
 

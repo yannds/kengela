@@ -1,7 +1,7 @@
 {
   "name": "@kengela/connector-translog",
   "version": "0.1.0",
-  "description": "Kengela — connecteur TransLog Pro : implemente CredentialStore, AuthorizationRepository, SessionStore et PolicyStore contre le schema Prisma reel de TransLog. Paquet prive de reference.",
+  "description": "Kengela reference connector implementing CredentialStore, AuthorizationRepository, SessionStore and PolicyStore against a real Prisma schema. Private reference package.",
   "license": "Apache-2.0",
   "type": "module",
   "exports": {

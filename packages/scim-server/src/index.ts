@@ -1,5 +1,5 @@
 /**
- * `@kengela/scim-server` — cœur SCIM 2.0 (Users + Groups) FRAMEWORK-AGNOSTIQUE.
+ * `@kengela/scim-server` - cœur SCIM 2.0 (Users + Groups) FRAMEWORK-AGNOSTIQUE.
  *
  * Le paquet expose :
  *  - le PORT `ScimStore` (persistance NARROW, orientée SCIM) et ses types de lignes ;

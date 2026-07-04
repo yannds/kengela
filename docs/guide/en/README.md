@@ -11,7 +11,7 @@ self-contained (it also serves as a GitHub wiki page).
 
 > 🇫🇷 **Version française** : [Guide français](../README.md) (wiki : _FR-Accueil_). 🇬🇧 You are reading the English version.
 
-## Table of contents — the fundamentals
+## Table of contents - the fundamentals
 
 | #   | Page                                                   | Topic                                                                                                                          |
 | --- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
@@ -25,7 +25,7 @@ self-contained (it also serves as a GitHub wiki page).
 | 7   | [Developing an adapter](./07-developing-an-adapter.md) | Add an adapter: implement a port, a NARROW vendor interface, a test fake, `DEBT.md`, strict conventions, dual build.           |
 | 8   | [Security](./08-security.md)                           | Zero Trust posture, red/blue audit summary, and how to re-run the adversarial audit.                                           |
 
-## Implementation recipes — "how do I wire Kengela into my app?"
+## Implementation recipes - "how do I wire Kengela into my app?"
 
 Each recipe is **copy-paste**, backed by the code's **real signatures**, and separates what is
 **provided by Kengela** from what **the application writes itself**. Pick the one that matches your
@@ -33,7 +33,7 @@ identity backend.
 
 | Scenario                                                                      | Recipe                                                                  |
 | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| **NestJS + native auth (argon2) + Prisma** — the recommended default path     | [Recipe: NestJS + native + Prisma](./10-recipe-nestjs-native-prisma.md) |
+| **NestJS + native auth (argon2) + Prisma** - the recommended default path     | [Recipe: NestJS + native + Prisma](./10-recipe-nestjs-native-prisma.md) |
 | **better-auth** as the authentication backend (delegated session)             | [Recipe: better-auth](./11-recipe-better-auth.md)                       |
 | **SCIM 2.0 provisioning from Microsoft Entra ID** (Azure AD)                  | [Recipe: SCIM / Entra](./12-recipe-scim-entra.md)                       |
 | **LDAP / Active Directory** directory federation                              | [Recipe: LDAP / AD](./13-recipe-ldap.md)                                |
@@ -44,9 +44,9 @@ identity backend.
 
 | Combo                                                                                      | Recipe                                                      |
 | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------- |
-| **better-auth + PII** — account delegated to better-auth, field encryption + erasure       | [Combo: better-auth + PII](./16-combo-better-auth-pii.md)   |
-| **SCIM/Entra + authorization** — user provisioned from Entra → grants → RBAC/ABAC decision | [Combo: SCIM/Entra + authz](./17-combo-scim-entra-authz.md) |
-| **Full stack** — NestJS + native + Prisma + MFA + authz + PII in a single composition root | [Combo: full stack](./18-combo-full-stack.md)               |
+| **better-auth + PII** - account delegated to better-auth, field encryption + erasure       | [Combo: better-auth + PII](./16-combo-better-auth-pii.md)   |
+| **SCIM/Entra + authorization** - user provisioned from Entra → grants → RBAC/ABAC decision | [Combo: SCIM/Entra + authz](./17-combo-scim-entra-authz.md) |
+| **Full stack** - NestJS + native + Prisma + MFA + authz + PII in a single composition root | [Combo: full stack](./18-combo-full-stack.md)               |
 
 ## The 12 packages at a glance
 

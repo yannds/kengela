@@ -1,7 +1,7 @@
-# Combo 17 — Entra provisioning via SCIM + authorization decision (RBAC + CEL)
+# Combo 17 - Entra provisioning via SCIM + authorization decision (RBAC + CEL)
 
 > COMBO: two recipes assembled end to end. A user is PROVISIONED from Microsoft Entra ID
-> via SCIM 2.0 (recipe 12) — account creation + mapping of groups to application roles —
+> via SCIM 2.0 (recipe 12) - account creation + mapping of groups to application roles -
 > THEN their access is DECIDED by the layered PDP RBAC + CEL condition (recipe 14). The
 > through-line: provisioning LAYS DOWN the grants, the PDP READS them on every request.
 
@@ -11,12 +11,12 @@
 
 Two phases, two families of real symbols:
 
-- **Provisioning (SCIM → roles)** — the pure handlers of `@kengela/scim-server`
+- **Provisioning (SCIM → roles)** - the pure handlers of `@kengela/scim-server`
   (`handleUsersPost`, …) persist the account via the `ScimStore` port; then
   `profileFromScim` (`@kengela/iam-mapping`) normalizes the SCIM body into a
   `DirectoryProfile`, `evaluateMappings` derives `roleKeys`, and `toContractsProfile`
   projects to the minimal `contracts` form for persistence.
-- **Decision (RBAC + ABAC)** — `LayeredDecisionPoint` (`@kengela/authz-core`) evaluates,
+- **Decision (RBAC + ABAC)** - `LayeredDecisionPoint` (`@kengela/authz-core`) evaluates,
   PER REQUEST: the RBAC floor (grants reloaded via `PrismaAuthorizationRepository`), the
   org relation via `PrincipalRelationResolver`, then CEL conditions via
   `CelExpressionEngine` (`@kengela/adapter-expr-cel`) over the policies loaded by
@@ -52,7 +52,7 @@ Entra ──SCIM POST /Users──► handleUsersPost(store, req) ──► Scim
 | `RelationResolver`          | `PrincipalRelationResolver`                                   | `@kengela/authz-core`                 |
 | `ExpressionEnginePort`      | `CelExpressionEngine`                                         | `@kengela/adapter-expr-cel`           |
 | `PolicyDecisionPoint`       | `LayeredDecisionPoint`                                        | `@kengela/authz-core`                 |
-| — (pure functions)          | `profileFromScim` / `evaluateMappings` / `toContractsProfile` | `@kengela/iam-mapping`                |
+| - (pure functions)          | `profileFromScim` / `evaluateMappings` / `toContractsProfile` | `@kengela/iam-mapping`                |
 
 > `RbacDecisionPoint` (RBAC only, no policies) also exists in `@kengela/authz-core`: use it
 > if this tenant has NO ABAC conditions. This combo uses the layered PDP
@@ -70,7 +70,7 @@ npm add @kengela/scim-server @kengela/iam-mapping @kengela/authz-core \
 
 ---
 
-## 3. Phase 1 — provision then map roles
+## 3. Phase 1 - provision then map roles
 
 The SCIM handlers talk to the `ScimStore` port (Prisma implementation you write in your
 app, see recipe 12). An Entra `POST /Users` creates or reconciles the account by email:
@@ -127,11 +127,11 @@ const profile = toContractsProfile(rich, { source: 'scim', active });
 union, honors `stopOnMatch`. The rules are per-tenant configurable (never hardcoded).
 
 Once the `roleKeys` are translated into `Grant` rows (via the tenant's `Role` catalog), the
-PDP reloads them on every `check` — no cache: revoking a right takes effect immediately.
+PDP reloads them on every `check` - no cache: revoking a right takes effect immediately.
 
 ---
 
-## 4. Phase 2 — decide an access (RBAC + CEL)
+## 4. Phase 2 - decide an access (RBAC + CEL)
 
 `LayeredDecisionPoint` decides per request. Real order (`policy-pdp.ts`): 1. RBAC floor
 (else `deny no_grant`); 2. policies applicable to `(resource, action)`; 3. explicit deny

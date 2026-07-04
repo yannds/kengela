@@ -11,7 +11,7 @@ source. Chaque page est autonome (elle sert aussi de page de wiki GitHub).
 
 > 🇬🇧 **English version** : [English guide](./en/README.md) (wiki : _Home_). 🇫🇷 Vous lisez la version française.
 
-## Table des matières — les fondamentaux
+## Table des matières - les fondamentaux
 
 | #   | Page                                                   | Sujet                                                                                                                                 |
 | --- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
@@ -25,7 +25,7 @@ source. Chaque page est autonome (elle sert aussi de page de wiki GitHub).
 | 7   | [Développer un adapter](./07-developing-an-adapter.md) | Ajouter un adapter : implémenter un port, interface vendor NARROW, fake de test, `DEBT.md`, conventions strictes, dual build.         |
 | 8   | [Sécurité](./08-security.md)                           | Posture Zero Trust, résumé de l'audit red/blue, et comment relancer l'audit adverse.                                                  |
 
-## Recettes d'implémentation — « comment je branche Kengela chez moi »
+## Recettes d'implémentation - « comment je branche Kengela chez moi »
 
 Chaque recette est **copier-coller**, adossée aux **signatures réelles** du code, et distingue ce qui
 est **fourni par Kengela** de ce que **l'application écrit elle-même**. Choisis selon ton backend
@@ -33,7 +33,7 @@ d'identité.
 
 | Scénario                                                                           | Recette                                                                   |
 | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| **NestJS + auth native (argon2) + Prisma** — le chemin par défaut recommandé       | [Recette : NestJS + native + Prisma](./10-recipe-nestjs-native-prisma.md) |
+| **NestJS + auth native (argon2) + Prisma** - le chemin par défaut recommandé       | [Recette : NestJS + native + Prisma](./10-recipe-nestjs-native-prisma.md) |
 | **better-auth** comme backend d'authentification (session déléguée)                | [Recette : better-auth](./11-recipe-better-auth.md)                       |
 | Provisioning **SCIM 2.0 depuis Microsoft Entra ID** (Azure AD)                     | [Recette : SCIM / Entra](./12-recipe-scim-entra.md)                       |
 | Fédération annuaire **LDAP / Active Directory**                                    | [Recette : LDAP / AD](./13-recipe-ldap.md)                                |
@@ -44,9 +44,9 @@ d'identité.
 
 | Combo                                                                                       | Recette                                                      |
 | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| **better-auth + PII** — compte délégué à better-auth, chiffrement de champ + effacement     | [Combo : better-auth + PII](./16-combo-better-auth-pii.md)   |
-| **SCIM/Entra + autorisation** — user provisionné depuis Entra → grants → décision RBAC/ABAC | [Combo : SCIM/Entra + authz](./17-combo-scim-entra-authz.md) |
-| **Full stack** — NestJS + native + Prisma + MFA + authz + PII, un seul composition root     | [Combo : full stack](./18-combo-full-stack.md)               |
+| **better-auth + PII** - compte délégué à better-auth, chiffrement de champ + effacement     | [Combo : better-auth + PII](./16-combo-better-auth-pii.md)   |
+| **SCIM/Entra + autorisation** - user provisionné depuis Entra → grants → décision RBAC/ABAC | [Combo : SCIM/Entra + authz](./17-combo-scim-entra-authz.md) |
+| **Full stack** - NestJS + native + Prisma + MFA + authz + PII, un seul composition root     | [Combo : full stack](./18-combo-full-stack.md)               |
 
 ## Les 12 paquets en un coup d'œil
 

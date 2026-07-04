@@ -5,10 +5,10 @@ const IV_LEN = 12;
 const TAG_LEN = 16;
 
 /**
- * Chiffrement de champ PII avec une clé PAR SUJET (crypto-shredding). Chaque
- * personne concernée a sa clé (via SubjectKeyStore) ; détruire la clé
- * (SubjectCryptoShredder) rend ses PII définitivement illisibles (RGPD art. 17).
- * Format base64 : iv(12) || tag(16) || ciphertext.
+ * PII field encryption with a PER-SUBJECT key (crypto-shredding). Each data
+ * subject has their own key (via SubjectKeyStore); destroying the key
+ * (SubjectCryptoShredder) makes their PII permanently unreadable (GDPR art. 17).
+ * base64 format: iv(12) || tag(16) || ciphertext.
  */
 export class SubjectFieldCipher {
   readonly #keys: SubjectKeyStore;
@@ -32,7 +32,7 @@ export class SubjectFieldCipher {
     });
   }
 
-  /** Retourne null si la clé du sujet a été détruite (donnée « shreddée »). */
+  /** Returns null if the subject's key has been destroyed (data "shredded"). */
   public async decryptFor(
     tenantId: TenantId,
     subjectId: string,

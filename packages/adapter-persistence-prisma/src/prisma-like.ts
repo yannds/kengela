@@ -1,5 +1,5 @@
 /**
- * PrismaLike — la surface NARROW dont cet adapter depend.
+ * PrismaLike - la surface NARROW dont cet adapter depend.
  *
  * DOCTRINE : le port est un sas, pas une planque. On ne genere PAS de client
  * Prisma ici et on n'importe RIEN de `@prisma/client`. On decrit exactement les
@@ -159,14 +159,14 @@ export interface MfaChallengeDelegate {
 // compte (actif, mfa, roles) dans `User`. Un vrai `PrismaClient` (User/Account) est
 // structurellement compatible avec les delegues NARROW ci-dessous.
 
-/** Ligne `Account` — sous-ensemble NARROW (le hash `password` est optionnel). */
+/** Ligne `Account` - sous-ensemble NARROW (le hash `password` est optionnel). */
 export interface AccountRow {
   readonly userId: UserId;
   readonly tenantId: TenantId;
   readonly password: string | null;
 }
 
-/** Ligne `User` — sous-ensemble NARROW lu pour resoudre un `CredentialRecord`. */
+/** Ligne `User` - sous-ensemble NARROW lu pour resoudre un `CredentialRecord`. */
 export interface CredentialUserRow {
   readonly id: UserId;
   readonly tenantId: TenantId;

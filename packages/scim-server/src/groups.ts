@@ -1,5 +1,5 @@
 /**
- * Handlers SCIM 2.0 `/Groups` — PURS (`(store, requête) → réponse`), sans HTTP.
+ * Handlers SCIM 2.0 `/Groups` - PURS (`(store, requête) → réponse`), sans HTTP.
  *
  * L'IdP (Entra/Okta) pousse ici les groupes et leurs membres (RFC 7643 §4.2). CRUD complet
  * + gestion des membres via PATCH (add/remove/replace) et remplacement complet via PUT.

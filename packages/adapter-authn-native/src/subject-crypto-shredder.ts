@@ -1,9 +1,9 @@
 import type { ErasurePort, SubjectKeyStore, TenantId } from '@kengela/contracts';
 
 /**
- * Effacement RGPD (art. 17) par crypto-shredding : détruit la clé du sujet.
- * Toutes les PII chiffrées avec SubjectFieldCipher deviennent alors illisibles,
- * sans avoir à réécrire chaque table.
+ * GDPR erasure (art. 17) via crypto-shredding: destroys the subject's key.
+ * All PII encrypted with SubjectFieldCipher then becomes unreadable,
+ * without having to rewrite every table.
  */
 export class SubjectCryptoShredder implements ErasurePort {
   readonly #keys: SubjectKeyStore;

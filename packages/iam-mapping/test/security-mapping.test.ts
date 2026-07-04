@@ -1,5 +1,5 @@
 /**
- * RED TEAM — mapping IdP -> roles (@kengela/iam-mapping).
+ * RED TEAM - mapping IdP -> roles (@kengela/iam-mapping).
  *
  * ReDoS des regles `matches`, regles vides fail-closed, aucune elevation non configuree,
  * projection SAML/OIDC sans fabrication de groupes. PUR (aucun reseau/DB).
@@ -9,7 +9,7 @@ import { compileSafeRegex, safeRegexTest } from '../src/safe-regex.js';
 import { evaluateMappings, type IdpMappingRule } from '../src/rules.js';
 import { profileFromParts, profileFromSaml } from '../src/profile.js';
 
-describe('RED — safe-regex : anti-ReDoS', () => {
+describe('RED - safe-regex : anti-ReDoS', () => {
   it('rejette un quantificateur imbrique catastrophique (fail-closed, null)', () => {
     expect(compileSafeRegex('(a+)+$')).toBeNull();
     expect(compileSafeRegex('(a*)*')).toBeNull();
@@ -35,7 +35,7 @@ describe('RED — safe-regex : anti-ReDoS', () => {
   });
 });
 
-describe('RED — regles de mapping : fail-closed & pas d’elevation non configuree', () => {
+describe('RED - regles de mapping : fail-closed & pas d’elevation non configuree', () => {
   const admin = profileFromParts({ email: 'a@x.io', groups: ['CN=Admins', 'CN=Cashiers'] });
 
   it('une regle VIDE (ni all ni any) ne matche JAMAIS', () => {
@@ -88,7 +88,7 @@ describe('RED — regles de mapping : fail-closed & pas d’elevation non config
   });
 });
 
-describe('RED — projection SAML : pas de fabrication ni d’elevation implicite', () => {
+describe('RED - projection SAML : pas de fabrication ni d’elevation implicite', () => {
   it('une assertion sans groupe ne produit aucun groupe (donc aucun role via mapping)', () => {
     const profile = profileFromSaml({ nameId: 'evil@x.io', attributes: {} });
     expect(profile.groups).toEqual([]);
