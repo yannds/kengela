@@ -1,6 +1,6 @@
 {
   "name": "@kengela/adapter-authn-better-auth",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Kengela IdentityPort adapter on top of a better-auth instance (OIDC/OAuth/SSO).",
   "license": "Apache-2.0",
   "type": "module",

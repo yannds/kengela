@@ -1,6 +1,6 @@
 {
   "name": "@kengela/authz-core",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Kengela pure authorization engine: scoped RBAC + org relation + deny-by-default PDP.",
   "license": "Apache-2.0",
   "type": "module",
