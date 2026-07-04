@@ -76,10 +76,10 @@ ESM only (`"type": "module"`), TypeScript strict. Les imports internes sont en `
 
 **Attention à la nomenclature — deux ports coexistent :**
 
-| Port             | Paquet                 | Rôle                                                                                                                                                         |
-| ---------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `ScimStore`      | `@kengela/scim-server` | Port NARROW **consommé par les handlers**. CRUD SCIM complet Users + Groups. **C'est celui que vous implémentez pour cette recette.**                        |
-| `ScimRepository` | `@kengela/contracts`   | Port ATRIUM historique à 2 méthodes (`upsertUserByEmail`, `deactivateUser`). Orienté « pull/upsert par profil », pas CRUD SCIM. Non requis par les handlers. |
+| Port             | Paquet                 | Rôle                                                                                                                                                              |
+| ---------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ScimStore`      | `@kengela/scim-server` | Port NARROW **consommé par les handlers**. CRUD SCIM complet Users + Groups. **C'est celui que vous implémentez pour cette recette.**                             |
+| `ScimRepository` | `@kengela/contracts`   | Port APPLICATIVE historique à 2 méthodes (`upsertUserByEmail`, `deactivateUser`). Orienté « pull/upsert par profil », pas CRUD SCIM. Non requis par les handlers. |
 
 Les handlers SCIM de cette recette parlent à **`ScimStore`** (port CRUD riche, lignes
 `ScimUserRow`…). `ScimRepository` (contracts) est un port de fédération MINIMAL et orienté

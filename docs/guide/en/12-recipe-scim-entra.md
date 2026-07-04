@@ -75,10 +75,10 @@ ESM only (`"type": "module"`), strict TypeScript. Internal imports use `.js` (No
 
 **Watch the naming — two ports coexist:**
 
-| Port             | Package                | Role                                                                                                                                                                  |
-| ---------------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ScimStore`      | `@kengela/scim-server` | NARROW port **consumed by the handlers**. Full SCIM CRUD for Users + Groups. **This is the one you implement for this recipe.**                                       |
-| `ScimRepository` | `@kengela/contracts`   | Historical ATRIUM port with 2 methods (`upsertUserByEmail`, `deactivateUser`). Oriented toward "pull/upsert by profile", not SCIM CRUD. Not required by the handlers. |
+| Port             | Package                | Role                                                                                                                                                                       |
+| ---------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ScimStore`      | `@kengela/scim-server` | NARROW port **consumed by the handlers**. Full SCIM CRUD for Users + Groups. **This is the one you implement for this recipe.**                                            |
+| `ScimRepository` | `@kengela/contracts`   | Historical APPLICATIVE port with 2 methods (`upsertUserByEmail`, `deactivateUser`). Oriented toward "pull/upsert by profile", not SCIM CRUD. Not required by the handlers. |
 
 The SCIM handlers in this recipe talk to **`ScimStore`** (a rich CRUD port, `ScimUserRow`
 rows…). `ScimRepository` (contracts) is a MINIMAL federation port oriented toward
