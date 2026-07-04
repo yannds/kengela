@@ -7,7 +7,7 @@ conditional access, obligations / step-up and decision logs.
 ## Permission grammar
 
 A permission is a **dotted string** `plane.resource.action`, where `resource` may span several
-segments. It is compatible with the Atrium and TransLog catalogs.
+segments. It is compatible with varied real-world authorization catalogs.
 
 ```
 data.cashier.register.read

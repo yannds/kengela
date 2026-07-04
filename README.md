@@ -23,7 +23,7 @@ Socle **identité &amp; accès Zero Trust** multi-tenant pour TypeScript —
 ## Pourquoi Kengela
 
 Une seule brique pour l'identité et l'accès de tes applications, plutôt que de réinventer
-la roue à chaque projet. Née de la consolidation de deux bases réelles (Atrium et TransLog Pro).
+la roue à chaque projet. Née de la consolidation de deux bases réelles (deux applications multi-tenant reelles).
 
 - **Autorisation « Entra-like »** : RBAC scopé + relation organisationnelle + **ABAC** (conditions
   CEL) + **conditional access** (géo/heure/device/risque) + **step-up** — deny-by-default, fail-closed.

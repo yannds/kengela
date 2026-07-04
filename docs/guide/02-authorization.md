@@ -7,7 +7,7 @@ déclaratives (CEL), le conditional access, les obligations / step-up et les dec
 ## Grammaire des permissions
 
 Une permission est une **chaîne pointée** `plane.resource.action`, où `resource` peut compter
-plusieurs segments. Elle est compatible avec les catalogues Atrium et TransLog.
+plusieurs segments. Elle est compatible avec des catalogues d'autorisation reels varies.
 
 ```
 data.cashier.register.read
