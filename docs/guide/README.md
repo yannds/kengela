@@ -23,7 +23,7 @@ source. Chaque page est autonome (elle sert aussi de page de wiki GitHub).
 | 5   | [Intégration NestJS](./05-nestjs-integration.md)       | `KengelaAuthzGuard`, décorateurs, jeton `KENGELA_PDP`, `StepUpRequiredException`, module d'exemple.                                   |
 | 6   | [Conformité & PII](./06-compliance-pii.md)             | Classification, minimisation, redaction, rétention, effacement (crypto-shredding), `PiiAccessLogSink`.                                |
 | 7   | [Développer un adapter](./07-developing-an-adapter.md) | Ajouter un adapter : implémenter un port, interface vendor NARROW, fake de test, `DEBT.md`, conventions strictes, dual build.         |
-| 8   | [Sécurité](./08-security.md)                           | Posture Zero Trust, résumé de l'audit red/blue, et comment relancer l'audit adverse.                                                  |
+| 8   | [Sécurité](./08-security.md)                           | Posture Zero Trust, contrôles vérifiés et cartographie de conformité.                                                                 |
 
 ## Recettes d'implémentation - « comment je branche Kengela chez moi »
 

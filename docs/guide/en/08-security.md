@@ -1,8 +1,7 @@
 # 08 - Security
 
 Kengela is a security foundation: its own posture must be **proven**, not asserted. This page
-summarizes the Zero Trust doctrine, the controls verified by the adversarial red/blue audit, and
-explains how to re-run that audit.
+summarizes the Zero Trust doctrine and the controls verified by the adversarial test suite.
 
 ## Zero Trust posture (the invariants)
 
@@ -17,48 +16,7 @@ explains how to re-run that audit.
 | **Anti-ReDoS**                         | `matches` forbidden in CEL; bounded regexes in `iam-mapping`; bounded SCIM filters                                               |
 | **Observability**                      | `DecisionLogSink` (authorization), `AuditSink` (business/security), `PiiAccessLogSink` (GDPR art. 30)                            |
 
-## Audit summary (red team / blue team)
-
-The full report is in [`docs/SECURITY-AUDIT-REPORT.md`](../SECURITY-AUDIT-REPORT.md). The audit
-attacked the 12 packages adversarially (in-memory fakes, no real network/DB), then proved the
-controls and mapped compliance.
-
-### Tally
-
-| Severity | Found | Fixed | Documented (debt) |
-| -------- | ----- | ----- | ----------------- |
-| Critical | 0     | 0     | 0                 |
-| High     | 4     | 4     | 0                 |
-| Medium   | 1     | 0     | 1                 |
-| Low      | 1     | 0     | 1                 |
-
-**83 adversarial test cases** (`security-*.test.ts`), all green. No public port API modified.
-
-### The 4 fixed Highs
-
-1. **Multi-tenant isolation defended at the core.** The PDP delegated all isolation to the app's
-   `RelationResolver`. Fix: `tenantScopedRelation()` brings the relation back to `none` in
-   cross-tenant (fail-closed), wired into `pdp.ts` and `policy-pdp.ts`, with a `crossTenant` signal
-   on the decision log.
-2. **Fail-open NestJS guard.** A **class-level** `@PublicRoute` neutralized a **handler-level**
-   `@RequirePermission`. Fix: explicit handler > class precedence (see
-   [05-nestjs-integration.md](./05-nestjs-integration.md)).
-3. **ReDoS via CEL `matches`.** cel-js compiled an unbounded `RegExp` (DoS of the PDP). Fix:
-   `matches` **forbidden at compile time** (fail-closed); conditions are written via `==`, `in`,
-   `startsWith`, `contains`.
-4. **Expired sessions served.** `get()` returned an expired row not yet purged. Fix: `get()` returns
-   `null` as soon as `expiresAt <= now`, independently of the cron (Prisma + connector-translog).
-
-### The 2 documented debts
-
-- **MEDIUM-1** - anti-replay of the TOTP **code** (NIST 800-63B §5.1.4.2): the challenge is one-shot,
-  but an already-consumed code could be replayed via a new `challengeId` within the window (~30 s).
-  Target: anti-replay cache (`adapter-authn-native/DEBT.md` #3).
-- **LOW-1** - `escapeLdapFilterValue()` helper missing: the adapter introduces no injection (verbatim
-  filter), but does not tool the caller who would compose a filter from user input
-  (`adapter-directory-ldap/DEBT.md` #5).
-
-## Proven controls (blue team excerpt)
+## Verified controls
 
 | Attacked scenario     | Proven control                                                                                       |
 | --------------------- | ---------------------------------------------------------------------------------------------------- |
@@ -81,34 +39,9 @@ controls and mapped compliance.
 | Framework           | Coverage                                                                                                                                                                                                                                                                                     |
 | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **OWASP ASVS v4**   | V2 authn (argon2id, anti-enumeration), V3 session (fail-closed expiration, rotation, 256 bits), V4 access control (deny-by-default, `tenantScopedRelation`, deny-wins), V6 crypto (AES-256-GCM per tenant/subject), V7 logging (decision log), V9 data protection (`pii`, `FieldCipherPort`) |
-| **NIST SP 800-63B** | argon2id memory-hard hashing + `needsRehash`; constant-time verifier; TOTP MFA (RFC 6238) encrypted secret + one-shot challenge; OTP anti-replay = debt #3                                                                                                                                   |
+| **NIST SP 800-63B** | argon2id memory-hard hashing + `needsRehash`; constant-time verifier; TOTP MFA (RFC 6238) encrypted secret + one-shot challenge                                                                                                                                                              |
 | **GDPR**            | minimization, erasure art. 17 (crypto-shredding), access log art. 30, retention, at-rest encryption, inter-tenant cryptographic isolation                                                                                                                                                    |
 | **SCIM**            | RFC 7643/7644 + Microsoft Entra validator (schema, bounded `eq` filter, PATCH, uniqueness 409, deprovisioning = deactivation, tenant isolation)                                                                                                                                              |
-
-## Re-running the adversarial audit
-
-The reproducible audit prompt is in
-[`docs/SECURITY-AUDIT-PROMPT.md`](../SECURITY-AUDIT-PROMPT.md). It gives an agent (or a pentester)
-read access + **test** write access to the repository, with the mission to **break** the lib (RED)
-then **prove** the controls (BLUE).
-
-Imposed framework:
-
-- First check that everything is green:
-  ```sh
-  pnpm install && pnpm -r build && pnpm -r test && pnpm lint:arch
-  ```
-- Read the ports (`packages/contracts/src/index.ts`), the implementations (`packages/*/src`) and **all
-  the `DEBT.md` files** (each debt = a weakness hypothesis to confirm/refute).
-- Write adversarial tests `packages/*/test/security-*.test.ts` (hermetic, in-memory fakes).
-- Fix the Critical/High; document the Medium/Low in the `DEBT.md` files (a resolved debt is
-  **deleted**).
-- Re-check build + test + `lint:arch` green, without regression, without breaking the ports' public
-  API.
-
-Deliverables: the `docs/SECURITY-AUDIT-REPORT.md` report (findings by severity + compliance mapping
-
-- applied vs recommended fixes) and the adversarial tests added.
 
 ## Reporting a vulnerability
 
