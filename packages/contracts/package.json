@@ -1,6 +1,6 @@
 {
   "name": "@kengela/contracts",
-  "version": "0.1.3",
+  "version": "0.1.5",
   "description": "Kengela stable port contracts (types only, zero vendor).",
   "license": "Apache-2.0",
   "type": "module",

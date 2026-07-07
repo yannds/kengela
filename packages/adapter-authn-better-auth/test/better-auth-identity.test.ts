@@ -47,4 +47,54 @@ describe('BetterAuthIdentity', () => {
     expect(principal?.tenantId).toBe('t9');
     expect(principal?.roles).toEqual(['admin']);
   });
+
+  it('resolvePrincipal absent : comportement par defaut inchange (base retournee)', async () => {
+    const auth = authWith({ user: { id: 'u1', tenantId: 't1' }, session: { createdAt: new Date(5) } });
+    const principal = await new BetterAuthIdentity({ auth }).verifySession({
+      strategy: 'bearer',
+      token: 'tok',
+    });
+    expect(principal?.userId).toBe('u1');
+    expect(principal?.tenantId).toBe('t1');
+  });
+
+  it('resolvePrincipal remappe le userId (identite auth -> user metier, async)', async () => {
+    const auth = authWith({ user: { id: 'auth-1', email: 'a@b.io', tenantId: 't1' }, session: {} });
+    const lookup = new Map([['a@b.io:t1', 'domain-42']]);
+    const identity = new BetterAuthIdentity({
+      auth,
+      resolvePrincipal: async ({ user, base }) => {
+        if (base === null) return null;
+        const email = typeof user['email'] === 'string' ? user['email'] : '';
+        const domainId = await Promise.resolve(lookup.get(`${email}:${base.tenantId}`) ?? null);
+        return domainId === null ? null : { ...base, userId: domainId, authMethod: 'credential' };
+      },
+    });
+    const principal = await identity.verifySession({ strategy: 'bearer', token: 'x' });
+    expect(principal?.userId).toBe('domain-42'); // pas l'id d'auth
+    expect(principal?.authMethod).toBe('credential');
+  });
+
+  it('resolvePrincipal peut resoudre le tenant depuis base=null (repli email async)', async () => {
+    // Pas de tenantId sur le user -> base null ; le hook resout le tenant lui-meme.
+    const auth = authWith({ user: { id: 'u1', email: 'sso@corp.io' }, session: {} });
+    const identity = new BetterAuthIdentity({
+      auth,
+      resolvePrincipal: async ({ user }) => {
+        const email = typeof user['email'] === 'string' ? user['email'] : null;
+        const tenantId = await Promise.resolve(email === 'sso@corp.io' ? 't-corp' : null);
+        return tenantId === null
+          ? null
+          : { userId: user.id, tenantId, roles: [], mfaLevel: 'none', authMethod: 'oidc', ctx: { authTime: 0 } };
+      },
+    });
+    const principal = await identity.verifySession({ strategy: 'bearer', token: 'x' });
+    expect(principal?.tenantId).toBe('t-corp');
+  });
+
+  it('resolvePrincipal renvoyant null refuse la session (fail-closed)', async () => {
+    const auth = authWith({ user: { id: 'u1', tenantId: 't1' }, session: {} });
+    const identity = new BetterAuthIdentity({ auth, resolvePrincipal: () => null });
+    expect(await identity.verifySession({ strategy: 'bearer', token: 'x' })).toBeNull();
+  });
 });

@@ -1,6 +1,6 @@
 {
   "name": "@kengela/adapter-directory-ldap",
-  "version": "0.1.3",
+  "version": "0.1.5",
   "description": "Kengela AD/LDAP directory adapter: LDAP(S) bind, paginated search, normalization to LdapEntryParts and DirectoryProfile.",
   "license": "Apache-2.0",
   "type": "module",
